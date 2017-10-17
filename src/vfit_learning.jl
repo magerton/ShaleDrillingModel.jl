@@ -1,15 +1,4 @@
-
-# ubV0  = @view( ubVfull[:,:,  1])
-# dubV0 = @view( ubVfull[:,:,:,1])
-# dubV_σ0 = @view(dubV_σ[:,:,:,1])
-#
-# ubV1  = @view( ubVfull[:,:,  idxd[2:end]])
-# dubV1 = @view(dubVfull[:,:,:,idxd[2:end]])
-# dubV_σ1 = @view(dubV_σ[:,:,:,2:end])
-
-
-
-"""
+""""
     ensure_diagonal(Π::M)
 
 If `M<:SparseMatrixCSC`, ensure that diagonal has all entries (even if zero).
@@ -31,35 +20,35 @@ end
 ensure_diagonal(Π::M) where {T<:Number, M<:Matrix{T}} = Π
 
 
-function vfit!(EV0::AbstractArray, logsumubV::AbstractArray, ubVmax::AbstractArray, ubV::AbstractArray, Πz::AbstractMatrix)
-    logsumexp3!(logsumubV,ubVmax,ubV)
-    A_mul_B_md!(EV0,Πz,logsumubV,1)
+
+# function vfit!(EV0::AbstractArray, dEV0::AbstractArray, logsumubV::AbstractArray, ubVmax::AbstractArray, ubV::AbstractArray, sumdubV::AbstractMatrix, dubV::AbstractMatrix, Πz::AbstractMatrix)
+#     vfit!(EV0, dEV0, logsumubV, ubVmax, ubV, ubV, sumduβV, dubV, Πz)
+# end
+#
+#
+# function vfit!(EV0::AbstractArray, dEV0::AbstractArray, logsumubV::AbstractArray, ubVmax::AbstractArray, ubV::AbstractArray, q::AbstractArray, sumdubV::AbstractMatrix, dubV::AbstractMatrix, Πz::AbstractMatrix)
+#     logsumexp_and_softmax3!(logsumubV,q,ubVmax,ubV)
+#     A_mul_B_md!(EV0,Πz,logsumubV,1)
+#     sumdubV .= @view(dubV[:,:,1]) .* @view(q[:,:,1])
+#     for d in 2:size(dubV,ndims(dubV))
+#         sumdubV .+= @view(dubV[:,:,d]) .* @view(q[:,:,d])
+#     end
+#     A_mul_B_md!(dEV0,Πz,sumdubV,1)
+# end
+
+
+function vfit!(EV0::AbstractArray, tmp1::AbstractArray, tmp2::AbstractArray, ubV::AbstractArray, Πz::AbstractMatrix)
+    logsumexp3!(tmp1,tmp2,ubV)
+    A_mul_B_md!(EV0,Πz,tmp1,1)
 end
 
-function vfit!(EV0::AbstractArray, dEV0::AbstractArray, logsumubV::AbstractArray, ubVmax::AbstractArray, ubV::AbstractArray, sumdubV::AbstractMatrix, dubV::AbstractMatrix, Πz::AbstractMatrix)
-    vfit!(EV0, dEV0, logsumubV, ubVmax, ubV, ubV, sumduβV, dubV, Πz)
-end
 
-
-function vfit!(EV0::AbstractArray, dEV0::AbstractArray, logsumubV::AbstractArray, ubVmax::AbstractArray, ubV::AbstractArray, q::AbstractArray, sumdubV::AbstractMatrix, dubV::AbstractMatrix, Πz::AbstractMatrix)
-    logsumexp_and_softmax3!(logsumubV,q,ubVmax,ubV)
-    A_mul_B_md!(EV0,Πz,logsumubV,1)
-    sumdubV .= @view(dubV[:,:,1]) .* @view(q[:,:,1])
-    for d in 2:size(dubV,ndims(dubV))
-        sumdubV .+= @view(dubV[:,:,d]) .* @view(q[:,:,d])
-    end
-    A_mul_B_md!(dEV0,Πz,sumdubV,1)
-end
-
-
-
-
-function solve_inf_vfit!(EV0::AbstractArray, EVtmp::AbstractArray, logsumubV::AbstractArray, ubv::AbstractArray, Πz::AbstractMatrix, β::Real; maxit::Int=6, vftol::Real=1e-11)
+function solve_inf_vfit!(EV0::AbstractArray, tmp1::AbstractArray, tmp2::AbstractArray, ubV::AbstractArray, Πz::AbstractMatrix, β::Real; maxit::Int=6, vftol::Real=1e-11)
     iter = zero(maxit)
     while true
-        vfit!(EVtmp, logsumubV, EVtmp, ubV, Πz)
-        bnds = extrema(EVtmp.-EV0) .* β ./ (1.0 .- β)
-        ubV[:,:,1] .= β .* (EV0 .= EVtmp)
+        vfit!(tmp2, tmp1, tmp2, ubV, Πz)
+        bnds = extrema(tmp2.-EV0) .* β ./ (1.0 .- β)
+        ubV[:,:,1] .= β .* (EV0 .= tmp2)
         iter += 1
         converged = all(abs.(bnds) .< vftol)
         if converged  ||  iter >= maxit

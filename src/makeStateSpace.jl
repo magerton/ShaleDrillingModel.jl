@@ -11,7 +11,11 @@ export
   state,
   horizon, dmax, τmax, length, Dmax,
   sprime,
-  state_idx
+  state_idx,
+  terminal_state_ind,
+  explore_state_inds,
+  infill_state_inds
+
 
 # -------- Definition of the endogenous, deterministic state --------
 
@@ -135,7 +139,6 @@ end
 
 # ----------- fast state transitions matrix ------------
 
-
 """
     horizon(Sprimes::Matrix, Γmax::Vector)
 
@@ -215,9 +218,12 @@ state(  p::well_problem, i::Int) = p.SS[i]
 action_iter( p::well_problem, i::Int) = 0 : dmax(p, i)
 
 "Return vector of indices `iprime ∈ 1:length(SS)` such that `SS[iprime]` is reachable from `SS[i]`"
-function sprime_idx(p::well_problem, i::Int)
- return p.Sprimes[1:p.Γmax[i]+1, i]
+function sprime_idx(p::well_problem, i::Integer)
+   return p.Sprimes[1:p.Γmax[i]+1, i]
 end
+
+action0(wp::well_problem,j::Integer) = wp.Sprimes[1,j]
+
 
 
 "Find index of `s::state` given `wp::well_problem`"
@@ -240,6 +246,17 @@ end
 "Returns (dmax+1, iprimes, horizon) from `well_problem` in state `i`"
 wp_info(wp::well_problem, i::Int) = (1:dmax(wp,i)+1, sprime_idx(wp,i), horizon(wp,i), wp.SS[i], )
 
+
+function exploratory_dmax(wp::well_problem)
+  1 ∈ explore_state_inds(wp)  || throw(error("Initial state is not exploratory."))
+  return dmax(wp,1)
+end
+
+function infill_state_idx_from_exploratory(wp::well_problem)
+  tmx = τmax(wp)
+  dmx = dmax(wp,tmx)
+  return tmx + 2*(1:dmx)
+end
 
 terminal_state_ind(wp::well_problem) = length(wp)
 explore_state_inds(wp::well_problem) = τmax(wp)+1 : -1  : 1

@@ -1,4 +1,4 @@
-export tauchen86_ρ!, tauchen86_c!
+export tauchen86_ρ!, tauchen86_σ!
 
 zθ( x2::Real, x1::Real , θ::Real         ) = (x2 - θ^2.*x1)/sqrt(1.-θ)
 dzθ(x2::Real, x1::Real , θ::Real, z::Real) = -2.*θ*x1/sqrt(1.-θ) + 0.5*z/(1.-θ)
@@ -11,6 +11,7 @@ d2Pdθ(x2::Real, x1::Real, θ::Real, z::Real) = normpdf(z) * ( d2zθ(x2,x1,θ,z)
 ρ_σ(σ::Real) = one(σ)/sqrt(one(σ)+σ^2)
 dρ_σ(σ::Real)  = -σ*(one(σ)+σ^2)^-1.5
 d2ρ_σ(σ::Real) = -(one(σ)+σ^2.)^-1.5 + 3.*σ^2.*(one(σ)+σ^2.)^-2.5
+
 
 function tauchen86_σ!(P::AbstractMatrix, dP::AbstractMatrix, d2P::AbstractMatrix, z::Vector, y::StepRangeLen, σ::Real)
     length(d2P) > 0  && length(dP) == 0  && throw(error("Must do d2P and dP!"))
@@ -29,7 +30,7 @@ function tauchen86_ρ!(P::AbstractMatrix, dP::AbstractMatrix, d2P::AbstractMatri
     n = length(y)
     (n,n,)  == size(P) || throw(DimensionMismatch())
     n == length(z)   || throw(DimensionMismatch())
-    -1.0 < ρ < 1.0     || throw(DomainError("need -1 < ρ < 1"))
+    -1.0 < θ < 1.0     || throw(DomainError("need -1 < ρ < 1"))
 
     doP = length(P) > 0
     dodP = length(dP) > 0

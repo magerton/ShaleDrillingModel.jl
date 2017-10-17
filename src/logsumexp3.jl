@@ -1,3 +1,5 @@
+export logsumexp3!, logsumexp_and_softmax3!
+
 function logsumexp3!(lse::AbstractArray, tmp::AbstractArray, x::AbstractArray)
     size(lse) == size(tmp) || throw(DimensionMismatch())
     tmpA = reshape(tmp, length.(Base.reduced_indices(x,3)))
