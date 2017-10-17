@@ -8,19 +8,15 @@ function solve_vf_terminal!(EV::AbstractArray{T}, dEV::AbstractArray{T}) where {
 end
 
 
-function solve_vf_infill!(EV::AbstractArray, uin::AbstractArray, wp::well_problem, tmp1::AbstractArray, tmp2::AbstractArray, q::AbstractArray, ubVfull::AbstractArray, IminusTEVp::M, Πz::M, β::Real; maxit0::Int=12, maxit1::Int=20, vftol::Real=1e-11) where {M<:AbstractMatrix}
+function solve_vf_infill!(EV::AbstractArray, uin::AbstractArray, wp::well_problem, tmp1::AbstractMatrix, tmp2::AbstractMatrix, q::AbstractArray, ubVfull::AbstractArray, IminusTEVp::M, Πz::M, β::Real; maxit0::Int=12, maxit1::Int=20, vftol::Real=1e-11) where {M<:AbstractMatrix}
 
     nz,nψ,nS = size(EV)
     ndin, ndex = dmax(wp)+1, dmax(wp,1)+1
 
-    (nz, nψ, ndin, 2) == size(uin)  || throw(DimensionMismatch())  # uin[z,ψ,d,d1]
-    (nz, nψ, ndin) == size(ubVfull) || throw(DimensionMismatch())  # ubVfull[z,ψ,d]
-    (nz, nψ, ndin) == size(q)       || throw(DimensionMismatch())
-
-    (nz,nψ) == size(tmp1)           || throw(DimensionMismatch())
-    (nz,nψ) == size(tmp2)           || throw(DimensionMismatch())
-    (nz,nz) == size(IminusTEVp)     || throw(DimensionMismatch())
-    (nz,nz) == size(Πz)             || throw(DimensionMismatch())
+    (nz,nψ,ndin,2) == size(uin)                      || throw(DimensionMismatch())  # uin[z,ψ,d,d1]
+    (nz,nψ,ndin)   == size(ubVfull)    == size(q)    || throw(DimensionMismatch())  # ubVfull[z,ψ,d]
+    (nz,nψ)        == size(tmp1)       == size(tmp2) || throw(DimensionMismatch())
+    (nz,nz)        == size(IminusTEVp) == size(Πz)   || throw(DimensionMismatch())
 
     dograd = false
 
@@ -64,29 +60,24 @@ function solve_vf_explore!(EV::AbstractArray, uex::AbstractArray, wp::well_probl
     nz,nψ,nS = size(EV)
     ndin, ndex = dmax(wp)+1, dmax(wp,1)+1
 
-    (nz, nψ, ndex) == size(uex)     || throw(DimensionMismatch())  # uin[z,ψ,d,d1]
-    (nz, nψ, ndex) == size(ubVfull) || throw(DimensionMismatch())  # ubVfull[z,ψ,d]
-    (nz, nψ, ndex) == size(q)       || throw(DimensionMismatch())
-
-    (nz,nψ) == size(tmp1)           || throw(DimensionMismatch())
-    (nz,nψ) == size(tmp2)           || throw(DimensionMismatch())
-    (nz,nz) == size(Πz)             || throw(DimensionMismatch())
-    (nψ,nψ) == size(βΠψ)            || throw(DimensionMismatch())
+    (nz,nψ,ndex) == size(uex)  == size(ubVfull) == size(q) || throw(DimensionMismatch())
+    (nz,nψ)      == size(tmp1) == size(tmp2)               || throw(DimensionMismatch())
+    (nz,nz)      == size(Πz)                               || throw(DimensionMismatch())
+    (nψ,nψ)      == size(βΠψ)                              || throw(DimensionMismatch())
 
     dograd = false
 
     dmaxp1 = exploratory_dmax(wp)+1
     s_idx2_fm_1 = infill_state_idx_from_exploratory(wp)
-
     ubV  = @view( ubVfull[:,:,  1:dmaxp1])
-    dograd && (dubV = @view(dubVfull[:,:,:,1:dmaxp1]))
 
     # update uβV
     A_mul_B_md!(@view(ubV[:,:,2:end]), βΠψ, @view(EV[:,:,s_idx2_fm_1]), 2)
     ubV[:,:,2:end] .+= @view(uex[:,:,2:end])
     if dograd
+        dubV = @view(dubVfull[:,:,:,1:dmaxp1])
         A_mul_B_md!(@view(  duBv[:,:,:,2:end]),  βΠψ, @view(dEV[:,:,:,s_idx2_fm_1]), 2)
-        A_mul_B_md!(@view(dubV_σ[:,:,:,2:end]), βdΠψ, @view( EV[:,:,  s_idx2_fm_1]), 2)  # may have problems?
+        A_mul_B_md!(@view(dubV_σ[:,:,:,2:end]), βdΠψ, @view( EV[:,:,  s_idx2_fm_1]), 2)
         dubV[  :,:,:,2:end] .+= @view(  duex[:,:,:,2:end])
         dubV_σ[:,:,:,2:end] .+= @view(duex_σ[:,:,:,2:end])
     end

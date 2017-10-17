@@ -10,8 +10,9 @@ function uflow(θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer,     
 end
 
 
-function duflow(θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, d::Integer, k::Integer,     d1::Integer, Dgt0::Bool, omroy::Real) where {T}
+function duflow(θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,    d1::Integer, Dgt0::Bool, omroy::Real) where {T}
     d == 0  && return zero(T)
+
     k == 1  && return  d * exp(logp) * omroy
     k == 2  && return  d  == 1 ? one(T)  : zero(T)
     k == 3  && return  d  == 1 ? zero(T) : convert(T, d)
@@ -33,7 +34,7 @@ function duflow!(du::AbstractVector{T}, θ::AbstractVector{T}, σ::T,     logp::
     K = length(θ)
     length(du) == K  || throw(DimensionMismatch())
     for k = 1:K
-        du[k] = duflow(θ, σ,     logp, ψ, d, k,     d1, Dgt0, omroy)
+        du[k] = duflow(θ, σ,     logp, ψ, k, d,    d1, Dgt0, omroy)
     end
 end
 
@@ -69,7 +70,7 @@ end
 
 
 function makepdct(zspace::Tuple, ψspace::Range, vspace::Range, wp::well_problem, θ::AbstractVector, typ::Symbol)
-    dspace = 1:dmax(wp)+1
+    dspace = 0:dmax(wp)
     typ == :u   && return  Base.product(zspace..., ψspace,              dspace)
     typ == :du  && return  Base.product(zspace..., ψspace, 1:length(θ), dspace)
     typ == :duσ && return  Base.product(zspace..., ψspace, vspace,      dspace)

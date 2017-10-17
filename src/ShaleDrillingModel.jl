@@ -6,6 +6,7 @@ using Calculus
 
 # package code goes here
 
+include("helpers.jl")
 include("tauchen86.jl")
 include("logsumexp3.jl")
 include("makeStateSpace.jl")
