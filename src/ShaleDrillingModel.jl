@@ -4,6 +4,10 @@ using StatsFuns
 using AxisAlgorithms
 using Calculus
 
+const AbstractArray3{T} = AbstractArray{T,3}
+const AbstractArray4{T} = AbstractArray{T,4}
+const AbstractArray5{T} = AbstractArray{T,5}
+
 # package code goes here
 
 include("helpers.jl")

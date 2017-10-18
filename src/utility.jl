@@ -1,4 +1,4 @@
-export uflow, duflow, duflow_σ, fillflows, makepdct, check_flowgrad
+export uflow, duflow, duflow!, duflow_σ, fillflows, makepdct, check_flowgrad, update_payoffs!
 
 
 function uflow(θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer,     d1::Integer, Dgt0::Bool, omroy::Real) where {T}
@@ -64,7 +64,7 @@ function fillflows(X::AbstractArray, θ::AbstractVector{T}, σ::T, f::Function, 
     omroy = one(T)-roy
     size(pdct) == size(X) || throw(DimensionMismatch())
     @inbounds for (i, st) in enumerate(pdct)
-        X[i] = f(θ, σ, st, omroy)
+        X[i] = f(θ, σ, st..., omroy)
     end
 end
 
@@ -80,30 +80,60 @@ end
 
 # ------------------------ check flow grad --------------
 
-function check_flowgrad(θ::AbstractVector{T}, σ::T, zspace::Tuple, ψspace::Range, vspace::Range, wp::well_problem) where {T}
+function check_flowgrad(θ::AbstractVector{T}, σ::T, uf::Function, duf::Function, dufσ::Function, zspace::Tuple, ψspace::Range, vspace::Range, wp::well_problem) where {T}
     omroy = 1. - 0.2
     du = Vector{Float64}(length(θ))
     dufd = similar(du)
     updct = makepdct(zspace, ψspace, vspace, wp, θ, :u)
     for st in updct
         for d1D in [(0,true), (1,true), (0,false)]
-            u(θ) = uflow(θ, σ, st...,  d1D..., omroy)
-            duflow!(du, θ, σ,  st...,  d1D..., omroy)
+            u(θ) = uf(θ, σ, st...,  d1D..., omroy)
+            duf(du, θ, σ,  st...,  d1D..., omroy)
             Calculus.finite_difference!(u, θ, dufd, :central)
             dufd ≈ du || throw(error("Bad θ diff at $st, $d1D. du=$du and fd = $dufd"))
         end
 
         for v in vspace
             logp, ψ, d = st
-            duσ = duflow_σ(θ, σ, logp, ψ, v, d, omroy)
-            uσ(h::Real) = uflow(θ, σ+h, logp, ψ + h*v, d, 0, false, omroy)
+            duσ = dufσ(θ, σ, logp, ψ, v, d, omroy)
+            uσ(h::Real) = uf(θ, σ+h, logp, ψ + h*v, d, 0, false, omroy)
             duσfd = Calculus.derivative(uσ, 0., :central)
             duσ ≈ duσfd  || throw(error("Bad σ diff at $st. duσ = $duσ and fd = $duσfd"))
         end
 
     end
+end
+
+
+# ------------------------ check flow grad --------------
 
 
 
 
+function update_payoffs!(
+    uin::AbstractArray4, uex::AbstractArray3, βΠψ::AbstractMatrix,
+    uf::Function,
+    θt::AbstractVector, σv::Real,
+    roy::Real, zspace::Tuple, ψspace::AbstractVector, vspace::AbstractVector, wp::well_problem
+    )
+
+    uin0, uin1 = @view(uin[:,:,:,1]), @view(uin[:,:,:,2])
+    fillflows(uin0, uin1, uex,    θt, σv, uf,    makepdct(zspace, ψspace, vspace, wp, θt, :u),  roy)
+    tauchen86_σ!(βΠψ, ψspace, σv)
+end
+
+function update_payoffs!(
+    uin::AbstractArray4, uex::AbstractArray3, βΠψ::AbstractMatrix,
+    duin::AbstractArray5, duex::AbstractArray4, duexσ::AbstractArray4, βdΠψ::AbstractMatrix,
+    uf::Function, duf::Function, dufσ::Function,
+    θt::AbstractVector, σv::Real,
+    roy::Real, zspace::Tuple, ψspace::AbstractVector, vspace::AbstractVector, wp::well_problem
+    )
+
+    uin0, uin1 = @view(uin[:,:,:,1]), @view(uin[:,:,:,2])
+    duin0, duin1 = @view(duin[:,:,:,:,1]), @view(duin[:,:,:,:,2])
+    fillflows(uin0, uin1, uex,    θt, σv, uf,   makepdct(zspace, ψspace, vspace, wp, θt, :u),  roy)
+    fillflows(duin0, duin1, duex, θt, σv, duf,  makepdct(zspace, ψspace, vspace, wp, θt, :du),  roy)
+    fillflows(duexσ,              θt, σv, dufσ, makepdct(zspace, ψspace, vspace, wp, θt, :duσ), roy)
+    tauchen86_σ!(βΠψ, βdΠψ, ψspace, σv)
 end
