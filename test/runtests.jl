@@ -22,7 +22,6 @@ wp = well_problem(dmx,4,10)
 zspace, ψspace, dspace, d1space, vspace = (pspace,), linspace(-5.5, 5.5, nψ), 0:dmx, 0:1, linspace(-3.0, 3.0, nv)
 nd, ns, nθ = length(dspace), length(wp), length(θt)
 
-
 # ----------------------------------------------------------
 # ----------------------------------------------------------
 # ----------------------------------------------------------
@@ -59,14 +58,30 @@ q0       = @view(q[:,:,1])
 tmp      = Array{Float64}(nz,nψ)
 lse      = Array{Float64}(nz,nψ)
 
+
+fa = ShaleDrillingModel.u_add
+dfa = ShaleDrillingModel.du_add
+dfσa = ShaleDrillingModel.duσ_add
+
+prim = dcdp_primitives(fa, dfa, dfσa, β, wp, zspace, Πp1, nψ, vspace, 1)
+tmpvars = dcdp_tmpvars(nθ, prim)
+evs = dcdp_Emax(EV,dEV,dEV_σ)
+
+check_size(θt, prim,evs)
+
+update_payoffs!(uin, uex, βΠψ,                          fa,            θt, σv, β, 0.2, zspace, ψspace, vspace, wp)
+update_payoffs!(uin, uex, βΠψ, duin, duex, duexσ, βdΠψ, fa, dfa, dfσa, θt, σv, β, 0.2, zspace, ψspace, vspace, wp)
+update_payoffs!(tmpvars, θt, σv, prim, extrema(ψspace), 0.2, true)
+check_flowgrad(θt, σv, prim, extrema(ψspace), 0.2)
+
 # ----------------- test flow payoffs ----------------------
 
 # make u
-fillflows(uin0, uin1, uex,    θt, σv, uflow,    makepdct(zspace, ψspace, vspace, wp, θt, :u),   0.2)
-fillflows(duin0, duin1, duex, θt, σv, duflow,   makepdct(zspace, ψspace, vspace, wp, θt, :du),  0.2)
-fillflows(duexσ,              θt, σv, duflow_σ, makepdct(zspace, ψspace, vspace, wp, θt, :duσ), 0.2)
+fillflows(uin0, uin1, uex,    θt, σv, fa,   makepdct(zspace, ψspace, vspace, wp, θt, :u),   0.2)
+fillflows(duin0, duin1, duex, θt, σv, dfa,  makepdct(zspace, ψspace, vspace, wp, θt, :du),  0.2)
+fillflows(duexσ,              θt, σv, dfσa, makepdct(zspace, ψspace, vspace, wp, θt, :duσ), 0.2)
 
-check_flowgrad(θt, σv,    uflow, duflow!, duflow_σ,    zspace, ψspace, vspace, wp)
+check_flowgrad(θt, σv,  fa, dfa, dfσa,    zspace, ψspace, vspace, wp, 0.2)
 
 # are all transitions 0 for no action?
 @test all(uin0[:,:,1] .== 0.)
@@ -164,7 +179,7 @@ if false
 end
 
 
-if false
+if true
     let idxs = [ShaleDrillingModel.explore_state_inds(wp)..., ShaleDrillingModel.infill_state_inds(wp)..., ShaleDrillingModel.terminal_state_ind(wp)...]
         @test idxs ⊆ 1:length(wp)
         @test 1:length(wp) ⊆ idxs
@@ -197,8 +212,18 @@ if true
 end
 
 
-update_payoffs!(uin, uex, βΠψ,                          uflow,                   θt, σv, 0.2, zspace, ψspace, vspace, wp)
-update_payoffs!(uin, uex, βΠψ, duin, duex, duexσ, βdΠψ, uflow, duflow, duflow_σ, θt, σv, 0.2, zspace, ψspace, vspace, wp)
+solve_vf_all!(EV,             tmpvars, θt, σv, prim, extrema(ψspace), 0.2,)
+solve_vf_all!(EV, dEV, dEV_σ, tmpvars, θt, σv, prim, extrema(ψspace), 0.2, false)
+solve_vf_all!(EV, dEV, dEV_σ, tmpvars, θt, σv, prim, extrema(ψspace), 0.2, true)
+solve_vf_all!(evs,            tmpvars, θt, σv, prim, extrema(ψspace), 0.2, true)
+solve_vf_all!(evs,            tmpvars, θt, σv, prim, extrema(ψspace), 0.2, false)
+
+
+
+check_EVgrad(θt, σv, prim, extrema(ψspace), 0.2)
+
+
+
 
 
 # TODO: make VF structs

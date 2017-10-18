@@ -19,4 +19,7 @@ include("makeIminusTVp.jl")
 include("vfit_learning.jl")
 include("vf_total_solve_learning.jl")
 
+include("vf_structs.jl")
+
+
 end # module
