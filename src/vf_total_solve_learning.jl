@@ -101,9 +101,11 @@ function learningUpdate!(dubV::AbstractArray4, dubV_σ::AbstractArray4, duex::Ab
     duex1 = @view(duex[:,:,:,2:end])
     duex_σ1 = @view(duexσ[:,:,:,2:end])
 
+    # ∇EV[:,:,2:dmaxp1] = ∇u[:,:,2:dmaxp1] + β * Πψ ⊗ I ∇EV[:,:,2:dmaxp1]
     A_mul_B_md!(dubV1, βΠψ, dEV1, 2)
-    dubV[  :,:,:,2:end] .+= duex1
+    dubV1 .+= duex1
 
+    # ∂EV∂σ[:,:,v,2:dmaxp1] = ∂u∂σ[:,:,v,2:dmaxp1] + β * ∂Πψ/∂σ ⊗ I EV[:,:,2:dmaxp1]  ∀  v ∈ vspace
     for d in 1:size(dubV1,4)
         dubV_σ1a = @view(dubV_σ1[:,:,1,d])
         dubV_σ1b = @view(dubV_σ1[:,:,2:end,d])
@@ -176,7 +178,10 @@ function solve_vf_explore!(
             dubV[:,:,:,1] .= β .* dEV1
             dubV_σ[:,:,:,1] .= β .* dEV1_σ
 
+            # this does EV0 & ∇EV0
             vfit!(EV0, dEV0, ubV, dubV, q, lse, tmp, Πz)
+
+            # Need to 
             sumprod!(sumdubV_σ, dubV_σ, q)
             A_mul_B_md!(dEV0_σ, Πz, sumdubV_σ, 1)
         else

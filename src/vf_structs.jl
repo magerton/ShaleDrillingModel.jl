@@ -1,6 +1,6 @@
 import Base: size
 
-export dcdp_primitives, dcdp_Emax, dcdp_tmpvars, update_θ!, update_payoffs!, check_flowgrad, check_EVgrad
+export dcdp_primitives, dcdp_Emax, dcdp_tmpvars, update_θ!, update_payoffs!, check_flowgrad, check_EVgrad, check_EVgrad!
 
 """
 make primitives. Note: flow payoffs, gradient, and grad wrt `σ` must have the following structure:
@@ -51,13 +51,15 @@ struct dcdp_Emax{T<:Real,A1<:AbstractArray{T,3},A2<:AbstractArray{T,4},A3<:Abstr
     dEV_σ::A3
 end
 
-dcdp_Emax(EV,dEV,dEV_σ) = dcdp_Emax{eltype(EV),typeof(EV),typeof(dEV),typeof(dEV_σ)}(EV,dEV,dEV_σ)
+function dcdp_Emax(EV::AbstractArray3{T}, dEV::AbstractArray4{T}, dEV_σ::AbstractArray4{T}) where {T<:Real}
+    dcdp_Emax{T,typeof(EV),typeof(dEV),typeof(dEV_σ)}(EV,dEV,dEV_σ)
+end
 
 function dcdp_Emax(θt::AbstractVector, p::dcdp_primitives{T}) where {T}
-    EV = Array{T}(  _nz(p), p.nψ, _nS(prim))
-    dEV = Array{T}( _nz(p), p.nψ, length(θt), _nS(prim))
-    dEVσ = Array{T}(_nz(p), p.nψ, _nv(prim), _nS(prim))
-    dcdp_Emax(EV,dEV,dEV_σ)
+    EV   = zeros(T, _nz(p), p.nψ,             _nS(p))
+    dEV  = zeros(T, _nz(p), p.nψ, length(θt), _nS(p))
+    dEVσ = zeros(T, _nz(p), p.nψ, _nv(p),     _nSexp(p)+1)
+    dcdp_Emax(EV,dEV,dEVσ)
 end
 
 # --------------------- check conformable --------------------------
@@ -135,7 +137,7 @@ dcdp_tmpvars(θfull::AbstractVector, prim::dcdp_primitives) = dcdp_tmpvars(_nθt
 
 # --------------------------- payoff updating ---------------------------------
 
-function update_payoffs!(tmp::dcdp_tmpvars, θt::AbstractVector, σv::Real, prim::dcdp_primitives, ψextrema::NTuple{2}, roy::Real=0.2, dograd::Bool=true)
+function update_payoffs!(tmp::dcdp_tmpvars, θt::AbstractVector{T}, σv::T, prim::dcdp_primitives, ψextrema::NTuple{2}, roy::Real=0.2, dograd::Bool=true; h::T=zero(T)) where {T}
     size(tmp.duin,3) == length(θt) || throw(DimensionMismatch())
 
     uin = tmp.uin
@@ -159,6 +161,8 @@ function update_payoffs!(tmp::dcdp_tmpvars, θt::AbstractVector, σv::Real, prim
         duf = prim.df
         dufσ = prim.dfσ
         update_payoffs!(uin, uex, βΠψ, duin, duex, duexσ, βdΠψ, uf, duf, dufσ, θt, σv, β, roy, zspace, ψspace, vspace, wp)
+    elseif h != zero(T)
+        update_payoffs!(uin, uex, βΠψ,                          uf,            θt, σv, β, roy, zspace, ψspace, vspace, wp, h, vspace[1])
     else
         update_payoffs!(uin, uex, βΠψ,                          uf,            θt, σv, β, roy, zspace, ψspace, vspace, wp)
     end
@@ -201,19 +205,27 @@ solve_vf_all!(EV::AbstractArray3,                                             tm
 
 # ------------------------------ check total grad ------------------------------
 
+reldiff(x::T, y::T) where {T<:Real} = x+y == zero(T) ? zero(T) : convert(T,2) * abs(x-y) / (abs(x)+abs(y))
+absdiff(x::T, y::T) where {T<:Real} = abs(x-y)
 
 
-
-function check_EVgrad(θt::AbstractVector{T}, σv::Real, prim::dcdp_primitives, ψextrema::NTuple{2}, roy::Real=0.2) where {T}
+function check_dEV(θt::AbstractVector{T}, σv::Real, prim::dcdp_primitives, ψextrema::NTuple{2}, roy::Real=0.2) where {T}
     evs = dcdp_Emax(θt, prim)
-    EV1 = similar(evs.EV)
-    EV2 = similar(evs.EV)
+    tmp = dcdp_tmpvars(length(θt), prim)
+    check_dEV!(evs, tmp, θt, σv, prim, ψextrema, roy)
+end
+
+function check_dEV!(evs::dcdp_Emax, tmp::dcdp_tmpvars, θt::AbstractVector{T}, σv::Real, prim::dcdp_primitives, ψextrema::NTuple{2}, roy::Real=0.2) where {T}
+    check_size(θt, prim, evs)
+
+    EV1 = zeros(T, size(evs.EV))
+    EV2 = zeros(T, size(evs.EV))
+    EVfd = similar(EV1)
 
     θ1, θ2 = similar(θt), similar(θt)
     nk = length(θt)
 
-    tmp = dcdp_tmpvars(nk, prim)
-    solve_vf_all!(evs, tmp, θt, σv, prim, ψextrema, roy)
+    solve_vf_all!(evs, tmp, θt, σv, prim, ψextrema, roy, true)
 
     for k in 1:nk
         θ1 .= θt
@@ -225,43 +237,51 @@ function check_EVgrad(θt::AbstractVector{T}, σv::Real, prim::dcdp_primitives, 
         solve_vf_all!(EV1, tmp, θ1, σv, prim, ψextrema, roy)
         solve_vf_all!(EV2, tmp, θ2, σv, prim, ψextrema, roy)
 
-        all( (EV2 .- EV1) ./ hh .≈ @view(evs.dEV[:,:,k,:] ))   ||  throw(error("Bad grad"))
-        !all( EV .== 0.0 )    ||  throw(error("All zeros"))
-        !all( EV1 .== 0.0 )   ||  throw(error("All zeros"))
-        !all( EV2 .== 0.0 )   ||  throw(error("All zeros"))
-        extr = extrema( (EV2 .- EV1) ./ hh .- @view(evs.dEV[:,:,k,:] ) )
-        println("In dimension $k, max absdiffs are $extr")
+        !all( evs.EV .== 0.0 )    ||  throw(error("EV all zeros"))
+        !all( evs.dEV .== 0.0 )   ||  throw(error("dEV all zeros"))
+        all(isfinite.(evs.dEV))   || throw(error("dEV not finite"))
+        !all( EV1 .== 0.0 )   ||  throw(error("EV1 all zeros"))
+        !all( EV2 .== 0.0 )   ||  throw(error("EV2 all zeros"))
+
+        EVfd .= (EV2 .- EV1) ./ hh
+        dEVk = @view(evs.dEV[:,:,k,:])
+        EVfd ≈ dEVk  ||  warn("Bad grad in dim $k")
+
+        absd = maximum( absdiff.(EVfd, dEVk ) )
+        reld = maximum( reldiff.(EVfd, dEVk ) )
+        println("In dimension $k, abs diff is $absd. max rel diff is $reld")
     end
 end
 
 
+function check_dEVσ(evs::dcdp_Emax, tmp::dcdp_tmpvars, θt::AbstractVector{T}, σv::T, p::dcdp_primitives, ψextrema::NTuple{2}, roy::Real) where {T}
 
+    EV1 = zeros(T, size(evs.EV))
+    EV2 = zeros(T, size(evs.EV))
 
+    h = max( abs(σv), one(T) ) * cbrt(eps(T))
+    σp = σv + h
+    σm = σv - h
+    hh = σp - σm
 
+    update_payoffs!(tmp, θt, σv, p, ψextrema, roy, false; h=-h)
+    solve_vf_all!(EV1, tmp.uin, tmp.uex, tmp.ubVfull, tmp.lse, tmp.tmp, tmp.IminusTEVp, p.wp, p.Πz, tmp.βΠψ, p.β)
 
+    update_payoffs!(tmp, θt, σv, p, ψextrema, roy, false; h=h)
+    solve_vf_all!(EV2, tmp.uin, tmp.uex, tmp.ubVfull, tmp.lse, tmp.tmp, tmp.IminusTEVp, p.wp, p.Πz, tmp.βΠψ, p.β)
 
+    solve_vf_all!(evs, tmp, θt, σv, p, ψextrema, roy, true)
 
+    dEVk = @view(evs.dEV_σ[:,:,1,1:end-1])
+    EV1vw = @view(EV1[:,:,1:size(dEVk,3)])
+    EV2vw = @view(EV2[:,:,1:size(dEVk,3)])
+    EVfd = (EV2vw .- EV1vw) ./ hh
+    EVfd ≈ dEVk  ||  warn("Bad grad for σ at vspace[1]")
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    absd = maximum( absdiff.(EVfd, dEVk ) )
+    reld = maximum( reldiff.(EVfd, dEVk ) )
+    println("For σ, abs diff is $absd. max rel diff is $reld")
+end
 
 
 #

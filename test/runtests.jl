@@ -67,7 +67,7 @@ prim = dcdp_primitives(fa, dfa, dfσa, β, wp, zspace, Πp1, nψ, vspace, 1)
 tmpvars = dcdp_tmpvars(nθ, prim)
 evs = dcdp_Emax(EV,dEV,dEV_σ)
 
-check_size(θt, prim,evs)
+ShaleDrillingModel.check_size(θt, prim,evs)
 
 update_payoffs!(uin, uex, βΠψ,                          fa,            θt, σv, β, 0.2, zspace, ψspace, vspace, wp)
 update_payoffs!(uin, uex, βΠψ, duin, duex, duexσ, βdΠψ, fa, dfa, dfσa, θt, σv, β, 0.2, zspace, ψspace, vspace, wp)
@@ -142,7 +142,7 @@ let EVtmp = zeros(nz,nψ)
 end
 
 # try VFI for inf horizon
-if false
+if true
     let EVvfit = zeros(eltype(EV0), size(EV0)),
         EVpfit = zeros(eltype(EV0), size(EV0)),
         dEVvfit = zeros(eltype(dEV0), size(dEV0)),
@@ -212,15 +212,16 @@ if true
 end
 
 
-solve_vf_all!(EV,             tmpvars, θt, σv, prim, extrema(ψspace), 0.2,)
-solve_vf_all!(EV, dEV, dEV_σ, tmpvars, θt, σv, prim, extrema(ψspace), 0.2, false)
-solve_vf_all!(EV, dEV, dEV_σ, tmpvars, θt, σv, prim, extrema(ψspace), 0.2, true)
-solve_vf_all!(evs,            tmpvars, θt, σv, prim, extrema(ψspace), 0.2, true)
-solve_vf_all!(evs,            tmpvars, θt, σv, prim, extrema(ψspace), 0.2, false)
+ShaleDrillingModel.solve_vf_all!(EV,             tmpvars, θt, σv, prim, extrema(ψspace), 0.2,)
+ShaleDrillingModel.solve_vf_all!(EV, dEV, dEV_σ, tmpvars, θt, σv, prim, extrema(ψspace), 0.2, false)
+ShaleDrillingModel.solve_vf_all!(EV, dEV, dEV_σ, tmpvars, θt, σv, prim, extrema(ψspace), 0.2, true)
+ShaleDrillingModel.solve_vf_all!(evs,            tmpvars, θt, σv, prim, extrema(ψspace), 0.2, true)
+ShaleDrillingModel.solve_vf_all!(evs,            tmpvars, θt, σv, prim, extrema(ψspace), 0.2, false)
+
+ShaleDrillingModel.solve_vf_all!(evs,            tmpvars, θt .+ rand(length(θt)), σv .+ rand(), prim, extrema(ψspace), 0.2, false)
 
 
-
-check_EVgrad(θt, σv, prim, extrema(ψspace), 0.2)
+# check_EVgrad(θt, σv, prim, extrema(ψspace), 0.2)
 
 
 

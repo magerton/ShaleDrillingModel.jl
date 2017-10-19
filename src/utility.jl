@@ -59,6 +59,21 @@ function fillflows(Xin0::AbstractArray, Xin1::AbstractArray, Xexp::AbstractArray
     end
 end
 
+function fillflows(Xin0::AbstractArray3, Xin1::AbstractArray3, Xexp::AbstractArray3, θ::AbstractVector{T}, σ::T, f::Function, pdct::Base.Iterators.AbstractProdIterator, roy::Real, h::T, v::Real) where {T}
+    σ += h
+    omroy = one(T)-roy
+    size(pdct) == size(Xin0) == size(Xin1) == size(Xexp) || throw(DimensionMismatch())
+    @inbounds for (i, st) in enumerate(pdct)
+        z = st[1:end-2]
+        ψ = st[end-1]
+        d = st[end]
+        Xin0[i] = f(θ, σ  , st...,             0, true , omroy)
+        Xin1[i] = f(θ, σ  , st...,             1, true , omroy)
+        Xexp[i] = f(θ, σ+h, z... , ψ + h*v, d, 0, false, omroy)
+    end
+end
+
+
 function fillflows(X::AbstractArray, θ::AbstractVector{T}, σ::T, f::Function, pdct::Base.Iterators.AbstractProdIterator, roy::Real) where {T}
     omroy = one(T)-roy
     size(pdct) == size(X) || throw(DimensionMismatch())
@@ -125,6 +140,22 @@ function update_payoffs!(
     tauchen86_σ!(βΠψ, ψspace, σv)
     βΠψ .*= β
 end
+
+
+function update_payoffs!(
+    uin::AbstractArray4, uex::AbstractArray3, βΠψ::AbstractMatrix,
+    f::Function,
+    θt::AbstractVector{T}, σv::Real, β::Real,
+    roy::Real, zspace::Tuple, ψspace::AbstractVector, vspace::AbstractVector, wp::well_problem, h::T, v::T
+    ) where {T}
+
+    uin0, uin1 = @view(uin[:,:,:,1]), @view(uin[:,:,:,2])
+    fillflows(uin0, uin1, uex,    θt, σv, f,    makepdct(zspace, ψspace, vspace, wp, θt, :u),  roy, h, v)
+    tauchen86_σ!(βΠψ, ψspace, σv+h)
+    βΠψ .*= β
+end
+
+
 
 function update_payoffs!(
     uin::AbstractArray4, uex::AbstractArray3, βΠψ::AbstractMatrix,
