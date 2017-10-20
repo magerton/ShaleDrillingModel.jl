@@ -33,15 +33,6 @@ solve_vf_all!(e::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θ::AbstractVec
 solve_vf_all!(e::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θ::AbstractVector, roy::Real, geoid::Integer, dograd::Bool=true; kwargs...) = solve_vf_all!(e, t, p, _θt(θ, geoid), _σv(θ), roy, Val{dograd}; kwargs...)
 
 
-@GenGlobal g_dcdp_primitives g_dcdp_Emax g_dcdp_tmpvars
-
-function solve_vf_all!(θ::AbstractVector, roy::Real, geoid::Integer, dograd::Type     ; kwargs...)
-    global g_dcdp_Emax
-    global g_dcdp_tmpvars
-    global g_dcdp_primitives
-    solve_vf_all!(g_dcdp_Emax, g_dcdp_tmpvars, g_dcdp_primitives, θ, roy, geoid, dograd; kwargs...)
-end
-
 # function solve_vf_all!(
 #     EV::AbstractArray3, dEV::AbstractArray4, dEV_σ::AbstractArray4,                           # complete VF
 #     uin::AbstractArray4, uex::AbstractArray3,                                                 # flow payofs

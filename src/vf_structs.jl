@@ -146,9 +146,12 @@ end
 
 function dcdp_tmpvars(nθt::Integer, prim::dcdp_primitives{T}) where {T}
 
+
     nz, nψ, nS = size(prim)
     nv, nd = _nv(prim), _nd(prim)
     ndex, nSexp = _ndex(prim), _nSexp(prim)
+
+    nθt > nψ &&  throw(error("Must have more length(ψspace) > length(θt)"))
 
     # flow payoffs + gradients
     uin   = Array{T}(nz,nψ,nd,2)

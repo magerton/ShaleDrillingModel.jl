@@ -81,7 +81,7 @@ end
 
 
 # note -- this destroys ubV
-function gradinf!(dEV0::AbstractArray3, ubV::AbstractArray3, dubV::AbstractArray4, lse::AbstractMatrix, tmp::AbstractMatrix, IminusTEVp::AbstractMatrix, Πz::AbstractMatrix, β::Real)
+function gradinf!(dEV0::AbstractArray3{T}, ubV::AbstractArray3, dubV::AbstractArray4, lse::AbstractMatrix, tmp::AbstractMatrix, IminusTEVp::AbstractMatrix, Πz::AbstractMatrix, β::Real) where {T}
     size(dubV,4) >= 2 || throw(DimensionMismatch("Need dubV with at least 2+ action possibilities"))
 
     sumdubV = @view(dubV[:,:,:,1])
@@ -91,14 +91,19 @@ function gradinf!(dEV0::AbstractArray3, ubV::AbstractArray3, dubV::AbstractArray
     sumprod!(sumdubV, dubV, ubV)
     A_mul_B_md!(ΠsumdubV, Πz, sumdubV, 1)
 
-    for j in 1:size(dubV,2)
-        q0j = @view(ubV[:,j,1])
-        dEV0j = @view(dEV0[:,j,:])
-        ΠsumdubVj = @view(ΠsumdubV[:,j,:])
+    # TODO: does copying over the data help??
+    nθ = size(dubV,3)
+    ΠsumdubVj = @view(lse[:,1:nθ]) # Array{T}(nz,nθ)
+    dev0jtmp  = @view(tmp[:,1:nθ]) # Array{T}(nz,nθ)
 
-        update_IminusTVp!(IminusTEVp, Πz, β, q0j)
+    for j in 1:size(dubV,2)
+        @views update_IminusTVp!(IminusTEVp, Πz, β, ubV[:,j,1])
         fact = lufact(IminusTEVp)
-        A_ldiv_B!(dEV0j, fact, ΠsumdubVj)
+        @views ΠsumdubVj .= ΠsumdubV[:,j,:]
+
+        # Note: cannot do this with @view(dEV0[:,j,:])
+        @views A_ldiv_B!(dev0jtmp, fact, ΠsumdubVj) # ΠsumdubV[:,j,:])
+        dEV0[:,j,:] .= dev0jtmp
     end
 end
 

@@ -29,34 +29,18 @@ evs = dcdp_Emax(θt, prim)
 # check sizes of models
 ShaleDrillingModel.check_size(θt, prim, evs)
 
+
+
 include("learning_transition.jl")
 include("utility.jl")
 include("logsumexp3.jl")
 include("vf_solve_terminal_and_infill.jl")
 include("vf_solve_exploratory.jl")
 
-
 # check jacobian
 check_EVjac(evs, tmpv, prim, θt, σv, 0.2)
 
-# example solver we can do parallelized...
-solve_vf_all!(evs, tmpv, prim, vcat(θt, σv), 0.2, 1, Val{true})
-
-set_g_dcdp_primitives(prim)
-set_g_dcdp_Emax(evs)
-set_g_dcdp_tmpvars(tmpv)
-
-solve_vf_all!(vcat(θt, σv), 0.2, 1, Val{true})
-
-
-
-
-
-
-
-
-
-#
+include("parallel_solution.jl")
 
 
 

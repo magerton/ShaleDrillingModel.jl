@@ -38,9 +38,33 @@ check_EVjac(evs, tmpv, prim, θt, σv, 0.2)
 # example solver we can do parallelized...
 solve_vf_all!(evs, tmpv, prim, vcat(θt, σv), 0.2, 1, Val{true})
 
-# how we do this with globals
-set_g_dcdp_primitives(prim)
-set_g_dcdp_Emax(evs)
-set_g_dcdp_tmpvars(tmpv)
+# ----------- how we do this with globals ------------
 
-solve_vf_all!(vcat(θt, σv), 0.2, 1, Val{true})
+# set up workers
+pids = addprocs()
+
+# tell workers about the pkg
+@everywhere @show pwd()
+@everywhere using ShaleDrillingModel
+
+# initialize struct of shared arrays
+sev = SharedEV(pids, vcat(θt, σv), prim, royalty_rates, 1:1)
+
+# send primitives to workers
+@eval @everywhere begin
+    set_g_dcdp_primitives($prim)
+    set_g_dcdp_tmpvars($tmpv)
+    set_g_SharedEV($sev)
+end
+
+# parallel solve
+parallel_solve_vf_all!(sev, vcat(θt,σv), Val{true})
+
+using Plots
+gr()
+
+nSexpl = ShaleDrillingModel._nSexp(prim)
+nS = ShaleDrillingModel._nS(prim)
+
+plot(prim.wp.τmax:-1:0, sev.EV[15, 3, 1:nSexpl, :, 1], xaxis=(:flip,), label=string.(round.(royalty_rates,3)), xlabel="time remaining", ylabel="Emax(V)")
+plot(exp.(pspace), sev.EV[:, 3, nSexpl+1:nS, 4, 1], xlabel="Price", ylabel="Emax(V)")
