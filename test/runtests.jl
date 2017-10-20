@@ -3,8 +3,8 @@ using Base.Test
 using StatsFuns
 using JLD
 
-pth = joinpath(Pkg.dir("DynamicDrillingProblemEstimation"), "data/price-cost-transitions.jld")
-@load pth pspace cspace Πpcr Πp1
+jldpath = joinpath(Pkg.dir("ShaleDrillingModel"), "data/price-cost-transitions.jld")
+@load jldpath pspace cspace Πpcr Πp1
 
 # some primitives
 β = (1.02 / 1.125) ^ (1./12.)  # real discount rate

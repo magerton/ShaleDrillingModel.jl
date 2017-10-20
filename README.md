@@ -1,4 +1,4 @@
-# ShaleDrillingModel
+# ShaleDrillingModel.jl
 
 [![Build Status](https://travis-ci.org/magerton/ShaleDrillingModel.jl.svg?branch=master)](https://travis-ci.org/magerton/ShaleDrillingModel.jl)
 
@@ -9,4 +9,11 @@
 
 # Example
 
-See [example/example.jl](example/example.jl)
+To get the package, run
+```julia
+Pkg.clone("https://github.com/magerton/ShaleDrillingModel.jl.git")
+```
+
+See [example/example.jl](example/example.jl) for how to use.
+
+Create price/cost transition matrices using [MarkovTransitionMatrices.jl](https://github.com/magerton/MarkovTransitionMatrices.jl). [example/make_big_transition.jl](example/make_big_transition.jl) has an example of doing this. Note that the version of `MarkovTransitionMatrices.jl` being used is probably `new-moment-matching`, not `master`.
