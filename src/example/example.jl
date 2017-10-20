@@ -17,61 +17,30 @@ royalty_types = 1:length(royalty_rates)
 σv = 0.5
 
 # problem sizes
-nψ, dmx, nz, nv =  5, 2, size(Πp1,1), 5
-wp = well_problem(dmx,4,10)
-zspace, ψspace, dspace, d1space, vspace = (pspace,), linspace(-5.5, 5.5, nψ), 0:dmx, 0:1, linspace(-3.0, 3.0, nv)
-# nd, ns, nθ = length(dspace), length(wp), length(θt)
+wp = well_problem(2, 4, 10)  # max 2 wells/period, max 4 total, 10 periods in lease
+nψ, nv =  5, 5
+zspace, ψspace, vspace = (pspace,), linspace(-5.5, 5.5, nψ),  linspace(-3.0, 3.0, nv)
 
+# set up primitives. using u_add, du_add, and duσ_add as payoffs + jacobians
 prim = dcdp_primitives(u_add, du_add, duσ_add, β, wp, zspace, Πp1, ψspace, vspace, 1)
 tmpv = dcdp_tmpvars(length(θt), prim)
 evs = dcdp_Emax(θt, prim)
 
-# check sizes of models
+# check sizes of primitives
 ShaleDrillingModel.check_size(θt, prim, evs)
 
-include("learning_transition.jl")
-include("utility.jl")
-include("logsumexp3.jl")
-include("vf_solve_terminal_and_infill.jl")
-include("vf_solve_exploratory.jl")
+# check flow gradients
+check_flowgrad(θt, σv, prim, 0.2)
 
-
-# check jacobian
+# check jacobian of Emax
 check_EVjac(evs, tmpv, prim, θt, σv, 0.2)
 
 # example solver we can do parallelized...
 solve_vf_all!(evs, tmpv, prim, vcat(θt, σv), 0.2, 1, Val{true})
 
+# how we do this with globals
 set_g_dcdp_primitives(prim)
 set_g_dcdp_Emax(evs)
 set_g_dcdp_tmpvars(tmpv)
 
 solve_vf_all!(vcat(θt, σv), 0.2, 1, Val{true})
-
-
-
-
-
-
-
-
-
-#
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#

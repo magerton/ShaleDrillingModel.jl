@@ -93,9 +93,9 @@ fillflows!(t::dcdp_tmpvars, p::dcdp_primitives,                   θ::AbstractVe
 fillflows!(t::dcdp_tmpvars, p::dcdp_primitives,                   θ::AbstractVector, σ::T,                                            roy::Real, v::Real=0.0, h::T=0.0) where {T} = fillflows!(t, p, θ, σ,             makepdct(p, θ, Val{:u}, σ),           roy, v, h)
 
 function fillflows_grad!(t::dcdp_tmpvars, p::dcdp_primitives, θ::AbstractVector, σ::Real, roy::Real)
-    fillflows!(p.f,   @view(t.uin[:,:,:,   1]), @view(t.uin[:,:,:,   2]),  t.uex, θ, σ, makepdct(p, θ, Val{:u},  σ), roy)
-    fillflows!(p.df,  @view(t.duin[:,:,:,:,1]), @view(t.duin[:,:,:,:,2]), t.duex, θ, σ, makepdct(p, θ, Val{:du}, σ), roy)
-    fillflows!(p.dfσ, t.duexσ,                                                    θ, σ, makepdct(p, θ, Val{:duσ},σ), roy)
+    @views fillflows!(p.f,  t.uin[:,:,:,   1], t.uin[:,:,:,   2],  t.uex, θ, σ, makepdct(p, θ, Val{:u},  σ), roy)
+    @views fillflows!(p.df, t.duin[:,:,:,:,1], t.duin[:,:,:,:,2], t.duex, θ, σ, makepdct(p, θ, Val{:du}, σ), roy)
+    fillflows!(p.dfσ, t.duexσ,                                            θ, σ, makepdct(p, θ, Val{:duσ},σ), roy)
 end
 
 

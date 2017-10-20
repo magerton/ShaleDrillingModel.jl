@@ -5,9 +5,9 @@ function logsumexp3!(lse::AbstractMatrix, tmp::AbstractMatrix, x::AbstractArray{
     (nz, nψ) ==  size(lse) == size(tmp) || throw(DimensionMismatch())
 
     maximum!(reshape(tmp, nz,nψ,1), x)
-    lse .= exp.(@view(x[:,:,1]) .- tmp)
+    @views lse .= exp.(x[:,:,1] .- tmp)
     @inbounds for k in 2:nd
-        lse .+= exp.(@view(x[:,:,k]) .- tmp)
+        @views lse .+= exp.(x[:,:,k] .- tmp)
     end
     lse .= log.(lse) .+ tmp
 end
@@ -19,9 +19,9 @@ function softmax3!(q::AbstractArray{T,3}, lse::AbstractArray{T,2}, tmp::Abstract
     (nz, nψ) ==  size(lse) == size(tmp) || throw(DimensionMismatch())
 
     maximum!(reshape(tmp, nz,nψ,1), x)
-    lse .= (q[:,:,1] .= exp.(@view(x[:,:,1]) .- tmp))
+    @views lse .= (q[:,:,1] .= exp.(x[:,:,1] .- tmp))
     @inbounds for k in 2:size(x,3)
-        lse .+= (q[:,:,k] .= exp.(@view(x[:,:,k]) .- tmp))
+        @views lse .+= (q[:,:,k] .= exp.(x[:,:,k] .- tmp))
     end
     q ./= lse
 end
@@ -33,9 +33,9 @@ function softmax3!(q::AbstractArray{T,2}, lse::AbstractArray{T,2}, tmp::Abstract
     (nz, nψ) ==  size(lse) == size(tmp) == size(q) || throw(DimensionMismatch())
 
     maximum!(reshape(tmp, nz,nψ,1), x)
-    lse .= (q .= exp.(@view(x[:,:,1]) .- tmp))
+    @views lse .= (q .= exp.(x[:,:,1] .- tmp))
     @inbounds for k in 2:size(x,3)
-        lse .+= exp.(@view(x[:,:,k]) .- tmp)
+        @views lse .+= exp.(x[:,:,k] .- tmp)
     end
     q ./= lse
 end

@@ -37,35 +37,29 @@ function solve_vf_explore!(
         dubV = @view(dubVfull[:,:,:,1:dmaxp1])
     end
 
-    ubV = @view(ubVfull[:,:,1:dmaxp1])
-
     # --------- VFIt --------------
+
+    ubV = @view(ubVfull[:,:,1:dmaxp1])
 
     for i in explore_state_inds(wp)
         ip = action0(wp,i)
-
-        EV0 = @view(EV[:,:,i])
-        ubV[:,:,1] .= β .* @view(EV[:,:,ip])
+        @views ubV[:,:,1] .= β .* EV[:,:,ip]
 
         if dograd
-            dEV0 = @view(dEV[:,:,:,i])
-            dEV1 = @view(dEV[:,:,:,ip])
-            dEV0_σ = @view(dEV_σ[:,:,:,i])
-            dEV1_σ = @view(dEV_σ[:,:,:,min(ip,nSex+1)])  # because we don't use regime2 but need a TVC
             sumdubV_σ = @view(dubV_σ[:,:,:,1])
 
             # TODO: assumes that u(0) = 0
-            dubV[:,:,:,1] .= β .* dEV1
-            dubV_σ[:,:,:,1] .= β .* dEV1_σ
+            @views dubV[:,:,:,1] .= β .* dEV[:,:,:,ip]
+            @views dubV_σ[:,:,:,1] .= β .* dEV_σ[:,:,:,min(ip,nSex+1)]  # max because we don't use regime2 but need a TVC
 
             # this does EV0 & ∇EV0
-            vfit!(EV0, dEV0, ubV, dubV, q, lse, tmp, Πz)
+            @views vfit!(EV[:,:,i], dEV[:,:,:,i], ubV, dubV, q, lse, tmp, Πz)
 
             # ∂EV/∂σ = I ⊗ I ⊗ Πz * ∑( Pr(d) * ∂ubV/∂σ[zspace, ψspace, vspace, d]  )
             sumprod!(sumdubV_σ, dubV_σ, q)
-            A_mul_B_md!(dEV0_σ, Πz, sumdubV_σ, 1)
+            @views A_mul_B_md!(dEV_σ[:,:,:,i], Πz, sumdubV_σ, 1)
         else
-            vfit!(EV0, ubV, lse, tmp, Πz)
+            @views vfit!(EV[:,:,i], ubV, lse, tmp, Πz)
         end
     end
 end
@@ -79,7 +73,9 @@ function solve_vf_explore!(EV::AbstractArray3{T}, uex::AbstractArray3, ubVfull::
 end
 
 
-solve_vf_explore!(e::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives) = solve_vf_explore!(e.EV, e.dEV, e.dEV_σ, t.uex, t.duex, t.duexσ, t.ubVfull, t.dubVfull, t.dubV_σ, t.q, t.lse, t.tmp, p.wp, p.Πz, t.βΠψ, t.βdΠψ, β)
+solve_vf_explore!(e::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, ::Type{Val{true}})  = solve_vf_explore!(e.EV, e.dEV, e.dEV_σ, t.uex, t.duex, t.duexσ, t.ubVfull, t.dubVfull, t.dubV_σ, t.q, t.lse, t.tmp, p.wp, p.Πz, t.βΠψ, t.βdΠψ, p.β)
+solve_vf_explore!(e::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, ::Type{Val{false}}) = solve_vf_explore!(e.EV,                 t.uex,                  t.ubVfull,                            t.lse, t.tmp, p.wp, p.Πz, t.βΠψ,         p.β)
+solve_vf_explore!(e::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, dograd::Bool=true)  = solve_vf_explore!(e,t,p,Val{dograd})
 
 
 

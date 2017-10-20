@@ -1,8 +1,10 @@
 module ShaleDrillingModel
 
 using StatsFuns
+using StatsBase
 using AxisAlgorithms
 using Calculus
+using GenGlobal
 
 const AbstractArray3{T} = AbstractArray{T,3}
 const AbstractArray4{T} = AbstractArray{T,4}
@@ -13,23 +15,23 @@ include("utility_additive.jl")
 
 
 include("helpers.jl")
-include("tauchen86.jl")
-include("logsumexp3.jl")
+include("learning_transition.jl")
 include("makeStateSpace.jl")
 
 include("vf_structs.jl")
-
 include("utility.jl")
-include("makeIminusTVp.jl")
-include("vfit.jl")
 
+include("logsumexp3.jl")
+
+include("makeIminusTVp.jl")
+
+include("vfit.jl")
 
 include("vf_solve_terminal_and_infill.jl")
 include("learning_update.jl")
 include("vf_solve_exploratory.jl")
 include("vf_solve_all.jl")
-
-
+include("check_dEV.jl")
 
 
 

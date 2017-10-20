@@ -16,14 +16,7 @@ end
 
 solve_vf_terminal!(evs::dcdp_Emax) = solve_vf_terminal!(evs.EV, evs.dEV, evs.dEV_σ)
 
-
-function solve_vf_infill!(EV::AbstractArray3{T}, uin::AbstractArray4, ubVfull::AbstractArray3, lse::AbstractMatrix, tmp::AbstractMatrix, IminusTEVp::AbstractMatrix, wp::well_problem, Πz::AbstractMatrix, β::Real; kwargs...) where {T}
-    zeros4 = Array{T}(0,0,0,0)
-    zeros5 = Array{T}(0,0,0,0,0)
-    solve_vf_infill!(EV, zeros4, uin, zeros5, ubVfull, zeros4, lse, tmp, IminusTEVp, wp, Πz, β; kwargs...)
-end
-
-solve_vf_infill!(e::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives; kwargs...) = solve_vf_infill!(e.EV, e.dEV, t.uin, t.duin, t.ubVfull, t.dubVfull, t.lse, t.tmp, t.IminusTEVp, p.wp, p.Πz, p.β; kwargs...)
+# ---------------------------------------------
 
 function solve_vf_infill!(
     EV::AbstractArray3, dEV::AbstractArray4,                                  # value function
@@ -60,7 +53,7 @@ function solve_vf_infill!(
 
         ubV  = @view(ubVfull[:,:,idxd])
         EV0  = @view(EV[:,:,i])
-        ubV .= @view(uin[:,:,idxd,1+s.d1]) .+ β .* @view(EV[:,:,idxs])
+        @views ubV .= uin[:,:,idxd,1+s.d1] .+ β .* EV[:,:,idxs]
 
         if dograd
             dubV = @view(dubVfull[:,:,:,idxd])
@@ -85,3 +78,16 @@ function solve_vf_infill!(
         end
     end
 end
+
+# ---------------------------- wrappers ----------------------------------
+
+
+function solve_vf_infill!(EV::AbstractArray3{T}, uin::AbstractArray4, ubVfull::AbstractArray3, lse::AbstractMatrix, tmp::AbstractMatrix, IminusTEVp::AbstractMatrix, wp::well_problem, Πz::AbstractMatrix, β::Real; kwargs...) where {T}
+    zeros4 = Array{T}(0,0,0,0)
+    zeros5 = Array{T}(0,0,0,0,0)
+    solve_vf_infill!(EV, zeros4, uin, zeros5, ubVfull, zeros4, lse, tmp, IminusTEVp, wp, Πz, β; kwargs...)
+end
+
+solve_vf_infill!(e::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, ::Type{Val{true}} ; kwargs...) = solve_vf_infill!(e.EV, e.dEV, t.uin, t.duin, t.ubVfull, t.dubVfull, t.lse, t.tmp, t.IminusTEVp, p.wp, p.Πz, p.β; kwargs...)
+solve_vf_infill!(e::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, ::Type{Val{false}}; kwargs...) = solve_vf_infill!(e.EV,        t.uin,         t.ubVfull,             t.lse, t.tmp, t.IminusTEVp, p.wp, p.Πz, p.β; kwargs...)
+solve_vf_infill!(e::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, dograd::Bool=true; kwargs...) = solve_vf_infill!(e,t,p,Val{dograd};kwargs...)
