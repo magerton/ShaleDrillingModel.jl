@@ -3,3 +3,8 @@ julia 0.6
 StatsFuns
 AxisAlgorithms
 Calculus
+StatsBase
+
+MarkovTransitionMatrices  # to make transition matrices
+
+GenGlobal # Pkg.clone("https://github.com/magerton/GenGlobal.jl", "GenGlobal")

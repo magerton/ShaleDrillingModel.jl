@@ -9,9 +9,12 @@
 
 # Example
 
-To get the package, run
+To get the package & everything needed, run
 ```julia
-Pkg.clone("https://github.com/magerton/ShaleDrillingModel.jl.git")
+Pkg.clone("https://github.com/magerton/GenGlobal.jl", "GenGlobal")
+Pkg.clone("https://github.com/magerton/ShaleDrillingModel.jl.git", "ShaleDrillingModel")
+Pkg.add("MarkovTransitionMatrices")
+Pkg.checkout("MarkovTransitionMatrices", branch="new-moment-matching")
 ```
 
 See [example/example.jl](example/example.jl) for how to use.
