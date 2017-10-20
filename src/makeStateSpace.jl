@@ -16,7 +16,6 @@ export
   explore_state_inds,
   infill_state_inds
 
-
 # -------- Definition of the endogenous, deterministic state --------
 
 "Deterministic state  (`τ`, `D`, `d1`)"

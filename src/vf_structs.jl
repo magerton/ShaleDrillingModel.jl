@@ -64,6 +64,29 @@ _vspace(prim::dcdp_primitives) = prim.vspace
 # _ψstep(   σ::Real, prim::dcdp_primitives) = _ψstep(   σ, prim.maxsd, prim.nψ)
 # _dψstepdσ(σ::Real, prim::dcdp_primitives) = _dψstepdσ(σ, prim.maxsd, prim.nψ)
 
+
+# midpoint(r::StepRangeLen) = (last(r) + first(r))/2.0
+# function stepsrng(r::StepRangeLen)
+#     m = midpoint(r)
+#     s = step(r)
+#     l = (first(r)-m)/s
+#     return l : 1.0 : -l
+# end
+#
+# function drngdlast(r::StepRangeLen)
+#     l = last(r)
+#     first(r) == -l  || throw(error("must be symmetric"))
+#     return -1.0 : step(r)/l  : 1.0
+# end
+#
+# function _dψdσ(ψspace::StepRangeLen, σ::Real)
+#     l = last(ψspace)
+#     first(ψspace) == -l  || throw(error("must be symmetric"))
+#     twosig = 2.0 * σ
+#     return -twosig : twosig * step(ψspace)/l  : twosig
+# end
+
+
 size(prim::dcdp_primitives) = _nz(prim), _nψ(prim), _nS(prim)
 
 # --------------------- Emax --------------------------

@@ -1,5 +1,3 @@
-
-
 export _dΠψ!, _fdΠψ!, _Πψ!
 
 
@@ -15,7 +13,6 @@ export _dΠψ!, _fdΠψ!, _Πψ!
 _ρ(σ::Real) = 1.0/sqrt(1.0+σ^2)
 _ρ2(σ::Real) = 1.0/(1.0+σ^2)
 _z(x2::Real, x1::Real, Δ::Real, ρ::Real) = (x2 - ρ^2*x1 + Δ)/sqrt(1.0-ρ)
-
 
 # derivatives
 _dzdρ(x2::Real, x1::Real, ρ::Real, z::Real) = -2.0*ρ*x1/sqrt(1.0-ρ) + 0.5*z/(1.0-ρ)
@@ -33,6 +30,7 @@ end
 
 _dπdσ(x2::Real, x1::Real, Δ::Real, σ::Real, v::Real) = _dπdσ(x2,x1,Δ,_ρ(σ),σ,v)
 
+# ------------------------------ matrix updates -------------------------
 
 function _dβΠψ!(P::AbstractMatrix, y::StepRangeLen, σ::Real, β::Real, v::Real)
     n = length(y)
@@ -88,7 +86,7 @@ function _fdβΠψ!(P::AbstractMatrix, y::StepRangeLen, σ::Real, β::Real, v::R
 end
 
 
-
+# ------------------------------ derivative check -------------------------
 
 
 
