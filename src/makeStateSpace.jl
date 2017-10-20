@@ -209,9 +209,10 @@ Dmax(       p::well_problem) = p.Dmax
 τmax(       p::well_problem) = p.τmax
 
 # methods for retrieving info from structure
-horizon(p::well_problem, i::Int) = p.horizon[i]
-dmax(   p::well_problem, i::Int) = p.Γmax[i]
-state(  p::well_problem, i::Int) = p.SS[i]
+horizon(p::well_problem, i::Integer) = p.horizon[i]
+dmax(   p::well_problem, i::Integer) = p.Γmax[i]
+state(  p::well_problem, i::Integer) = p.SS[i]
+
 
 "`action_iter(p::well_problem, i) = 0 : dmax(p, i)`"
 action_iter( p::well_problem, i::Int) = 0 : dmax(p, i)
@@ -221,8 +222,8 @@ function sprime_idx(p::well_problem, i::Integer)
    return p.Sprimes[1:p.Γmax[i]+1, i]
 end
 
-action0(wp::well_problem,j::Integer) = wp.Sprimes[1,j]
 
+action0(wp::well_problem,j::Integer) = wp.Sprimes[1,j]
 
 
 "Find index of `s::state` given `wp::well_problem`"
@@ -244,7 +245,6 @@ end
 
 "Returns (dmax+1, iprimes, horizon) from `well_problem` in state `i`"
 wp_info(wp::well_problem, i::Int) = (1:dmax(wp,i)+1, sprime_idx(wp,i), horizon(wp,i), wp.SS[i], )
-
 
 function exploratory_dmax(wp::well_problem)
   1 ∈ explore_state_inds(wp)  || throw(error("Initial state is not exploratory."))

@@ -35,6 +35,21 @@ end
 _σv(θ::AbstractVector) = θ[end]
 _θt(θ::AbstractVector, geoid::Integer=1, ngeo::Integer=1) = vcat(θ[geoid], θ[ngeo+1:end-1])
 _θt(θ::AbstractVector, geoid::Integer, prim::dcdp_primitives) = _θt(θ, geoid, prim.ngeo)
+
+function _θt!(θt::AbstractVector, θfull::AbstractVector, geoid::Integer, ngeo::Integer=1)
+    nfull = length(θfull)
+    nt = length(θt)
+    nt == nfull - ngeo  || throw(DimensionMismatch())
+    1 <= geoid <= ngeo  || throw(DomainError())
+
+    # updating
+    θt[1] = θfull[geoid]
+    @inbounds @simd for i = 2:nt
+        θt[i] = θfull[i + ngeo]
+    end
+    return θfull[end]  # return σ
+end
+
 _nθt(θ::AbstractVector, ngeo::Integer) = length(θ)-ngeo
 _nθt(θ::AbstractVector, prim::dcdp_primitives) = _nθt(θ, prim.ngeo)
 
@@ -63,6 +78,13 @@ _vspace(prim::dcdp_primitives) = prim.vspace
 # _ψspace(  σ::Real, prim::dcdp_primitives) = _ψspace(  σ, prim.maxsd, prim.nψ)
 # _ψstep(   σ::Real, prim::dcdp_primitives) = _ψstep(   σ, prim.maxsd, prim.nψ)
 # _dψstepdσ(σ::Real, prim::dcdp_primitives) = _dψstepdσ(σ, prim.maxsd, prim.nψ)
+
+
+sprime_idx(prim::dcdp_primitives, i::Integer) = sprime_idx(prim.wp, i)
+wp_info(prim::dcdp_primitives, i::Int) = wp_info(prim.wp, i)
+state(prim::dcdp_primitives, i::Integer) = state(prim.wp, i)
+dmax( prim::dcdp_primitives, i::Integer) = dmax(prim.wp, i)
+
 
 
 # midpoint(r::StepRangeLen) = (last(r) + first(r))/2.0
