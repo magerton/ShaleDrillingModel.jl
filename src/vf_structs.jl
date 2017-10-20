@@ -1,6 +1,7 @@
 import Base: size
 
-export dcdp_primitives, dcdp_Emax, dcdp_tmpvars, update_θ!, update_payoffs!, check_flowgrad, check_EVgrad, check_EVgrad!
+export dcdp_primitives, dcdp_Emax, dcdp_tmpvars, update_θ!, update_payoffs!, check_flowgrad, check_EVgrad, check_EVgrad!,
+    _ψspace, _vspace
 
 """
 make primitives. Note: flow payoffs, gradient, and grad wrt `σ` must have the following structure:
@@ -18,7 +19,8 @@ struct dcdp_primitives{T<:Real,AM<:AbstractMatrix{T},TT<:Tuple,AV<:AbstractVecto
     wp::well_problem  # structure of endogenous choice vars
     zspace::TT        # z-space (tuple)
     Πz::AM            # transition for z
-    nψ::Int           # num ψ types (information)
+    # nψ::Int         # num ψ types (information)
+    ψspace::AV        # ψspace = u + σv*v
     vspace::AV        # noise: ψ = u + σv*v
     ngeo::Int         # num geology types
 end
@@ -32,14 +34,29 @@ _nθt(θ::AbstractVector, prim::dcdp_primitives) = _nθt(θ, prim.ngeo)
 
 _nz(prim::dcdp_primitives) = size(prim.Πz,1)
 _nv(prim::dcdp_primitives) = length(prim.vspace)
-_nψ(prim::dcdp_primitives) = prim.nψ
+_nψ(prim::dcdp_primitives) = length(prim.ψspace) # prim.nψ
 _nS(prim::dcdp_primitives) = length(prim.wp)
 _nSexp(prim::dcdp_primitives) = τmax(prim.wp)+1
 _nd(prim::dcdp_primitives) = dmax(prim.wp)+1
 _ndex(prim::dcdp_primitives) = exploratory_dmax(prim.wp)+1
-_ψspace(prim::dcdp_primitives, minψ::Real, maxψ::Real) = linspace(minψ, maxψ, prim.nψ)
-_ψspace(prim::dcdp_primitives, ψextrema::NTuple{2}) = _ψspace(prim, ψextrema...)
 
+# just in case we have things lying around...
+_ψspace(prim::dcdp_primitives) = prim.ψspace
+_ψspace(prim::dcdp_primitives, a, b) = _ψspace(prim)
+_ψspace(prim::dcdp_primitives, a)    = _ψspace(prim)
+_vspace(prim::dcdp_primitives) = prim.vspace
+# _ψspace(prim::dcdp_primitives, minψ::Real, maxψ::Real) = linspace(minψ, maxψ, prim.nψ)
+# _ψspace(prim::dcdp_primitives, ψextrema::NTuple{2}) = _ψspace(prim, ψextrema...)
+
+# _vspace(           nsd::Real, n::Int) = linspace(-nsd, nsd, n)
+# _ψspace(  σ::Real, nsd::Real, n::Int) = linspace(-nsd*(1.0+σ^2), nsd*(1.0+σ^2), n)
+# _ψstep(   σ::Real, nsd::Real, n::Int) = 2.0 * nsd * (1.0+σ^2) / (n-1.0)
+# _dψstepdσ(σ::Real, nsd::Real, n::Int) = 4.0 * nsd *      σ    / (n-1.0)
+#
+# _vspace(           prim::dcdp_primitives) = _vspace(     prim.maxsd, prim.nv)
+# _ψspace(  σ::Real, prim::dcdp_primitives) = _ψspace(  σ, prim.maxsd, prim.nψ)
+# _ψstep(   σ::Real, prim::dcdp_primitives) = _ψstep(   σ, prim.maxsd, prim.nψ)
+# _dψstepdσ(σ::Real, prim::dcdp_primitives) = _dψstepdσ(σ, prim.maxsd, prim.nψ)
 
 size(prim::dcdp_primitives) = _nz(prim), _nψ(prim), _nS(prim)
 
@@ -56,9 +73,9 @@ function dcdp_Emax(EV::AbstractArray3{T}, dEV::AbstractArray4{T}, dEV_σ::Abstra
 end
 
 function dcdp_Emax(θt::AbstractVector, p::dcdp_primitives{T}) where {T}
-    EV   = zeros(T, _nz(p), p.nψ,             _nS(p))
-    dEV  = zeros(T, _nz(p), p.nψ, length(θt), _nS(p))
-    dEVσ = zeros(T, _nz(p), p.nψ, _nv(p),     _nSexp(p)+1)
+    EV   = zeros(T, _nz(p), _nψ(p),             _nS(p))
+    dEV  = zeros(T, _nz(p), _nψ(p), length(θt), _nS(p))
+    dEVσ = zeros(T, _nz(p), _nψ(p), _nv(p),     _nSexp(p)+1)
     dcdp_Emax(EV,dEV,dEVσ)
 end
 
@@ -135,73 +152,27 @@ end
 dcdp_tmpvars(θfull::AbstractVector, prim::dcdp_primitives) = dcdp_tmpvars(_nθt(θfull,prim), prim)
 
 
-# --------------------------- payoff updating ---------------------------------
-
-function update_payoffs!(tmp::dcdp_tmpvars, θt::AbstractVector{T}, σv::T, prim::dcdp_primitives, ψextrema::NTuple{2}, roy::Real=0.2, dograd::Bool=true; h::T=zero(T)) where {T}
-    size(tmp.duin,3) == length(θt) || throw(DimensionMismatch())
-
-    uin = tmp.uin
-    uex = tmp.uex
-    βΠψ = tmp.βΠψ
-
-    uf = prim.f
-    β = prim.β
-
-    zspace = prim.zspace
-    ψspace = _ψspace(prim, ψextrema)
-    vspace = prim.vspace
-    wp     = prim.wp
-
-    if dograd
-        duin  = tmp.duin
-        duex  = tmp.duex
-        duexσ = tmp.duexσ
-        βdΠψ  = tmp.βdΠψ
-
-        duf = prim.df
-        dufσ = prim.dfσ
-        update_payoffs!(uin, uex, βΠψ, duin, duex, duexσ, βdΠψ, uf, duf, dufσ, θt, σv, β, roy, zspace, ψspace, vspace, wp)
-    elseif h != zero(T)
-        update_payoffs!(uin, uex, βΠψ,                          uf,            θt, σv, β, roy, zspace, ψspace, vspace, wp, h, vspace[1])
-    else
-        update_payoffs!(uin, uex, βΠψ,                          uf,            θt, σv, β, roy, zspace, ψspace, vspace, wp)
-    end
-end
-
-update_payoffs!(tmp::dcdp_tmpvars, θfull::AbstractVector, prim::dcdp_primitives, ψextrema::NTuple{2}, roy::Real, geoid::Integer, dograd::Bool) = update_payoffs!(tmp, _θt(θfull, geoid), _σv(θfull), prim, ψextrema, roy, dograd)
-
-# --------------------------- check grad ---------------------------------
-
-function check_flowgrad(θt::AbstractVector, σv::Real, p::dcdp_primitives, ψextrema::NTuple{2}, roy::Real)
-    ψspace = _ψspace(p, ψextrema)
-    check_flowgrad(θt, σv, p.f, p.df, p.dfσ, p.zspace, ψspace, p.vspace, p.wp, roy)
-end
-
-check_flowgrad(θfull::AbstractVector, p::dcdp_primitives, ψextrema::NTuple{2}, roy::Real, geoid::Integer) = check_flowgrad(_θt(θfull, geoid), _σv(θfull), p, ψextrema, roy)
-
-
 # --------------------------- solve it! --------------------------------
 
-function solve_vf_all!(EV::AbstractArray3, tmp::dcdp_tmpvars, θt::AbstractVector, σv::Real, p::dcdp_primitives, ψextrema::NTuple{2}, roy::Real)
-    update_payoffs!(tmp, θt, σv, p, ψextrema, roy, false)
+function solve_vf_all!(EV::AbstractArray3, tmp::dcdp_tmpvars, θt::AbstractVector, σv::Real, p::dcdp_primitives, roy::Real)
+    update_payoffs!(tmp, θt, σv, p, roy, false)
     solve_vf_all!(EV, tmp.uin, tmp.uex, tmp.ubVfull, tmp.lse, tmp.tmp, tmp.IminusTEVp, p.wp, p.Πz, tmp.βΠψ, p.β)
 end
 
-function solve_vf_all!(EV::AbstractArray3, dEV::AbstractArray4, dEV_σ::AbstractArray4, tmp::dcdp_tmpvars, θt::AbstractVector, σv::Real, p::dcdp_primitives, ψextrema::NTuple{2}, roy::Real, dograd::Bool=true)
+function solve_vf_all!(EV::AbstractArray3, dEV::AbstractArray4, dEV_σ::AbstractArray4, tmp::dcdp_tmpvars, θt::AbstractVector, σv::Real, p::dcdp_primitives, roy::Real, dograd::Bool=true)
     if dograd
-        update_payoffs!(tmp, θt, σv, p, ψextrema, roy, true)
+        update_payoffs!(tmp, θt, σv, p, roy, true)
         solve_vf_all!(EV, dEV, dEV_σ, tmp.uin, tmp.uex, tmp.duin, tmp.duex, tmp.duexσ, tmp.ubVfull, tmp.dubVfull, tmp.dubV_σ, tmp.q, tmp.lse, tmp.tmp, tmp.IminusTEVp, p.wp, p.Πz, tmp.βΠψ, tmp.βdΠψ, p.β  )
     else
-        solve_vf_all!(EV, tmp, θt, σv, p, ψextrema, roy)
+        solve_vf_all!(EV, tmp, θt, σv, p, roy)
     end
 end
 
 # wrappers
-solve_vf_all!(evs::dcdp_Emax,                                                 tmp::dcdp_tmpvars, θt::AbstractVector, σv::Real, p::dcdp_primitives, ψextrema::NTuple{2}, roy::Real,                   dograd::Bool=true) = solve_vf_all!(evs.EV, evs.dEV, evs.dEV_σ, tmp, θt, σv, p, ψextrema, roy, dograd)
-solve_vf_all!(evs::dcdp_Emax,                                                 tmp::dcdp_tmpvars, θfull::AbstractVector,        p::dcdp_primitives, ψextrema::NTuple{2}, roy::Real, geoid::Integer=1, dograd::Bool=true) = solve_vf_all!(evs,                        tmp, _θt(θfull, geoid), _σv(θfull), p, ψextrema, roy, dograd)
-solve_vf_all!(EV::AbstractArray3, dEV::AbstractArray4, dEV_σ::AbstractArray4, tmp::dcdp_tmpvars, θfull::AbstractVector,        p::dcdp_primitives, ψextrema::NTuple{2}, roy::Real, geoid::Integer=1, dograd::Bool=true) = solve_vf_all!(EV, dEV, dEV_σ,             tmp, _θt(θfull, geoid), _σv(θfull), p, ψextrema, roy, dograd)
-solve_vf_all!(EV::AbstractArray3,                                             tmp::dcdp_tmpvars, θfull::AbstractVector,        p::dcdp_primitives, ψextrema::NTuple{2}, roy::Real, geoid::Integer=1)                    = solve_vf_all!(EV,                         tmp, _θt(θfull, geoid), _σv(θfull), p, ψextrema, roy)
-
+solve_vf_all!(evs::dcdp_Emax,                                                 tmp::dcdp_tmpvars, θt::AbstractVector, σv::Real, p::dcdp_primitives, roy::Real,                   dograd::Bool=true) = solve_vf_all!(evs.EV, evs.dEV, evs.dEV_σ, tmp, θt, σv, p, roy, dograd)
+solve_vf_all!(evs::dcdp_Emax,                                                 tmp::dcdp_tmpvars, θfull::AbstractVector,        p::dcdp_primitives, roy::Real, geoid::Integer=1, dograd::Bool=true) = solve_vf_all!(evs,                        tmp, _θt(θfull, geoid), _σv(θfull), p, roy, dograd)
+solve_vf_all!(EV::AbstractArray3, dEV::AbstractArray4, dEV_σ::AbstractArray4, tmp::dcdp_tmpvars, θfull::AbstractVector,        p::dcdp_primitives, roy::Real, geoid::Integer=1, dograd::Bool=true) = solve_vf_all!(EV, dEV, dEV_σ,             tmp, _θt(θfull, geoid), _σv(θfull), p, roy, dograd)
+solve_vf_all!(EV::AbstractArray3,                                             tmp::dcdp_tmpvars, θfull::AbstractVector,        p::dcdp_primitives, roy::Real, geoid::Integer=1)                    = solve_vf_all!(EV,                         tmp, _θt(θfull, geoid), _σv(θfull), p, roy)
 
 # ------------------------------ check total grad ------------------------------
 
@@ -209,13 +180,13 @@ reldiff(x::T, y::T) where {T<:Real} = x+y == zero(T) ? zero(T) : convert(T,2) * 
 absdiff(x::T, y::T) where {T<:Real} = abs(x-y)
 
 
-function check_dEV(θt::AbstractVector{T}, σv::Real, prim::dcdp_primitives, ψextrema::NTuple{2}, roy::Real=0.2) where {T}
+function check_dEV(θt::AbstractVector{T}, σv::Real, prim::dcdp_primitives, roy::Real=0.2) where {T}
     evs = dcdp_Emax(θt, prim)
     tmp = dcdp_tmpvars(length(θt), prim)
-    check_dEV!(evs, tmp, θt, σv, prim, ψextrema, roy)
+    check_dEV!(evs, tmp, θt, σv, prim, roy)
 end
 
-function check_dEV!(evs::dcdp_Emax, tmp::dcdp_tmpvars, θt::AbstractVector{T}, σv::Real, prim::dcdp_primitives, ψextrema::NTuple{2}, roy::Real=0.2) where {T}
+function check_dEV!(evs::dcdp_Emax, tmp::dcdp_tmpvars, θt::AbstractVector{T}, σv::Real, prim::dcdp_primitives, roy::Real=0.2) where {T}
     check_size(θt, prim, evs)
 
     EV1 = zeros(T, size(evs.EV))
@@ -225,7 +196,7 @@ function check_dEV!(evs::dcdp_Emax, tmp::dcdp_tmpvars, θt::AbstractVector{T}, �
     θ1, θ2 = similar(θt), similar(θt)
     nk = length(θt)
 
-    solve_vf_all!(evs, tmp, θt, σv, prim, ψextrema, roy, true)
+    solve_vf_all!(evs, tmp, θt, σv, prim, roy, true)
 
     for k in 1:nk
         θ1 .= θt
@@ -234,8 +205,8 @@ function check_dEV!(evs::dcdp_Emax, tmp::dcdp_tmpvars, θt::AbstractVector{T}, �
         θ1[k] -= h
         θ2[k] += h
         hh = θ2[k] - θ1[k]
-        solve_vf_all!(EV1, tmp, θ1, σv, prim, ψextrema, roy)
-        solve_vf_all!(EV2, tmp, θ2, σv, prim, ψextrema, roy)
+        solve_vf_all!(EV1, tmp, θ1, σv, prim, roy)
+        solve_vf_all!(EV2, tmp, θ2, σv, prim, roy)
 
         !all( evs.EV .== 0.0 )    ||  throw(error("EV all zeros"))
         !all( evs.dEV .== 0.0 )   ||  throw(error("dEV all zeros"))
@@ -254,7 +225,7 @@ function check_dEV!(evs::dcdp_Emax, tmp::dcdp_tmpvars, θt::AbstractVector{T}, �
 end
 
 
-function check_dEVσ(evs::dcdp_Emax, tmp::dcdp_tmpvars, θt::AbstractVector{T}, σv::T, p::dcdp_primitives, ψextrema::NTuple{2}, roy::Real) where {T}
+function check_dEVσ(evs::dcdp_Emax, tmp::dcdp_tmpvars, θt::AbstractVector{T}, σv::T, p::dcdp_primitives, roy::Real) where {T}
 
     EV1 = zeros(T, size(evs.EV))
     EV2 = zeros(T, size(evs.EV))
@@ -264,13 +235,13 @@ function check_dEVσ(evs::dcdp_Emax, tmp::dcdp_tmpvars, θt::AbstractVector{T}, 
     σm = σv - h
     hh = σp - σm
 
-    update_payoffs!(tmp, θt, σv, p, ψextrema, roy, false; h=-h)
+    update_payoffs!(tmp, θt, σv, p, roy, false; h=-h)
     solve_vf_all!(EV1, tmp.uin, tmp.uex, tmp.ubVfull, tmp.lse, tmp.tmp, tmp.IminusTEVp, p.wp, p.Πz, tmp.βΠψ, p.β)
 
-    update_payoffs!(tmp, θt, σv, p, ψextrema, roy, false; h=h)
+    update_payoffs!(tmp, θt, σv, p, roy, false; h=h)
     solve_vf_all!(EV2, tmp.uin, tmp.uex, tmp.ubVfull, tmp.lse, tmp.tmp, tmp.IminusTEVp, p.wp, p.Πz, tmp.βΠψ, p.β)
 
-    solve_vf_all!(evs, tmp, θt, σv, p, ψextrema, roy, true)
+    solve_vf_all!(evs, tmp, θt, σv, p, roy, true)
 
     dEVk = @view(evs.dEV_σ[:,:,1,1:end-1])
     EV1vw = @view(EV1[:,:,1:size(dEVk,3)])

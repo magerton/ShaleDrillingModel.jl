@@ -22,223 +22,191 @@ wp = well_problem(dmx,4,10)
 zspace, ψspace, dspace, d1space, vspace = (pspace,), linspace(-5.5, 5.5, nψ), 0:dmx, 0:1, linspace(-3.0, 3.0, nv)
 nd, ns, nθ = length(dspace), length(wp), length(θt)
 
-# ----------------------------------------------------------
-# ----------------------------------------------------------
-# ----------------------------------------------------------
-# ----------------------------------------------------------
-
-
-# flow utility arrays
-uin = Array{Float64}(nz,nψ,nd,2)
-uex = Array{Float64}(nz,nψ,nd)
-duin = Array{Float64}(nz,nψ,nθ,nd,2)
-duex = Array{Float64}(nz,nψ,nθ,nd)
-duexσ = Array{Float64}(nz,nψ,nv,nd)
-
-uin0, uin1 = @view(uin[:,:,:,1]), @view(uin[:,:,:,2])
-duin0, duin1 = @view(duin[:,:,:,:,1]), @view(duin[:,:,:,:,2])
-
-# value function arrays
-EV = zeros(Float64, nz,nψ,ns)
-dEV = zeros(Float64, nz,nψ,nθ,ns)
-dEV_σ = zeros(Float64,nz,nψ,nv,length(explore_state_inds(wp))+1)
-
-# transition matrices
-βΠψ = Matrix{eltype(σv)}(nψ,nψ)
-βdΠψ = similar(βΠψ)
-Πz = Πp1
-IminusTEVp = ShaleDrillingModel.ensure_diagonal(Πz)
-
-# other temp variables
-ubVfull  = Array{Float64}(nz,nψ,nd)
-dubVfull = Array{Float64}(nz,nψ,nθ,nd)
-dubV_σ   = Array{Float64}(nz,nψ,nv,ShaleDrillingModel.exploratory_dmax(wp)+1)
-q        = Array{Float64}(nz,nψ,nd)
-q0       = @view(q[:,:,1])
-tmp      = Array{Float64}(nz,nψ)
-lse      = Array{Float64}(nz,nψ)
-
-
 fa = ShaleDrillingModel.u_add
 dfa = ShaleDrillingModel.du_add
 dfσa = ShaleDrillingModel.duσ_add
 
-prim = dcdp_primitives(fa, dfa, dfσa, β, wp, zspace, Πp1, nψ, vspace, 1)
-tmpvars = dcdp_tmpvars(nθ, prim)
-evs = dcdp_Emax(EV,dEV,dEV_σ)
+prim = dcdp_primitives(fa, dfa, dfσa, β, wp, zspace, Πp1, ψspace, vspace, 1)
+tmpv = dcdp_tmpvars(nθ, prim)
+evs = dcdp_Emax(θt, prim)
 
-ShaleDrillingModel.check_size(θt, prim,evs)
+ShaleDrillingModel.check_size(θt, prim, evs)
+size(evs.EV)
+size(evs.dEV)
+size(evs.dEV_σ)
 
-update_payoffs!(uin, uex, βΠψ,                          fa,            θt, σv, β, 0.2, zspace, ψspace, vspace, wp)
-update_payoffs!(uin, uex, βΠψ, duin, duex, duexσ, βdΠψ, fa, dfa, dfσa, θt, σv, β, 0.2, zspace, ψspace, vspace, wp)
-update_payoffs!(tmpvars, θt, σv, prim, extrema(ψspace), 0.2, true)
-check_flowgrad(θt, σv, prim, extrema(ψspace), 0.2)
+check_flowgrad(θt, σv, prim, 0.2)
+evs.EV .= 0.
+evs.dEV .= 0.
+evs.dEV_σ .= 0.
 
-# ----------------- test flow payoffs ----------------------
+# ---------------- check on ∂Πψ/∂σ ------------------
 
-# make u
-fillflows(uin0, uin1, uex,    θt, σv, fa,   makepdct(zspace, ψspace, vspace, wp, θt, :u),   0.2)
-fillflows(duin0, duin1, duex, θt, σv, dfa,  makepdct(zspace, ψspace, vspace, wp, θt, :du),  0.2)
-fillflows(duexσ,              θt, σv, dfσa, makepdct(zspace, ψspace, vspace, wp, θt, :duσ), 0.2)
+ShaleDrillingModel.check_dπdσ(σv, ψspace, vspace)
 
-check_flowgrad(θt, σv,  fa, dfa, dfσa,    zspace, ψspace, vspace, wp, 0.2)
+let x2 = similar(tmpv.βΠψ),
+    x1 = similar(tmpv.βΠψ),
+    fd = similar(tmpv.βΠψ),
+    d = tmpv.βdΠψ,
+    v = vspace[3],
+    h =  cbrt(eps(Float64))
 
-# are all transitions 0 for no action?
-@test all(uin0[:,:,1] .== 0.)
-@test all(uin1[:,:,1] .== 0.)
-@test all(uex[:,:,1] .== 0.)
-@test all(duin0[:,:,:,1] .== 0.)
-@test all(duin1[:,:,:,1] .== 0.)
-@test all(duex[:,:,:,1] .== 0.)
+    ShaleDrillingModel._fdβΠψ!(x2, ψspace, σv, β, v, h)
+    ShaleDrillingModel._fdβΠψ!(x1, ψspace, σv, β, v, -h)
+    ShaleDrillingModel._dβΠψ!(d, ψspace, σv, β, v)
+
+    fd .= (x2 .- x1) ./ (2.0 .* h)
+    # @show maximum(abs.(fd - d))
+    @test fd ≈ d
+
+    ShaleDrillingModel._βΠψ!(tmpv.βΠψ, ψspace, σv, 1.0)
+    @test all(sum(tmpv.βΠψ, 2) .≈ 1.0)
+
+    ShaleDrillingModel._fdβΠψ!(x2, ψspace, σv, 1.0, 1.0, cbrt(eps(Float64)))
+    @test all(sum(x2, 2) .≈ 1.0)
+end
 
 
-# ------------------- setup views --------------------
+# ------------------------------- show that derivatives for flow-payoffs are correct -----------------------------------
 
-i = 17
-dmaxp1 = dmax(wp,i)+1
+let logp = 1.0, ψ = ψspace[5], v = vspace[1], omroy = 0.8, d1 = 0, Dgt0 = false, d=3
+    x = duσ_add(θt, σv, logp, ψ, v, d, omroy)
+    @test x ≈ Calculus.derivative((h) -> u_add(     θt, σv+h, logp, ψ+h*v, d, d1, Dgt0, omroy      ), 0.0)
+    @test x ≈ Calculus.derivative((h) -> fduσ(u_add, θt, σv,  (logp, ψ, d,),   d1, Dgt0, omroy, v, h), 0.0)
+end
 
-# set up action-space specific views
-EV0  = @view(EV[:,:,i])
-dEV0 = @view(dEV[:,:,:,i])
-ubV  = @view(ubVfull[:,:,1:dmaxp1])
-dubV = @view(dubVfull[:,:,:,1:dmaxp1])
-
-# set values
-EV0 .= 0.0
-dEV0 .= 0.0
-ubV .= @view(uin[:,:,1:dmaxp1,2])
-dubV .= @view(duin[:,:,:,1:dmaxp1,2])
-
-# ---------------- logsumexp ------------------
-
-# test logsumexp
-let tst = similar(lse),
-    lsetest = similar(lse),
-    qvw = @view(q[:,:,1:dmaxp1])
-
-    logsumexp3!(lse,tmp,ubV)
-    for i in 1:31, j in 1:5
-        lsetest[i,j] = logsumexp(@view(ubV[i,j,:]))
+let duexσ = similar(tmpv.duexσ), uex1 = similar(tmpv.uex), uex2 = similar(tmpv.uex),
+    v = vspace[1], h = cbrt(eps(Float64)), d1 = 0, Dgt0 = false, omroy = 0.8
+    @inbounds for (i, st) in enumerate(makepdct(zspace, ψspace, vspace, wp, θt, Val{:u}))
+        logp, ψ, d = st
+        uex1[i] = u_add( θt, σv-h, logp, ψ-h*v, d, d1, Dgt0, omroy)
+        uex2[i] = u_add( θt, σv+h, logp, ψ+h*v, d, d1, Dgt0, omroy)
     end
-    @test all(lsetest .== lse)
-
-    # logsumexp_and_softmax3
-    logsumexp_and_softmax3!(lse, qvw, tmp, ubV)
-    @test all(sum(qvw,3) .≈ 1.0)
-    @test all(lsetest .== lse)
-
-    # logsumexp_and_softmax3 - q0
-    logsumexp_and_softmax3!(lse, tst, tmp, ubV)
-    @test all(tst .== qvw[:,:,1])
-    @test all(lsetest .== lse)
-end
-
-# ---------------- Regime 2 VFI and PFI ------------------
-
-# try a single VFI
-let EVtmp = zeros(nz,nψ)
-    ShaleDrillingModel.vfit!(EVtmp, ubV, lse, tmp, Πz)
-    @show extrema(EVtmp .- EV0) .* β ./ (1.0-β)
-end
-
-# try VFI for inf horizon
-if true
-    let EVvfit = zeros(eltype(EV0), size(EV0)),
-        EVpfit = zeros(eltype(EV0), size(EV0)),
-        dEVvfit = zeros(eltype(dEV0), size(dEV0)),
-        dEVpfit = zeros(eltype(dEV0), size(dEV0))
-
-        # solve with VFI only
-        EV .= 0.0
-        ubV .= @view(uin0[:,:,1:dmaxp1])
-        @show ShaleDrillingModel.solve_inf_vfit!(EVvfit, ubV, lse, tmp, Πz, β, maxit=5000, vftol=1e-12)
-
-        # solve with hybrid iteration (12 VFit steps + more PFit)
-        ubV .= @view(uin0[:,:,1:dmaxp1])
-        ShaleDrillingModel.pfit!(EV0, ubV, lse, tmp, IminusTEVp, Πz, β)
-        @show ShaleDrillingModel.solve_inf_vfit!(EVpfit, ubV, lse, tmp,             Πz, β, maxit=12, vftol=1.0)
-        @show ShaleDrillingModel.solve_inf_pfit!(EVpfit, ubV, lse, tmp, IminusTEVp, Πz, β; maxit=20, vftol=1e-11)
-        @test EVpfit ≈ EVvfit
-
-        # update ubV and make inf horizon derivatives
-        ubV .= @view(uin0[:,:,1:dmaxp1])
-        ubV[:,:,1] .+=  β .* EVpfit
-        dubV .= @view(duin0[:,:,:,1:dmaxp1])
-        ShaleDrillingModel.gradinf!(dEVpfit, ubV, dubV, lse, tmp, IminusTEVp, Πz, β)  # note: destroys ubV
-
-        # update dubV with gradinf! results & test that when we run VFI grad, we get the same thing back.
-        # Note: since ubV destroyed, re-make
-        ubV .= @view(uin0[:,:,1:dmaxp1])
-        ubV[:,:,1] .+= β .* EVpfit
-        dubV .= @view(duin0[:,:,:,1:dmaxp1])
-        dubV[:,:,:,1] .+= β .* dEVpfit
-        ShaleDrillingModel.vfit!(EVvfit, dEVvfit, ubV, dubV, lse, tmp, Πz)
-        @test EVpfit ≈ EVvfit
-        @test dEVpfit ≈ dEVvfit
+    @inbounds for (i, st) in enumerate(makepdct(zspace, ψspace, vspace, wp, θt, Val{:duσ}))
+        logp, ψ, v, d = st
+        duexσ[i] = duσ_add(θt, σv, logp, ψ, v, d, omroy)
     end
+    fduσex = (uex2 .- uex1) ./ (2.*h)
+    @test fduσex ≈ duexσ[:,:,1,:]
 end
 
 
-if true
-    let idxs = [ShaleDrillingModel.explore_state_inds(wp)..., ShaleDrillingModel.infill_state_inds(wp)..., ShaleDrillingModel.terminal_state_ind(wp)...]
-        @test idxs ⊆ 1:length(wp)
-        @test 1:length(wp) ⊆ idxs
-    end
+let duexσ = similar(tmpv.duexσ),
+    uex1 = similar(tmpv.uex),
+    uex2 = similar(tmpv.uex),
+    uin  = similar(tmpv.uin),
+    v = vspace[1], h = cbrt(eps(Float64)), d1 = 0, Dgt0 = false, roy = 0.2,
+    pdσ = makepdct(zspace, ψspace, vspace, wp, θt, Val{:duσ}),
+    pdex = makepdct(zspace, ψspace, vspace, wp, θt, Val{:u})
 
-    # full VFI
-    ShaleDrillingModel.solve_vf_terminal!(EV, dEV, dEV_σ)
-    ShaleDrillingModel.solve_vf_infill!(EV, uin, ubVfull, lse, tmp, IminusTEVp, wp, Πz, β)
-    ShaleDrillingModel.solve_vf_infill!(EV, dEV, uin, duin, ubVfull, dubVfull, lse, tmp, IminusTEVp, wp, Πz, β)
-    @test !all(EV .== 0.)
-end
+    uin0 = @view(uin[:,:,:,1])
+    uin1 = @view(uin[:,:,:,2])
 
-# ---------------- Regime 1 VFI and PFI ------------------
+    fillflows!(u_add, uin0, uin1, uex1, θt, σv, pdex, roy, v, -h)
+    fillflows!(u_add, uin0, uin1, uex2, θt, σv, pdex, roy, v, h)
+    fillflows!(duσ_add, duexσ, θt, σv, pdσ, roy)
+    fduσex = (uex2 .- uex1) ./ (2.0*h)
 
-if true
-    tauchen86_σ!(βΠψ,βdΠψ,ψspace,σv)
-    βΠψ .*= β
-    βdΠψ .*= β
-
-    ShaleDrillingModel.solve_vf_explore!(EV, uex, ubVfull, lse, tmp, wp, Πz, βΠψ, β)
-    @test !all(EV[:,:,explore_state_inds(wp)] .== 0.)
-
-    ShaleDrillingModel.solve_vf_explore!(EV, dEV, dEV_σ, uex, duex, duexσ, ubVfull, dubVfull, dubV_σ, q, lse, tmp, wp, Πz, βΠψ, βdΠψ, β)
+    @test fduσex ≈ duexσ[:,:,1,:]
 end
 
 
-if true
-    ShaleDrillingModel.solve_vf_all!(EV,             uin, uex,                    ubVfull,                      lse, tmp, IminusTEVp, wp, Πz, βΠψ, β)
-    ShaleDrillingModel.solve_vf_all!(EV, dEV, dEV_σ, uin, uex, duin, duex, duexσ, ubVfull, dubVfull, dubV_σ, q, lse, tmp, IminusTEVp, wp, Πz, βΠψ, βdΠψ, β)
+let duexσ = similar(tmpv.duexσ),
+    uex1  = similar(tmpv.uex),
+    uex2  = similar(tmpv.uex),
+    fdex  = similar(tmpv.uex),
+    vpos = 3,
+    h = cbrt(eps(Float64)),
+    roy = 0.2, p = prim, t = tmpv, σ = σv
+
+    fillflows!(t, p, θt, σ, roy, vspace[vpos], -h)
+    uex1 .= t.uex
+    fillflows!(t, p, θt, σ, roy, vspace[vpos], h)
+    uex2 .= t.uex
+    fillflows!(p.dfσ, t.duexσ, θt, σ, makepdct(p, θt, Val{:duσ}, σ), roy)
+
+    fdex .= (uex2 .- uex1) ./ (2.0.*h)
+    vw = @view(t.duexσ[:,:,vpos,:])
+    @test fdex ≈ vw
 end
 
+# ------------------------------- now compute the infill -----------------------------------
 
-ShaleDrillingModel.solve_vf_all!(EV,             tmpvars, θt, σv, prim, extrema(ψspace), 0.2,)
-ShaleDrillingModel.solve_vf_all!(EV, dEV, dEV_σ, tmpvars, θt, σv, prim, extrema(ψspace), 0.2, false)
-ShaleDrillingModel.solve_vf_all!(EV, dEV, dEV_σ, tmpvars, θt, σv, prim, extrema(ψspace), 0.2, true)
-ShaleDrillingModel.solve_vf_all!(evs,            tmpvars, θt, σv, prim, extrema(ψspace), 0.2, true)
-ShaleDrillingModel.solve_vf_all!(evs,            tmpvars, θt, σv, prim, extrema(ψspace), 0.2, false)
+roy = 0.2
+evs.EV .= 0.0
+fillflows_grad!(tmpv, prim, θt, σv, roy)
+solve_vf_terminal!(evs)
+solve_vf_infill!(evs, tmpv, prim)
 
-ShaleDrillingModel.solve_vf_all!(evs,            tmpvars, θt .+ rand(length(θt)), σv .+ rand(), prim, extrema(ψspace), 0.2, false)
+using Plots
+gr()
 
-
-# check_EVgrad(θt, σv, prim, extrema(ψspace), 0.2)
-
-
-
+plot(exp.(pspace), evs.EV[:, 3, end-1:-1:end-6])
 
 
-# TODO: make VF structs
-# 1) assumptions: primitives: β, wp, Πz, zspace, ψspace, vspace
-# 2) parameters: θt, σv, royalty, geology(baked in to θ)
-# 3) value function + gradient (must check out)
-# 4) tempvars: including flow payoffs & βΠψ (based on assumptions + parameters)
+# ------------------------------- exploratory ----------------------------------
 
+tmpv.ubVfull .= 0.
+tmpv.dubVfull .= 0.
+tmpv.dubV_σ .= 0.
 
+let fduσbv = zeros(size(tmpv.ubVfull)),
+    ubv1   = zeros(size(tmpv.ubVfull)),
+    ubv2   = zeros(size(tmpv.ubVfull)),
+    uin1   = zeros(size(tmpv.uin)),
+    uin1   = zeros(size(tmpv.uin)),
+    uin2   = zeros(size(tmpv.uin)),
+    uex1   = zeros(size(tmpv.uex)),
+    uex2   = zeros(size(tmpv.uex)),
+    EV1 = similar(evs.EV),
+    EV2 = similar(evs.EV),
+    vpos = 1,
+    h = cbrt(eps(Float64)),
+    t = tmpv,
+    p = prim,
+    σ = σv,
+    fdEV = similar(evs.EV)
 
+    v = vspace[vpos]
 
+    fillflows!(tmpv, p, θt, σ, roy, v, -h)
+    solve_vf_infill!(evs, tmpv, prim)
+    learningUpdate!(tmpv, evs, prim, σv, false, v, -h)
+    uin1 .= tmpv.uin
+    uex1 .= tmpv.uex
+    solve_vf_explore!(evs.EV, uex1, tmpv.ubVfull, tmpv.lse, tmpv.tmp, p.wp, p.Πz, tmpv.βΠψ, β)
+    ubv1 .= tmpv.ubVfull
+    EV1 .= evs.EV
 
+    fillflows!(tmpv, p, θt, σ, roy, v, +h)
+    solve_vf_infill!(evs, tmpv, prim)
+    learningUpdate!(tmpv, evs, prim, σv, false, v, h)
+    uin2 .= tmpv.uin
+    uex2 .= tmpv.uex
+    @test all(uin1 .== uin2)
+    @test !all(uex1 .== uex2)
+    solve_vf_explore!(evs.EV, uex2, tmpv.ubVfull, tmpv.lse, tmpv.tmp, p.wp, p.Πz, tmpv.βΠψ, β)
+    ubv2 .= tmpv.ubVfull
+    EV2 .= evs.EV
 
+    fillflows_grad!(tmpv, p, θt, σ, roy)
+    @test (uex2 .- uex1) ./ (2.0 .* h) ≈ tmpv.duexσ[:,:,vpos,:]
+    solve_vf_infill!(evs, tmpv, prim)
+    learningUpdate!(tmpv, evs, prim, σ, true)
+    solve_vf_explore!(evs, tmpv, prim)
 
+    fduσbv .= (ubv2 .- ubv1) ./ (2.0.*h)
+    @show findmax(abs.(fduσbv .-  tmpv.dubV_σ[:,:,vpos,:]))
+    # only test 2:end b/c we don't update ubV at the end...
+    @test tmpv.dubV_σ[:,:,vpos, 2:end] ≈ fduσbv[:,:,2:end]
+
+    fdEV .= (EV2 .- EV1) ./ (2.0.*h)
+    fdEVvw = @view(fdEV[:,:,explore_state_inds(wp)[end:-1:1]])
+    dEVσvw = @view(evs.dEV_σ[:,:,vpos,1:end-1])
+    @test fdEVvw ≈ dEVσvw
+end
+
+# -----------------------------------------------------------------
 
 
 
@@ -246,3 +214,70 @@ ShaleDrillingModel.solve_vf_all!(evs,            tmpvars, θt .+ rand(length(θt
 
 
 #
+#
+#
+#
+# ShaleDrillingModel.solve_vf_all!(evs, tmpvars, θt .+ rand(length(θt)), σv .+ rand(), prim, extrema(ψspace), 0.2, false)
+#
+# # check_dEV!(evs, tmpvars, θt, σv, prim, extrema(ψspace), 0.2)
+# # check_dEV(θt, σv, prim, extrema(ψspace), 0.2)
+# check_dEVσ(evs, tmpvars, θt, σv, prim, extrema(ψspace), 0.2)
+#
+#
+# T = eltype(θt)
+# p = prim
+# tmp = tmpvars
+# roy = 0.2
+#
+# EV1 = zeros(T, size(evs.EV))
+# EV2 = zeros(T, size(evs.EV))
+#
+# h = max( abs(σv), one(T) ) * cbrt(eps(T))
+# σp = σv + h
+# σm = σv - h
+# hh = σp - σm
+#
+# update_payoffs!(tmp, θt, σv, p, roy, false; h=-h)
+# solve_vf_all!(EV1, tmp.uin, tmp.uex, tmp.ubVfull, tmp.lse, tmp.tmp, tmp.IminusTEVp, p.wp, p.Πz, tmp.βΠψ, p.β)
+#
+# update_payoffs!(tmp, θt, σv, p, roy, false; h=h)
+# solve_vf_all!(EV2, tmp.uin, tmp.uex, tmp.ubVfull, tmp.lse, tmp.tmp, tmp.IminusTEVp, p.wp, p.Πz, tmp.βΠψ, p.β)
+#
+# solve_vf_all!(evs, tmp, θt, σv, p, roy, true)
+#
+# dEVk = @view(evs.dEV_σ[:,:,1,1:end-1])
+# EV1vw = @view(EV1[:,:,1:size(dEVk,3)])
+# EV2vw = @view(EV2[:,:,1:size(dEVk,3)])
+# EVfd = (EV2vw .- EV1vw) ./ hh
+# EVfd ≈ dEVk  ||  warn("Bad grad for σ at vspace[1]")
+#
+# absd = maximum( absdiff.(EVfd, dEVk ) )
+# reld = maximum( reldiff.(EVfd, dEVk ) )
+# println("For σ, abs diff is $absd. max rel diff is $reld")
+#
+#
+# dEVk
+#
+# tmp.duexσ[:,3,2:4,2:3]
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+#
+# #
