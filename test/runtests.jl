@@ -3,9 +3,6 @@ using Base.Test
 using StatsFuns
 using JLD
 
-
-
-
 jldpath = joinpath(Pkg.dir("ShaleDrillingModel"), "data/price-cost-transitions.jld")
 @load jldpath pspace cspace Πpcr Πp1
 
@@ -32,34 +29,103 @@ evs = dcdp_Emax(θt, prim)
 # check sizes of models
 ShaleDrillingModel.check_size(θt, prim, evs)
 
-# if true
-include("learning_transition.jl")
-include("utility.jl")
-include("logsumexp3.jl")
-include("vf_solve_terminal_and_infill.jl")
-include("vf_solve_exploratory.jl")
+if false
+    include("learning_transition.jl")
+    include("utility.jl")
+    include("logsumexp3.jl")
+    include("vf_solve_terminal_and_infill.jl")
+    include("vf_solve_exploratory.jl")
 
-for r in royalty_rates
-    println("\ntest royalty rate $r")
-    check_EVjac(evs, tmpv, prim, θt, σv, r)
+    for r in royalty_rates
+        println("test royalty rate $r")
+        check_EVjac(evs, tmpv, prim, θt, σv, r)
+    end
+
+    # check jacobian
+    include("parallel_solution.jl")
 end
 
-# check jacobian
-include("parallel_solution.jl")
-
-# end
-
 shev = SharedEV([1,], vcat(θt, σv), prim, royalty_rates, 1:1)
+isev = ItpSharedEV(shev, prim, σv)
 set_g_dcdp_primitives(prim)
 set_g_dcdp_tmpvars(tmpv)
 set_g_SharedEV(shev)
 
-s = parallel_solve_vf_all!(shev, vcat(θt,σv), Val{true})
-fetch.(s)
+# s = parallel_solve_vf_all!(shev, vcat(θt,σv), Val{true})
+# fetch.(s)
 
-include("parallel_dEV_check.jl")
 
-false && include("action_probabilities.jl")
+
+# include("parallel_dEV_check.jl")
+
+let itypidx = (4,1),
+    tmp = Vector{Float64}(dmax(wp)+1),
+    θfull = vcat(θt,σv),
+    grad = similar(θfull),
+    fdgrad = similar(θfull),
+    θ1 = similar(θfull),
+    θ2 = similar(θfull),
+    T = eltype(θfull)
+
+    serial_solve_vf_all!(shev, tmpv, prim, θfull, Val{true})
+
+    for s_idx in 1:12 # length(wp)
+        for d in action_iter(wp, s_idx)
+            grad .= 0.0
+            fdgrad .= 0.0
+
+            z = rand.(zspace)
+            uv = (0.1, 0.1)
+
+            lp = logP!(grad, tmp, θfull, prim, isev, true, itypidx, uv, d+1, s_idx, z...)
+
+            for k in 1:length(θfull)
+                θ1 .= θfull
+                θ2 .= θfull
+                h = max( abs(θfull[k]), one(T) ) * cbrt(eps(T))
+                θ1[k] -= h
+                θ2[k] += h
+                serial_solve_vf_all!(shev, tmpv, prim, θ1, Val{true})
+                lp1 = logP!(Vector{T}(0), tmp, θ1, prim, isev, false, itypidx, uv, d+1, s_idx, z...)
+                serial_solve_vf_all!(shev, tmpv, prim, θ2, Val{true})
+                lp2 = logP!(Vector{T}(0), tmp, θ2, prim, isev, false, itypidx, uv, d+1, s_idx, z...)
+                fdgrad[k] = (lp2-lp1)/(θ2[k] - θ1[k])
+            end
+            absd, abspos = findmax(abs.(grad .- fdgrad))
+            isapprox(grad, fdgrad, atol=1e-5) || warn("bad gradient. d=$d, sidx=$s_idx, offender at θ[$abspos], absdiff = $absd") #. absdiff at grad[$absdi] = $absd ")
+        end
+    end
+    @show "done"
+end
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# include("action_probabilities.jl")
 
 
 #
