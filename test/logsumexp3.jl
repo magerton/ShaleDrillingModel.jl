@@ -7,8 +7,8 @@ println("testing logsumexp3")
 # test logsumexp
 let i = 17,
     dmaxp1 = ShaleDrillingModel._nd(prim),
-    tst = similar(tmpv.lse),
-    lsetest = similar(tmpv.lse),
+    tst = zeros(size(tmpv.lse)),
+    lsetest = zeros(size(tmpv.lse)),
     qvw = @view(tmpv.q[:,:,1:dmaxp1]),
     EV0  = @view(evs.EV[:,:,i]),
     dEV0 = @view(evs.dEV[:,:,:,i]),
@@ -17,19 +17,26 @@ let i = 17,
     lse = tmpv.lse,
     tmp = tmpv.tmp
 
+    lse .= 0.0
+    tmp .= 0.0
+    @test all(lse.==0.0)
+    @test all(tmp.==0.0)
+
     ubV .= @view(tmpv.uin[:,:,1:dmaxp1,2])
     dubV .= @view(tmpv.duin[:,:,:,1:dmaxp1,2])
 
     logsumexp3!(lse,tmp,ubV)
-    for i in 1:31, j in 1:5
-        lsetest[i,j] = logsumexp(@view(ubV[i,j,:]))
+    for CI in CartesianRange(size(lsetest))
+        lsetest[CI] = logsumexp(@view(ubV[CI,:]))
     end
-    @test all(lsetest .== lse)
+    @show findmax(abs.(lsetest .- lse))
+    @test lsetest ≈ lse
 
     # logsumexp_and_softmax3
     logsumexp_and_softmax3!(lse, qvw, tmp, ubV)
     @test all(sum(qvw,3) .≈ 1.0)
-    @test all(lsetest .== lse)
+    @show findmax(abs.(lsetest .- lse))
+    @test lsetest ≈ lse
 
     # logsumexp_and_softmax3 - q0
     logsumexp_and_softmax3!(lse, tst, tmp, ubV)

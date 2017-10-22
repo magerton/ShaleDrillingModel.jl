@@ -13,7 +13,7 @@ sev = SharedEV(pids, vcat(θt, σv), prim, royalty_rates, 1:1)
 end
 
 s = remotecall_fetch(get_g_SharedEV, pids[2])
-s = @spawn evsvw, typs = dcdp_Emax(get_g_SharedEV(),1,1)
+s = @spawnat pids[2] dcdp_Emax(get_g_SharedEV(),1,1)
 fetch(s)
 
 evsvw, typs = dcdp_Emax(sev, 1,1)
@@ -24,6 +24,9 @@ sev.EV .= 0.
 sev.dEV .= 0.
 sev.dEVσ .= 0.
 @show parallel_solve_vf_all!(sev, vcat(θt,σv), Val{true})
+
+
+rmprocs()
 
 # using Plots
 # gr()

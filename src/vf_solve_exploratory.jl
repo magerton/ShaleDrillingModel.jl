@@ -50,7 +50,7 @@ function solve_vf_explore!(
 
             # TODO: assumes that u(0) = 0
             @views dubV[:,:,:,1] .= β .* dEV[:,:,:,ip]
-            @views dubV_σ[:,:,:,1] .= β .* dEV_σ[:,:,:,min(ip,nSex+1)]  # max because we don't use regime2 but need a TVC
+            @views dubV_σ[:,:,:,1] .= β .* dEV_σ[:,:,:,min(ip,nSex+1)]  # TODO: use better fct max because we don't use regime2 but need a TVC
 
             # this does EV0 & ∇EV0
             @views vfit!(EV[:,:,i], dEV[:,:,:,i], ubV, dubV, q, lse, tmp, Πz)

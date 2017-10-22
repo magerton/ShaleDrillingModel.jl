@@ -2,14 +2,14 @@ export learningUpdate!
 
 function learningUpdate!(ubV::AbstractArray3, uex::AbstractArray3, EV::AbstractArray3, s2idx::AbstractVector, βΠψ::AbstractMatrix, ψspace::StepRangeLen, σ::T, β::Real, v::Real=zero(T), h::T=zero(T)) where {T}
     _fdβΠψ!(βΠψ, ψspace, σ, β, v, h)
-    @views A_mul_B_md!(ubV[:,:,2:end], βΠψ,  EV[:,:,s2idx], 2)
+    @views A_mul_B_md!(ubV[:,:,2:end], βΠψ, EV[:,:,s2idx], 2)
     @views ubV[:,:,2:end] .+= uex[:,:,2:end]
 end
 
 
 function learningUpdate!(ubV::AbstractArray3, uex::AbstractArray3, EV::AbstractArray3, s2idx::AbstractVector, βΠψ::AbstractMatrix, ψspace::StepRangeLen, σ::Real, β::Real)
     _βΠψ!(βΠψ, ψspace, σ, β)
-    @views A_mul_B_md!(ubV[:,:,2:end], βΠψ,  EV[:,:,s2idx], 2)
+    @views A_mul_B_md!(ubV[:,:,2:end], βΠψ, EV[:,:,s2idx], 2)
     @views ubV[:,:,2:end] .+= uex[:,:,2:end]
 end
 
@@ -23,6 +23,7 @@ function learningUpdate!(
 
     length(vspace) == size(dubV_σ, 3) || throw(DimensionMismatch())
 
+    # update alternative-specific value functions for drilling 1+ wells & entering infill drilling regime
     ubV1    = @view(ubV[   :,:,  2:end])
     EV1     = @view(EV[    :,:,  s2idx])
     uex1    = @view(uex[   :,:,  2:end])
@@ -32,12 +33,13 @@ function learningUpdate!(
     duex1   = @view(duex[  :,:,:,2:end])
     duex_σ1 = @view(duexσ[ :,:,:,2:end])
 
-
-    # ubVtilde = u[:,:,2:dmaxp1] + β * dΠψ/dσ ⊗ I * EV[:,:,2:dmaxp1]
+    # value
+    # ubVtilde = u[:,:,2:dmaxp1] + β * Πψ/dσ ⊗ I * EV[:,:,2:dmaxp1]
     _βΠψ!(βΠψ, ψspace, σ, β)
     A_mul_B_md!(ubV1, βΠψ, EV1, 2)
     ubV[:,:,2:end] .+= uex1
 
+    # gradient
     # dubVtilde/dσ = du/dσ[:,:,:,2:dmaxp1] + β * Πψ ⊗ I * dEV/dσ[:,:,:,2:dmaxp1]
     A_mul_B_md!(dubV1, βΠψ, dEV1, 2)
     dubV1 .+= duex1

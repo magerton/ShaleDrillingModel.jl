@@ -20,7 +20,7 @@ function du_add(θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::
 end
 
 
-function duσ_add(θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, v::T,                d::Integer, omroy::Real) where {T}
+function duσ_add(θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, v::T, d::Integer,           omroy::Real) where {T}
     d == 0  &&  return zero(T)
     ρ2 = _ρ2(σ)
     return d * exp(logp) * omroy * ρ2 * (v - 2.0*ρ2*σ*ψ)

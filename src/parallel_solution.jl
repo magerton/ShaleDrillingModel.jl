@@ -1,4 +1,4 @@
-export parallel_solve_vf_all!, SharedEV
+export parallel_solve_vf_all!, SharedEV, serial_solve_vf_all!
 
 
 struct SharedEV{T<:Real,N,N2,TT<:Tuple}
@@ -78,12 +78,12 @@ function solve_vf_all!(sev::SharedEV, tmpv::dcdp_tmpvars, prim::dcdp_primitives,
     solve_vf_all!(evs, tmpv, prim, θ, typs..., dograd; kwargs...)
 end
 
-# function solve_vf_all!(θ::AbstractVector, roy::Real, geoid::Integer, dograd::Type     ; kwargs...)
-#     global g_dcdp_Emax
-#     global g_dcdp_tmpvars
-#     global g_dcdp_primitives
-#     solve_vf_all!(g_dcdp_Emax, g_dcdp_tmpvars, g_dcdp_primitives, θ, roy, geoid, dograd; kwargs...)
-# end
+function serial_solve_vf_all!(sev::SharedEV, tmpv::dcdp_tmpvars, prim::dcdp_primitives, θ::AbstractVector, dograd::Type; kwargs...)
+    CR = CartesianRange( length.(sev.itypes) )
+    for Idx in collect(CR)
+        solve_vf_all!(sev, tmpv, prim, θ, dograd, Idx.I...; kwargs...)
+    end
+end
 
 function solve_vf_all!(θ::AbstractVector, dograd::Type, typidx::Integer...; kwargs...)
     global g_SharedEV
@@ -98,10 +98,10 @@ function parallel_solve_vf_all!(sev::SharedEV, θ::AbstractVector, dograd::Type;
     s = @sync @parallel for Idx in collect(CR)
         solve_vf_all!(θ, dograd, Idx.I...; kwargs...)
     end
-    return fetch(s)
+    return fetch.(s)
 end
 
-# parallel_solve_vf_all!(sev::SharedEV, θ::AbstractVector, dograd::Bool) = parallel_solve_vf_all!(sev, θ, Val{dograd})
+parallel_solve_vf_all!(sev::SharedEV, θ::AbstractVector, dograd::Bool; kwargs...) = parallel_solve_vf_all!(sev, θ, Val{dograd}; kwargs...)
 
 
 

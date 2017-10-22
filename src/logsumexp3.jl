@@ -1,4 +1,43 @@
-export logsumexp3!, logsumexp_and_softmax3!, softmax3!
+export logsumexp3!, logsumexp_and_softmax3!, softmax3!, logsumexp_and_softmax!, logsumexp_and_softmax
+
+
+"""
+    logsumexp_and_softmax!(r, x)
+
+Set `r` = softmax(x) and return `logsumexp(x)`.
+"""
+function logsumexp_and_softmax!(r::AbstractArray{T}, x::AbstractArray{T}) where {T<:AbstractFloat}
+    n = length(x)
+    length(r) == n || throw(DimensionMismatch("Inconsistent array lengths."))
+    isempty(x) && return -T(Inf)
+
+    if n == 1
+      s = x[1]
+      x[1] = one(T)
+      return s
+    end
+
+    u = maximum(x)                                       # max value used to re-center
+    abs(u) == Inf && return any(isnan, x) ? S(NaN) : u   # check for non-finite values
+
+    s = zero(T)
+    one_to_n = Base.OneTo(n)
+    @inbounds for i in one_to_n
+        s += ( r[i] = exp(x[i] - u) )
+    end
+    invs = convert(T, inv(s))
+
+    @inbounds for i in one_to_n
+        r[i] *= invs
+    end
+
+    return log(s) + u
+end
+
+
+logsumexp_and_softmax!(x::AbstractArray{T}) where {T<:AbstractFloat}= logsumexp_and_softmax!(x, x)
+
+
 
 function logsumexp3!(lse::AbstractMatrix, tmp::AbstractMatrix, x::AbstractArray{T,3}) where {T<:Real}
     nz, nψ, nd = size(x)

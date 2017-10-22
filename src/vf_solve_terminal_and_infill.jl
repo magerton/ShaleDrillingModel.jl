@@ -58,6 +58,7 @@ function solve_vf_infill!(
         if dograd
             dubV = @view(dubVfull[:,:,:,idxd])
             dEV0 = @view(dEV[:,:,:,i])
+            dEV0 .= 0.0
             dubV .= @view(duin[:,:,:,idxd,1+s.d1]) .+ β .* @view(dEV[:,:,:,idxs])
         end
 
@@ -70,6 +71,7 @@ function solve_vf_infill!(
             converged, iter, bnds = solve_inf_pfit!(EV0, ubV, lse, tmp, IminusTEVp, Πz, β; maxit=maxit1, vftol=vftol)
             converged || throw(error("Did not converge at state $i after $iter pfit. McQueen-Porteus bnds: $bnds"))
             if dograd
+                # TODO: only allows 0-payoff if no action
                 ubV[:,:,1] .= β .* EV0
                 gradinf!(dEV0, ubV, dubV, lse, tmp, IminusTEVp, Πz, β)   # note: destroys ubV & dubV
             end

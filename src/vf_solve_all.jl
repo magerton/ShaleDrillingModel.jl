@@ -19,13 +19,13 @@ function solve_vf_all!(e::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θ::Ab
 end
 
 
-function solve_vf_all!(e::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θ::AbstractVector, σ::T, roy::AbstractFloat, v::Real=0.0, h::T=zero(T); kwargs...) where {T}
+function solve_vf_all!(ev::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θ::AbstractVector, σ::T, roy::AbstractFloat, v::Real=0.0, h::T=zero(T); kwargs...) where {T}
     dograd = Val{false}
     fillflows!(t, p, θ, σ, roy, v, h)
-    solve_vf_terminal!(e)
-    solve_vf_infill!(e, t, p, dograd, kwargs...)
-    learningUpdate!(t, e, p, σ, v, h)
-    solve_vf_explore!(e, t, p, dograd)
+    solve_vf_terminal!(ev)
+    solve_vf_infill!(ev, t, p, dograd, kwargs...)
+    learningUpdate!(t, ev, p, σ, v, h)
+    solve_vf_explore!(ev, t, p, dograd)
 end
 
 solve_vf_all!(e::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θ::AbstractVector,   σ::Real, roy::AbstractFloat, dograd::Bool ; kwargs...) = solve_vf_all!(e, t, p, θ, σ, roy, Val{dograd}; kwargs...)

@@ -5,6 +5,8 @@ using StatsBase
 using AxisAlgorithms
 using Calculus
 using GenGlobal
+using Interpolations
+
 
 const AbstractArray3{T} = AbstractArray{T,3}
 const AbstractArray4{T} = AbstractArray{T,4}
@@ -35,5 +37,8 @@ include("check_dEV.jl")
 
 include("parallel_solution.jl")
 
+include("action_probabilities.jl")
 
-end # module
+
+# end module
+end
