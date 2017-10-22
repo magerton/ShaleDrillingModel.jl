@@ -19,6 +19,7 @@ function solve_vf_all!(e::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θ::Ab
 end
 
 
+# doing with finite differnces
 function solve_vf_all!(ev::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θ::AbstractVector, σ::T, roy::AbstractFloat, v::Real=0.0, h::T=zero(T); kwargs...) where {T}
     dograd = Val{false}
     fillflows!(t, p, θ, σ, roy, v, h)

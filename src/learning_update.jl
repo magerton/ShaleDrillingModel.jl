@@ -22,6 +22,7 @@ function learningUpdate!(
     ψspace::StepRangeLen, vspace::AbstractVector, σ::Real, β::Real)
 
     length(vspace) == size(dubV_σ, 3) || throw(DimensionMismatch())
+    dmaxp1 = length(s2idx)
 
     # update alternative-specific value functions for drilling 1+ wells & entering infill drilling regime
     ubV1    = @view(ubV[   :,:,  2:end])
@@ -34,18 +35,18 @@ function learningUpdate!(
     duex_σ1 = @view(duexσ[ :,:,:,2:end])
 
     # value
-    # ubVtilde = u[:,:,2:dmaxp1] + β * Πψ/dσ ⊗ I * EV[:,:,2:dmaxp1]
+    # ubVtilde = u[:,:,2:dmaxp1] + β * Πψ ⊗ I * EV[:,:,2:dmaxp1]
     _βΠψ!(βΠψ, ψspace, σ, β)
     A_mul_B_md!(ubV1, βΠψ, EV1, 2)
     ubV[:,:,2:end] .+= uex1
 
     # gradient
-    # dubVtilde/dσ = du/dσ[:,:,:,2:dmaxp1] + β * Πψ ⊗ I * dEV/dσ[:,:,:,2:dmaxp1]
+    # dubVtilde/dθ = du/dθ[:,:,:,2:dmaxp1] + β * Πψ ⊗ I * dEV/dθ[:,:,:,2:dmaxp1]
     A_mul_B_md!(dubV1, βΠψ, dEV1, 2)
     dubV1 .+= duex1
 
-    # ∂EVtilde/∂σ[:,:,v,2:dmaxp1] = ∂u/∂σ[:,:,v,2:dmaxp1] + β * Πψ ⊗ I * EV[:,:,2:dmaxp1]  ∀  v ∈ vspace
-    for d in 1:size(dubV1,4)
+    # ∂EVtilde/∂σ[:,:,v,2:dmaxp1] = ∂u/∂σ[:,:,v,2:dmaxp1] + β * dΠψ/dσ ⊗ I * EV[:,:,2:dmaxp1]  ∀  v ∈ vspace
+    for d in 1:dmaxp1
         EV1d = @view(EV1[:,:,d])
         for (k, v) in enumerate(vspace)
             _dβΠψ!(βdΠψ, ψspace, σ, β, v)

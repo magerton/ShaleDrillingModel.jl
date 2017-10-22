@@ -2,6 +2,7 @@ using ShaleDrillingModel
 using Base.Test
 using StatsFuns
 using JLD
+using Interpolations
 
 jldpath = joinpath(Pkg.dir("ShaleDrillingModel"), "data/price-cost-transitions.jld")
 @load jldpath pspace cspace Πpcr Πp1
@@ -17,7 +18,7 @@ royalty_types = 1:length(royalty_rates)
 σv = 1.0
 
 # problem sizes
-nψ, dmx, nz, nv =  20, 2, size(Πp1,1), 10
+nψ, dmx, nz, nv =  101, 2, size(Πp1,1), 51
 wp = well_problem(dmx,4,10)
 zspace, ψspace, dspace, d1space, vspace = (pspace,), linspace(-6.0, 6.0, nψ), 0:dmx, 0:1, linspace(-3.0, 3.0, nv)
 # nd, ns, nθ = length(dspace), length(wp), length(θt)
@@ -40,7 +41,6 @@ if false
         println("test royalty rate $r")
         check_EVjac(evs, tmpv, prim, θt, σv, r)
     end
-
     # check jacobian
     include("parallel_solution.jl")
 end
@@ -54,49 +54,56 @@ set_g_SharedEV(shev)
 # s = parallel_solve_vf_all!(shev, vcat(θt,σv), Val{true})
 # fetch.(s)
 
+z = (pspace[15],)
+bslin = BSpline(Linear())
 
+itev = interpolate!(evs.EV, (bslin, bslin, NoInterp()), OnGrid())
+sitev = scale(itev, pspace, ψspace, 1:_nS(prim))
 
-# include("parallel_dEV_check.jl")
+nSexp1 = _nSexp(prim)+1
+itdevsig = interpolate!(evs.dEV_σ, (bslin, bslin, bslin, NoInterp()), OnGrid())
+sitdevsig = scale(itdevsig, pspace, ψspace, vspace, 1:nSexp1)
 
-let itypidx = (4,1),
-    tmp = Vector{Float64}(dmax(wp)+1),
-    θfull = vcat(θt,σv),
-    grad = similar(θfull),
-    fdgrad = similar(θfull),
-    θ1 = similar(θfull),
-    θ2 = similar(θfull),
-    T = eltype(θfull)
+pdct = Base.product( pspace, vspace, vspace, 1:nSexp1)
+dEVσ = Array{Float64}(size(pdct))
+EVσ1 = similar(dEVσ)
+EVσ2 = similar(dEVσ)
+fdEVσ = similar(dEVσ)
 
-    serial_solve_vf_all!(shev, tmpv, prim, θfull, Val{true})
-
-    for s_idx in 1:12 # length(wp)
-        for d in action_iter(wp, s_idx)
-            grad .= 0.0
-            fdgrad .= 0.0
-
-            z = rand.(zspace)
-            uv = (0.1, 0.1)
-
-            lp = logP!(grad, tmp, θfull, prim, isev, true, itypidx, uv, d+1, s_idx, z...)
-
-            for k in 1:length(θfull)
-                θ1 .= θfull
-                θ2 .= θfull
-                h = max( abs(θfull[k]), one(T) ) * cbrt(eps(T))
-                θ1[k] -= h
-                θ2[k] += h
-                serial_solve_vf_all!(shev, tmpv, prim, θ1, Val{true})
-                lp1 = logP!(Vector{T}(0), tmp, θ1, prim, isev, false, itypidx, uv, d+1, s_idx, z...)
-                serial_solve_vf_all!(shev, tmpv, prim, θ2, Val{true})
-                lp2 = logP!(Vector{T}(0), tmp, θ2, prim, isev, false, itypidx, uv, d+1, s_idx, z...)
-                fdgrad[k] = (lp2-lp1)/(θ2[k] - θ1[k])
-            end
-            absd, abspos = findmax(abs.(grad .- fdgrad))
-            isapprox(grad, fdgrad, atol=1e-5) || warn("bad gradient. d=$d, sidx=$s_idx, offender at θ[$abspos], absdiff = $absd") #. absdiff at grad[$absdi] = $absd ")
-        end
-    end
-    @show "done"
+h = cbrt(eps(Float64))
+σ1 = σv-h
+σ2 = σv+h
+hh = σ2 - σ1
+solve_vf_all!(evs, tmpv, prim, θt, σv, 0.2, true)
+@show maximum(abs.(evs.EV)), maximum(abs.(evs.dEV)), maximum(abs.(evs.dEV_σ))
+for (i,xi) in enumerate(pdct)
+    z, u, v, s = xi
+    dEVσ[i] = sitdevsig[z, u+σv*v, v, s]
 end
+@show maximum(abs.(dEVσ))
+
+solve_vf_all!(evs, tmpv, prim, θt, σ1, 0.2, false)
+for (i,xi) in enumerate(pdct)
+    z, u, v, s = xi
+    EVσ1[i] = sitdevsig[z, u+σ1*v, v, s]
+end
+ev1 = deepcopy(evs.EV)
+
+solve_vf_all!(evs, tmpv, prim, θt, σ2, 0.2, false)
+for (i,xi) in enumerate(pdct)
+    z, u, v, s = xi
+    EVσ2[i] = sitdevsig[z, u+σ2*v, v, s]
+end
+ev2 = deepcopy(evs.EV)
+
+(ev2 .- ev1) ./ hh
+
+
+fdEVσ .= (EVσ2 .- EVσ1) ./ hh
+worstval, worsti = findmax(abs.(dEVσ .- fdEVσ))
+worstind = ind2sub(dEVσ, worsti)
+println("In evaluating FD of EV over u&v, worst absdiff at $worstind = $worstval")
+@test worstval < 1e-4
 
 
 
@@ -121,10 +128,7 @@ end
 
 
 
-
-
-
-
+# include("pre-action-probabilities.jl")
 # include("action_probabilities.jl")
 
 
