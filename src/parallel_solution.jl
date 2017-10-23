@@ -32,7 +32,7 @@ function SharedEV(pids::AbstractVector{<:Integer}, θ::AbstractVector{<:Real}, p
     return SharedEV{T,N,N+1,typeof(itypes)}(EV,dEV,dEVσ,dEVψ,itypes)
 end
 
-SharedEV(θ::AbstractVector, prim::dcdp_primitives, itypes::AbstractVector...) = SharedEV(addprocs(), θ, prim, itypes...)
+SharedEV(θ::AbstractVector, prim::dcdp_primitives, itypes::AbstractVector...) = SharedEV(workers(), θ, prim, itypes...)
 
 
 function zero!(sev::SharedEV)

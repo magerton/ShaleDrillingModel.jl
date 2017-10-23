@@ -8,8 +8,9 @@ function logP!(grad::AbstractVector{T}, tmp::AbstractVector, θfull::AbstractVec
   omroy = one(T) - roy
 
   # gradient & coef views
-  θt =    @view(θfull[[geo, prim.ngeo+1:end-1...]])
-  σ = θfull[end]
+  θt = @view(θfull[[geo, prim.ngeo+1:end-1...]])
+  lenθfull = length(θfull)
+  σ = θfull[lenθfull]
 
   # states we can iterate over
   s = state(prim, s_idx)
@@ -23,8 +24,7 @@ function logP!(grad::AbstractVector{T}, tmp::AbstractVector, θfull::AbstractVec
   dmxp1rng = Base.OneTo(dmax(prim, s_idx)+1)
   ubV = @view(tmp[dmxp1rng])
 
-  # @inbounds
-  for di in dmxp1rng
+  @inbounds for di in dmxp1rng
     s_idxp = prim.wp.Sprimes[di,s_idx]
     ubV[di] = prim.f(θt, σ, z..., ψ, di-1, s.d1, Dgt0, omroy) + prim.β * isev.EV[z..., ψ, s_idxp, itypidx...]
   end
@@ -34,8 +34,7 @@ function logP!(grad::AbstractVector{T}, tmp::AbstractVector, θfull::AbstractVec
   logp = ubV[d_obs] - logsumexp_and_softmax!(ubV)
   nSexp1 = _nSexp(prim)+1
 
-  # @inbounds
-  for di in dmxp1rng
+  @inbounds for di in dmxp1rng
     wt = di==d_obs ? one(T)-ubV[di] : -ubV[di]
     dim1 = di-1
     s_idxp = prim.wp.Sprimes[di,s_idx]  # TODO: create a proper function mapping sprime_idx to sprime_idx_for_σ given s_idx & wp/prim
@@ -48,7 +47,7 @@ function logP!(grad::AbstractVector{T}, tmp::AbstractVector, θfull::AbstractVec
     if !Dgt0
       dpsi = prim.dfψ(θt, σ, z..., ψ, dim1, omroy) + prim.β * isev.dEVψ[z..., ψ, min(s_idxp,nSexp1), itypidx...]
       dsig = prim.dfσ(θt, σ, z..., ψ, dim1, omroy) + prim.β * isev.dEVσ[z..., ψ, min(s_idxp,nSexp1), itypidx...]
-      grad[end] += wt * (dpsi*v + dsig)
+      grad[lenθfull] += wt * (dpsi*v + dsig)
     end
   end
 
