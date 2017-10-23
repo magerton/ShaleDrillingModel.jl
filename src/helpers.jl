@@ -1,3 +1,5 @@
+export peturb
+
 """"
     ensure_diagonal(Π::M)
 
@@ -18,3 +20,6 @@ function ensure_diagonal(Π::M) where {T<:Number, M<:SparseMatrixCSC{T}}
 end
 
 ensure_diagonal(Π::M) where {T<:Number, M<:Matrix{T}} = Π
+
+
+peturb(x::T) where {T} = max( abs(x), one(T) ) * cbrt(eps(T))

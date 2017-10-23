@@ -1,20 +1,23 @@
-export solve_vf_terminal!, solve_vf_infill!
+export solve_vf_terminal!, solve_vf_infill!, zero!
 
-function solve_vf_terminal!(EV::AbstractArray3{T}) where {T}
-    EV[:,:,end] .= zero(T)
+
+function zero!(x::AbstractArray{T}) where {T<:Real}
+    @inbounds @simd for i in eachindex(x)
+        x[i] = zero(T)
+    end
 end
 
-function solve_vf_terminal!(EV::AbstractArray3{T}, dEV::AbstractArray4{T}) where {T}
-    solve_vf_terminal!(EV)
-    length(dEV) > 0  &&  (dEV[:,:,:,end] .= zero(T))
+solve_vf_terminal!(EV::AbstractArray3) = @views zero!(EV[:,:,end])
+
+
+function solve_vf_terminal!(EV::AbstractArray3, dEV::AbstractArray4, dEV_σ::AbstractArray3, dEV_ψ::AbstractArray3)
+    @views zero!(EV[:,:,end])
+    @views zero!(dEV[:,:,:,end])
+    @views zero!(dEV_σ[:,:,end])
+    @views zero!(dEV_ψ[:,:,end])
 end
 
-function solve_vf_terminal!(EV::AbstractArray3, dEV::AbstractArray4, dEV_σ::AbstractArray4{T}) where {T}
-    solve_vf_terminal!(EV,dEV)
-    length(dEV_σ) > 0 && (dEV_σ[:,:,:,end] .= zero(T))
-end
-
-solve_vf_terminal!(evs::dcdp_Emax) = solve_vf_terminal!(evs.EV, evs.dEV, evs.dEV_σ)
+solve_vf_terminal!(evs::dcdp_Emax) = solve_vf_terminal!(evs.EV, evs.dEV, evs.dEV_σ, evs.dEV_ψ)
 
 # ---------------------------------------------
 

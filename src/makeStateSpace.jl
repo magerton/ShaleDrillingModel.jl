@@ -9,7 +9,7 @@ import Base: ==, string, length, show
 export
   well_problem,
   state,
-  horizon, dmax, τmax, length, Dmax,
+  horizon, dmax, τmax, length, Dmax, _nSexp,
   sprime,
   state_idx,
   terminal_state_ind,
@@ -212,6 +212,8 @@ Dmax(       p::well_problem) = p.Dmax
 horizon(p::well_problem, i::Integer) = p.horizon[i]
 dmax(   p::well_problem, i::Integer) = p.Γmax[i]
 state(  p::well_problem, i::Integer) = p.SS[i]
+_nS(    p::well_problem) = length(p)
+_nSexp( p::well_problem) = τmax(p)+1
 
 
 "`action_iter(p::well_problem, i) = 0 : dmax(p, i)`"
@@ -224,6 +226,7 @@ end
 
 
 action0(wp::well_problem,j::Integer) = wp.Sprimes[1,j]
+action0short(wp::well_problem,j::Integer) = j <= _nSexp(wp) ? max(action0(wp,j), _nSexp(wp)+1) : action0(wp,j)
 
 
 "Find index of `s::state` given `wp::well_problem`"

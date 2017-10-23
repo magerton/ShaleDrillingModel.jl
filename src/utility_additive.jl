@@ -1,4 +1,4 @@
-export u_add, du_add, duσ_add
+export u_add, udθ_add, udσ_add, udψ_add
 
 function u_add(θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer,             d1::Integer, Dgt0::Bool, omroy::Real) where {T}
     d == 0 && return zero(logp)
@@ -9,7 +9,7 @@ function u_add(θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer,     
 end
 
 
-function du_add(θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, omroy::Real) where {T}
+function udθ_add(θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, omroy::Real) where {T}
     d == 0  && return zero(T)
 
     k == 1  && return  d * exp(logp) * omroy
@@ -19,9 +19,5 @@ function du_add(θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::
     throw(error("$k out of bounds"))
 end
 
-
-function duσ_add(θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, v::T, d::Integer,           omroy::Real) where {T}
-    d == 0  &&  return zero(T)
-    ρ2 = _ρ2(σ)
-    return d * exp(logp) * omroy * ρ2 * (v - 2.0*ρ2*σ*ψ)
-end
+udσ_add(θ::AbstractVector{T}, σ::T, logp::Real, ψ::Real, d::Integer, omroy::Real) where {T} = d == 0 ? zero(T) : d * exp(logp) * omroy * ψ * -2.0 * σ / (1.0+σ^2)^2
+udψ_add(θ::AbstractVector{T}, σ::T, logp::Real, ψ::Real, d::Integer, omroy::Real) where {T} = d == 0 ? zero(T) : d * exp(logp) * omroy * _ρ2(σ)

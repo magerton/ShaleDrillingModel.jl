@@ -1,4 +1,4 @@
-export _dΠψ!, _fdΠψ!, _Πψ!
+export check_dΠψ
 
 
 # FIXME: Δ is a function of σ because step(ψspace) = 2*numsd*(1+σ^2)/(numpts-1).
@@ -21,18 +21,20 @@ _dzdx1(ρ::Real) = - ρ^2 / sqrt(1.0-ρ)
 
 # finite difference versions
 _ρ(σ::Real, h::Real) = _ρ(σ+h)
-_z(x2::Real, x1::Real, Δ::Real, ρ::Real, v::Real, h::Real) = _z(x2, x1+v*h, Δ, ρ)
+_z(x2::Real, x1::Real, Δ::Real, ρ::Real, h::Real) = _z(x2, x1+h, Δ, ρ)
 
-function _dπdσ(x2::Real, x1::Real, Δ::Real, ρ::Real, σ::Real, v::Real)
+function _dπdσ(x2::Real, x1::Real, Δ::Real, ρ::Real, σ::Real)
     z = _z(x2,x1,Δ,ρ)
-    return normpdf(z) * ( _dzdρ(x2,x1,ρ,z)*_dρdσ(σ,ρ) + _dzdx1(ρ)*v )
+    return normpdf(z) * _dzdρ(x2,x1,ρ,z)*_dρdσ(σ,ρ)
 end
 
-_dπdσ(x2::Real, x1::Real, Δ::Real, σ::Real, v::Real) = _dπdσ(x2,x1,Δ,_ρ(σ),σ,v)
+_dπdσ(x2::Real, x1::Real, Δ::Real, σ::Real) = _dπdσ(x2,x1,Δ,_ρ(σ),σ)
+
+_dπdψ(x2::Real, x1::Real, Δ::Real, ρ::Real) = normpdf(_z(x2,x1,Δ,ρ)) * _dzdx1(ρ)
 
 # ------------------------------ matrix updates -------------------------
 
-function _dβΠψ!(P::AbstractMatrix, y::StepRangeLen, σ::Real, β::Real, v::Real)
+function _βΠψdσ!(P::AbstractMatrix, y::StepRangeLen, σ::Real, β::Real)
     n = length(y)
     (n,n) == size(P) || throw(DimensionMismatch())
     ρ = _ρ(σ)
@@ -40,18 +42,17 @@ function _dβΠψ!(P::AbstractMatrix, y::StepRangeLen, σ::Real, β::Real, v::Re
 
     @inbounds for (j,yj) in enumerate(y)
         if j == 1
-            @. P[ :,j] = β * _dπdσ(yj,y,Δ,ρ,σ,v)
+            @. P[ :,j] = β * _dπdσ(yj,y,Δ,ρ,σ)
         elseif j == n
-            @. P[ :,j] = -β * _dπdσ(yj,y,-Δ,ρ,σ,v)
+            @. P[ :,j] = -β * _dπdσ(yj,y,-Δ,ρ,σ)
         else
-            @. P[ :,j] = β * ( _dπdσ(yj,y,Δ,ρ,σ,v) - _dπdσ(yj,y,-Δ,ρ,σ,v) )
+            @. P[ :,j] = β * ( _dπdσ(yj,y,Δ,ρ,σ) - _dπdσ(yj,y,-Δ,ρ,σ) )
         end
     end
 end
 
 
-
-function _βΠψ!(P::AbstractMatrix, y::StepRangeLen, σ::Real, β::Real)
+function _βΠψdψ!(P::AbstractMatrix, y::StepRangeLen, σ::Real, β::Real)
     n = length(y)
     (n,n) == size(P) || throw(DimensionMismatch())
     ρ = _ρ(σ)
@@ -59,72 +60,52 @@ function _βΠψ!(P::AbstractMatrix, y::StepRangeLen, σ::Real, β::Real)
 
     @inbounds for (j,yj) in enumerate(y)
         if j == 1
-            @. P[ :,j] = β * normcdf(_z(yj, y, Δ, ρ))
+            @. P[ :,j] = β * _dπdψ(yj,y,Δ,ρ)
         elseif j == n
-            @. P[ :,j] = β * normccdf(_z(yj, y, -Δ, ρ))
+            @. P[ :,j] = -β * _dπdψ(yj,y,-Δ,ρ)
         else
-            @. P[ :,j] = β * ( normcdf(_z(yj, y, Δ, ρ)) - normcdf(_z(yj, y, -Δ, ρ) ))
+            @. P[ :,j] = β * ( _dπdψ(yj,y,Δ,ρ) - _dπdψ(yj,y,-Δ,ρ) )
         end
     end
 end
 
-function _fdβΠψ!(P::AbstractMatrix, y::StepRangeLen, σ::Real, β::Real, v::Real, h::Real)
-    n = length(y)
+
+function _βΠψ!(P::AbstractMatrix, y1::StepRangeLen, y2::StepRangeLen, σ::Real, β::Real)
+    n = length(y2)
+    n == length(y1) || throw(DimensionMismatch())
     (n,n) == size(P) || throw(DimensionMismatch())
-    ρ = _ρ(σ,h)
-    Δ = 0.5 * step(y)
+    ρ = _ρ(σ)
+    Δ = 0.5 * step(y2)
 
-    @inbounds for (j,yj) in enumerate(y)
+    @inbounds for (j,yj) in enumerate(y2)
         if j == 1
-            @. P[ :,j] = β * normcdf(_z(yj,y,Δ,ρ,v,h))
+            @. P[ :,j] = β * normcdf(_z(yj, y1, Δ, ρ))
         elseif j == n
-            @. P[ :,j] = β * normccdf(_z(yj,y,-Δ,ρ,v,h))
+            @. P[ :,j] = β * normccdf(_z(yj, y1, -Δ, ρ))
         else
-            @. P[ :,j] = β * (normcdf(_z(yj,y,Δ,ρ,v,h)) - normcdf(_z(yj,y,-Δ,ρ,v,h)) )
+            @. P[ :,j] = β * ( normcdf(_z(yj, y1, Δ, ρ)) - normcdf(_z(yj, y1, -Δ, ρ) ))
         end
     end
 end
 
+_βΠψ!(P::AbstractMatrix, y1::StepRangeLen, σ::Real, β::Real) = _βΠψ!(P, y1, y1, σ, β)
 
 # ------------------------------ derivative check -------------------------
 
+function check_dΠψ(σ::Real, ψspace::StepRangeLen)
 
-
-function check_dπdσ(σ::T, ψspace::StepRangeLen, vspace::AbstractVector) where {T}
-    h = max( abs(σ), one(T) ) * cbrt(eps(T))
-    σp, σm = σ+h, σ-h
-    hh = σp - σm
     Δ = 0.5 * step(ψspace)
+    ρ = _ρ(σ)
 
-    maxabs = 0.
-    maxrel = 0.
-    posabs = (Inf, Inf, Inf)
-    posrel = (Inf, Inf, Inf)
-
-    for ψj in ψspace
-        for ψi in ψspace
-            for v in vspace
-                d = _dπdσ(ψj, ψi, Δ, σ, v)
-                z2 = _z(ψj,ψi,Δ,_ρ(σ,h),v,h)
-                z1 = _z(ψj,ψi,Δ,_ρ(σ,-h),v,-h)
-                fd = (normcdf(z2) - normcdf(z1)) / hh
-                absd = abs(d-fd)
-                isfinite(d) || warn("non-finite dπdσ at ($ψj, $ψi, $v)")
-                isfinite(fd) || warn("non-finite fd at ($ψj, $ψi, $v)")
-                isapprox(d,fd, atol=1e-8) || warn("bad deriv: (ψj,ψi,v)=($ψj, $ψi, $v). fd = $fd, dπdσ = $d")
-                reld = 2.0 * absd / (abs(d)+abs(fd))
-                if absd > maxabs
-                    maxabs = absd
-                    posabs = (ψj, ψi, v)
-                end
-                if reld > maxrel && isfinite(reld)
-                    maxrel = reld
-                    posrel = (ψj, ψi, v)
-                end
-            end
+    for yj in ψspace
+        for y in ψspace
+            fdσ = Calculus.derivative((sig) -> normcdf(_z(yj, y  , Δ, _ρ(sig))), σ)
+            fdψ = Calculus.derivative((psi) -> normcdf(_z(yj, psi, Δ, ρ      )), y)
+            dσ  = _dπdσ(yj, y, Δ, σ)
+            dψ1 = _dπdψ(yj, y, Δ, ρ)
+            abs(fdσ - dσ ) < 1e-7 || throw(error("bad σ grad at σ = $σ, ψ2 = $yj, ψ1 = $y"))
+            abs(fdψ - dψ1) < 1e-7 || throw(error("bad ψ grad at σ = $σ, ψ2 = $yj, ψ1 = $y"))
         end
     end
-    println("worst absdif = $maxabs at (ψj,ψi,v) = $posabs")
-    println("worst reldif = $maxrel at (ψj,ψi,v) = $posrel")
-    return (maxabs, maxrel)
+    return true
 end

@@ -129,3 +129,26 @@ function sumprod!(red::AbstractArray3, big::AbstractArray4, small::AbstractArray
         end
     end
 end
+
+
+
+
+function sumprod!(red::AbstractMatrix, big::AbstractArray3, small::AbstractArray3)
+    nz,nψ,nd = size(big)
+    (nz,nψ) == size(red) || throw(DimensionMismatch())
+    (nz,nψ,nd) == size(small) || throw(DimensionMismatch())
+
+    # first loop w/ equals
+    @inbounds for d in 1:nd, ψ in 1:nψ
+        @simd for z in 1:nz
+            red[z,ψ] = small[z,ψ,1] * big[z,ψ,1]
+        end
+    end
+
+    # second set w/ plus equals
+    @inbounds for d in 2:nd, ψ in 1:nψ
+        @simd for z in 1:nz
+            red[z,ψ] += small[z,ψ,d] * big[z,ψ,d]
+        end
+    end
+end

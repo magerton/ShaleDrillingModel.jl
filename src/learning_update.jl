@@ -1,83 +1,81 @@
 export learningUpdate!
 
-function learningUpdate!(ubV::AbstractArray3, uex::AbstractArray3, EV::AbstractArray3, s2idx::AbstractVector, βΠψ::AbstractMatrix, ψspace::StepRangeLen, σ::T, β::Real, v::Real=zero(T), h::T=zero(T)) where {T}
-    _fdβΠψ!(βΠψ, ψspace, σ, β, v, h)
-    @views A_mul_B_md!(ubV[:,:,2:end], βΠψ, EV[:,:,s2idx], 2)
-    @views ubV[:,:,2:end] .+= uex[:,:,2:end]
-end
 
-
-function learningUpdate!(ubV::AbstractArray3, uex::AbstractArray3, EV::AbstractArray3, s2idx::AbstractVector, βΠψ::AbstractMatrix, ψspace::StepRangeLen, σ::Real, β::Real)
-    _βΠψ!(βΠψ, ψspace, σ, β)
-    @views A_mul_B_md!(ubV[:,:,2:end], βΠψ, EV[:,:,s2idx], 2)
+function learningUpdate!(ubV::AbstractArray3, uex::AbstractArray3, EV::AbstractArray3, s2idx::AbstractVector, Πψtmp::AbstractMatrix, ψspace::StepRangeLen, σ::Real, β::Real)
+    _βΠψ!(Πψtmp, ψspace, σ, β)
+    @views A_mul_B_md!(ubV[:,:,2:end], Πψtmp, EV[:,:,s2idx], 2)
     @views ubV[:,:,2:end] .+= uex[:,:,2:end]
 end
 
 
 function learningUpdate!(
-    ubV::AbstractArray3, dubV::AbstractArray4, dubV_σ::AbstractArray4,
-    uex::AbstractArray3, duex::AbstractArray4, duexσ::AbstractArray4,
+    ubV::AbstractArray3, dubV::AbstractArray4, dubV_σ::AbstractArray3, dubV_ψ::AbstractArray3,
+    uex::AbstractArray3, duex::AbstractArray4, duexσ::AbstractArray3, duexψ::AbstractArray3,
     EV::AbstractArray3, dEV::AbstractArray4, s2idx::AbstractVector,
-    βΠψ::AbstractMatrix, βdΠψ::AbstractMatrix,
-    ψspace::StepRangeLen, vspace::AbstractVector, σ::Real, β::Real)
+    Πψtmp::AbstractMatrix,
+    ψspace::StepRangeLen, σ::Real, β::Real)
 
-    length(vspace) == size(dubV_σ, 3) || throw(DimensionMismatch())
     dmaxp1 = length(s2idx)
 
     # update alternative-specific value functions for drilling 1+ wells & entering infill drilling regime
     ubV1    = @view(ubV[   :,:,  2:end])
-    EV1     = @view(EV[    :,:,  s2idx])
-    uex1    = @view(uex[   :,:,  2:end])
     dubV1   = @view(dubV[  :,:,:,2:end])
-    dubV_σ1 = @view(dubV_σ[:,:,:,2:end])
+    dubV_σ1 = @view(dubV_σ[:,:,  2:end])
+    dubV_ψ1 = @view(dubV_ψ[:,:,  2:end])
+
+    EV1     = @view(EV[    :,:,  s2idx])
     dEV1    = @view(dEV[   :,:,:,s2idx])
-    duex1   = @view(duex[  :,:,:,2:end])
-    duex_σ1 = @view(duexσ[ :,:,:,2:end])
 
-    # value
+    # ----------- value --------------
     # ubVtilde = u[:,:,2:dmaxp1] + β * Πψ ⊗ I * EV[:,:,2:dmaxp1]
-    _βΠψ!(βΠψ, ψspace, σ, β)
-    A_mul_B_md!(ubV1, βΠψ, EV1, 2)
-    ubV[:,:,2:end] .+= uex1
+    _βΠψ!(Πψtmp, ψspace, σ, β)
+    A_mul_B_md!(ubV1, Πψtmp, EV1, 2)
+    @views ubV1 .+= uex[:,:,2:end]
 
-    # gradient
+    # ---------- gradient ----------------
     # dubVtilde/dθ = du/dθ[:,:,:,2:dmaxp1] + β * Πψ ⊗ I * dEV/dθ[:,:,:,2:dmaxp1]
-    A_mul_B_md!(dubV1, βΠψ, dEV1, 2)
-    dubV1 .+= duex1
+    A_mul_B_md!(dubV1, Πψtmp, dEV1, 2)
+    @views dubV1 .+= duex[:,:,:,2:end]
 
-    # ∂EVtilde/∂σ[:,:,v,2:dmaxp1] = ∂u/∂σ[:,:,v,2:dmaxp1] + β * dΠψ/dσ ⊗ I * EV[:,:,2:dmaxp1]  ∀  v ∈ vspace
-    for d in 1:dmaxp1
-        EV1d = @view(EV1[:,:,d])
-        for (k, v) in enumerate(vspace)
-            _dβΠψ!(βdΠψ, ψspace, σ, β, v)
-            @views A_mul_B_md!(dubV_σ1[:,:,k,d], βdΠψ, EV1d, 2)
-        end
-    end
-    dubV_σ[:,:,:,2:end] .+= duex_σ1
+    # ∂EVtilde/∂σ[:,:,2:dmaxp1] = ∂u/∂σ[:,:,2:dmaxp1] + β * dΠψ/dσ ⊗ I * EV[:,:,2:dmaxp1]
+    _βΠψdσ!(Πψtmp, ψspace, σ, β)
+    A_mul_B_md!(dubV_σ1, Πψtmp, EV1, 2)
+    @views dubV_σ1 .+= duexσ[:,:,2:end]
+
+    # ∂EVtilde/∂ψ[:,:,2:dmaxp1] = ∂u/∂ψ[:,:,2:dmaxp1] + β * dΠψ/dψ ⊗ I * EV[:,:,2:dmaxp1]
+    _βΠψdψ!(Πψtmp, ψspace, σ, β)
+    A_mul_B_md!(dubV_ψ1, Πψtmp, EV1, 2)
+    @views dubV_ψ1 .+= duexψ[:,:,2:end]
 end
 
-function learningUpdate!(t::dcdp_tmpvars, e::dcdp_Emax, p::dcdp_primitives, σ::T, v::Real=zero(T), h::T=zero(T)) where {T}
+function learningUpdateψpeturb!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, σ::T, h::T) where {T}
     dmaxp1 = exploratory_dmax(p.wp)+1
     s2idx = infill_state_idx_from_exploratory(p.wp)
     ubV  = @view( t.ubVfull[:,:,1:dmaxp1])
-    learningUpdate!(ubV, t.uex, e.EV, s2idx, t.βΠψ, _ψspace(p,σ), σ, p.β, v, h)
+    learningUpdate!(ubV, t.uex, evs.EV, s2idx, t.Πψtmp, _ψspace(p,σ) .+ h, σ, p.β, h)
 end
 
 
-function learningUpdate!(t::dcdp_tmpvars, e::dcdp_Emax, p::dcdp_primitives, σ::Real, ::Type{Val{false}})
+function learningUpdate!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, σ::Real, ::Type{Val{false}})
     dmaxp1 = exploratory_dmax(p.wp)+1
     s2idx = infill_state_idx_from_exploratory(p.wp)
-    ubV  = @view( t.ubVfull[:,:,1:dmaxp1])
-    learningUpdate!(ubV, t.uex, e.EV, s2idx, t.βΠψ, _ψspace(p,σ), σ, p.β)
+    ubV  = @view(t.ubVfull[:,:,1:dmaxp1])
+    learningUpdate!(ubV, t.uex, evs.EV, s2idx, t.Πψtmp, _ψspace(p,σ), σ, p.β)
 end
 
+# function learningUpdate!(
+#     ubV::AbstractArray3, dubV::AbstractArray4, dubV_σ::AbstractArray3, dubV_ψ::AbstractArray3,
+#     uex::AbstractArray3, duex::AbstractArray4, duexσ::AbstractArray3, duexψ::AbstractArray3,
+#     EV::AbstractArray3, dEV::AbstractArray4, s2idx::AbstractVector,
+#     Πψtmp::AbstractMatrix,
+#     ψspace::StepRangeLen, σ::Real, β::Real)
 
-function learningUpdate!(t::dcdp_tmpvars, e::dcdp_Emax, p::dcdp_primitives, σ::Real, ::Type{Val{true}})
+function learningUpdate!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, σ::Real, ::Type{Val{true}})
     dmaxp1 = exploratory_dmax(p.wp)+1
     s2idx = infill_state_idx_from_exploratory(p.wp)
     ubV  = @view( t.ubVfull[:,:,1:dmaxp1])
     dubV = @view(t.dubVfull[:,:,:,1:dmaxp1])
-    learningUpdate!(ubV, dubV, t.dubV_σ, t.uex, t.duex, t.duexσ, e.EV, e.dEV, s2idx, t.βΠψ, t.βdΠψ, _ψspace(p,σ), _vspace(p), σ, p.β)
+    learningUpdate!(ubV, dubV, t.dubV_σ, t.dubV_ψ, t.uex, t.duex, t.duexσ, t.duexψ, evs.EV, evs.dEV, s2idx, t.Πψtmp, _ψspace(p,σ), σ, p.β)
 end
 
-learningUpdate!(t::dcdp_tmpvars, e::dcdp_Emax, p::dcdp_primitives, σ::Real, dograd::Bool=true)= learningUpdate!(t::dcdp_tmpvars, e::dcdp_Emax, p::dcdp_primitives, σ::Real, Val{dograd})
+learningUpdate!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, σ::Real, dograd::Bool=true)= learningUpdate!(evs, t, p, σ, Val{dograd})

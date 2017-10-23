@@ -4,6 +4,7 @@ struct ItpSharedEV{A1<:Interpolations.AbstractInterpolation,A2<:Interpolations.A
   EV::A1
   dEV::A2
   dEVσ::A3
+  dEVψ::A3
   itypes::TT
 end
 
@@ -11,7 +12,6 @@ function ItpSharedEV(sev::SharedEV{T,N,N2}, p::dcdp_primitives, σ::Real) where 
 
     ntyp = length(sev.itypes)
     nθ = size(sev.dEV, N2-ntyp-1)
-    nv = _nv(p)
     nS = _nS(p)
     nSexp1 = _nSexp(p)+1
 
@@ -21,19 +21,21 @@ function ItpSharedEV(sev::SharedEV{T,N,N2}, p::dcdp_primitives, σ::Real) where 
     splinetype(r::Union{StepRange,StepRangeLen}, flag::Interpolations.Flag=Linear()) = BSpline(flag)
     splinetype(r::UnitRange                    , flag::Interpolations.Flag=Linear()) = NoInterp()
 
-    scl_EV   = scalegrid.((p.zspace..., _ψspace(p,σ),             nS,     sev.itypes...))
-    scl_dEV  = scalegrid.((p.zspace..., _ψspace(p,σ), nθ,         nS,     sev.itypes...))
-    scl_dEVσ = scalegrid.((p.zspace..., _ψspace(p,σ), _vspace(p), nSexp1, sev.itypes...))
+    scl_EV   = scalegrid.((p.zspace..., _ψspace(p,σ),         nS, sev.itypes...))
+    scl_dEV  = scalegrid.((p.zspace..., _ψspace(p,σ), nθ,     nS, sev.itypes...))
+    scl_dEVσ = scalegrid.((p.zspace..., _ψspace(p,σ),     nSexp1, sev.itypes...))
 
     it_EV    = interpolate!(sev.EV  , splinetype.(scl_EV  ), OnGrid())
     it_dEV   = interpolate!(sev.dEV , splinetype.(scl_dEV ), OnGrid())
     it_dEVσ  = interpolate!(sev.dEVσ, splinetype.(scl_dEVσ), OnGrid())
+    it_dEVψ  = interpolate!(sev.dEVψ, splinetype.(scl_dEVσ), OnGrid())
 
     sit_EV   = Interpolations.scale(it_EV    , scl_EV...)
     sit_dEV  = Interpolations.scale(it_dEV   , scl_dEV...)
     sit_dEVσ = Interpolations.scale(it_dEVσ  , scl_dEVσ...)
+    sit_dEVψ = Interpolations.scale(it_dEVψ  , scl_dEVσ...)
 
-    return ItpSharedEV(sit_EV, sit_dEV, sit_dEVσ, sev.itypes)
+    return ItpSharedEV(sit_EV, sit_dEV, sit_dEVσ, sit_dEVψ, sev.itypes)
 end
 
 function ItpSharedEV(σ::Real)

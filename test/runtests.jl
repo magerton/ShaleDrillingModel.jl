@@ -1,4 +1,4 @@
-using ShaleDrillingModel
+# using ShaleDrillingModel
 using Base.Test
 using StatsFuns
 using JLD
@@ -18,92 +18,145 @@ royalty_types = 1:length(royalty_rates)
 σv = 1.0
 
 # problem sizes
-nψ, dmx, nz, nv =  101, 2, size(Πp1,1), 51
+nψ, dmx, nz, nv, ngeo =  51, 2, size(Πp1,1), 51, 1
 wp = well_problem(dmx,4,10)
 zspace, ψspace, dspace, d1space, vspace = (pspace,), linspace(-6.0, 6.0, nψ), 0:dmx, 0:1, linspace(-3.0, 3.0, nv)
 # nd, ns, nθ = length(dspace), length(wp), length(θt)
 
-prim = dcdp_primitives(u_add, du_add, duσ_add, β, wp, zspace, Πp1, ψspace, vspace, 1)
+prim = dcdp_primitives(u_add, udθ_add, udσ_add, udψ_add, β, wp, zspace, Πp1, ψspace, ngeo)
 tmpv = dcdp_tmpvars(length(θt), prim)
 evs = dcdp_Emax(θt, prim)
 
 # check sizes of models
 ShaleDrillingModel.check_size(θt, prim, evs)
 
-if false
-    include("learning_transition.jl")
-    include("utility.jl")
-    include("logsumexp3.jl")
-    include("vf_solve_terminal_and_infill.jl")
-    include("vf_solve_exploratory.jl")
 
-    for r in royalty_rates
-        println("test royalty rate $r")
-        check_EVjac(evs, tmpv, prim, θt, σv, r)
+println("testing flow gradients")
+@test check_flowgrad(θt, σv, prim, 0.2)
+println("testing transition derivatives")
+@test check_dΠψ(σv, ψspace)
+
+# include("test_utility.jl")
+# include("test_transition.jl")
+
+println("filling per-period payoffs")
+fillflows_grad!(tmpv, prim, θt, σv, 0.2)
+# include("logsumexp3.jl")
+# include("vf_solve_terminal_and_infill.jl")
+# include("vf_solve_exploratory.jl")
+
+zero!(tmpv)
+solve_vf_all!(evs, tmpv, prim, θt, σv, 0.2, Val{true})
+
+# include("test_dpsi.jl")
+# include("parallel_solution.jl")
+
+
+# ------------------------------- action ----------------------------------
+
+rmprocs(workers())
+pids = addprocs()
+@everywhere @show pwd()
+@everywhere using ShaleDrillingModel
+
+sev = SharedEV(pids, vcat(θt, σv), prim, royalty_rates, 1:1)
+@eval @everywhere begin
+    set_g_dcdp_primitives($prim)
+    set_g_dcdp_tmpvars($tmpv)
+    set_g_SharedEV($sev)
+end
+
+isev = ItpSharedEV(sev, prim, σv)
+θfull = vcat(θt,σv)
+T = eltype(θfull)
+tmp = Vector{T}(dmax(wp)+1)
+θ1 = similar(θfull)
+θ2 = similar(θfull)
+
+println("Testing logP & gradient")
+
+
+dograd = true
+
+rngs = (zspace..., vspace, vspace, 1:dmax(wp)+1, 1:length(wp), royalty_rates, 1:1)
+idxs = (1:2:31, 1:5:51, 1:5:51, 1:dmax(wp)+1, 1:length(wp), royalty_rates, 1:1,)
+grad = zeros(T, length.((θfull, idxs...)))
+fdgrad = zeros(T, size(grad))
+CR = CartesianRange(length.(idxs))
+grad .= zero(T)
+fdgrad .= zero(T)
+
+
+parallel_solve_vf_all!(sev, θfull, Val{dograd})
+println("solved round 1. doing logP")
+for CI in CR
+    zi, ui, vi, di, si, ri, gi = CI.I
+    z, u, v, d, s, r, g = getindex.(rngs, CI.I)
+    if d <= dmax(wp,s)+1
+        @views lp = logP!(grad[:,CI], tmp, θfull, prim, isev, dograd, (ri,gi), (u,v), d, s, z...)
     end
-    # check jacobian
-    include("parallel_solution.jl")
 end
 
-shev = SharedEV([1,], vcat(θt, σv), prim, royalty_rates, 1:1)
-isev = ItpSharedEV(shev, prim, σv)
-set_g_dcdp_primitives(prim)
-set_g_dcdp_tmpvars(tmpv)
-set_g_SharedEV(shev)
+dograd = false
+for k in 1:length(θfull)
+    println("θfull[$k]...")
+    θ1 .= θfull
+    θ2 .= θfull
+    h = peturb(θfull[k])
+    θ1[k] -= h
+    θ2[k] += h
+    hh = θ2[k] - θ1[k]
 
-# s = parallel_solve_vf_all!(shev, vcat(θt,σv), Val{true})
-# fetch.(s)
+    parallel_solve_vf_all!(sev, θ1, Val{dograd})
+    println("logp: θ[$k]-h")
+    for CI in CR
+        zi, ui, vi, di, si, ri, gi = CI.I
+        z, u, v, d, s, r, g = getindex.(rngs, CI.I)
+        if d <= dmax(wp,s)+1
+            fdgrad[k,CI] -= logP!(Vector{T}(0), tmp, θ1, prim, isev, dograd, (ri,gi), (u,v), d, s, z...)
+        end
+    end
 
-z = (pspace[15],)
-bslin = BSpline(Linear())
-
-itev = interpolate!(evs.EV, (bslin, bslin, NoInterp()), OnGrid())
-sitev = scale(itev, pspace, ψspace, 1:_nS(prim))
-
-nSexp1 = _nSexp(prim)+1
-itdevsig = interpolate!(evs.dEV_σ, (bslin, bslin, bslin, NoInterp()), OnGrid())
-sitdevsig = scale(itdevsig, pspace, ψspace, vspace, 1:nSexp1)
-
-pdct = Base.product( pspace, vspace, vspace, 1:nSexp1)
-dEVσ = Array{Float64}(size(pdct))
-EVσ1 = similar(dEVσ)
-EVσ2 = similar(dEVσ)
-fdEVσ = similar(dEVσ)
-
-h = cbrt(eps(Float64))
-σ1 = σv-h
-σ2 = σv+h
-hh = σ2 - σ1
-solve_vf_all!(evs, tmpv, prim, θt, σv, 0.2, true)
-@show maximum(abs.(evs.EV)), maximum(abs.(evs.dEV)), maximum(abs.(evs.dEV_σ))
-for (i,xi) in enumerate(pdct)
-    z, u, v, s = xi
-    dEVσ[i] = sitdevsig[z, u+σv*v, v, s]
+    println("solving again for logp: θ[$k]+h")
+    parallel_solve_vf_all!(sev, θ2, Val{dograd})
+    println("updating fdgrad")
+    for CI in CR
+        zi, ui, vi, di, si, ri, gi = CI.I
+        z, u, v, d, s, r, g = getindex.(rngs, CI.I)
+        if d <= dmax(wp,s)+1
+            fdgrad[k,CI] += logP!(Vector{T}(0), tmp, θ2, prim, isev, dograd, (ri,gi), (u,v), d, s, z...)
+            fdgrad[k,CI] /= hh
+        end
+    end
 end
-@show maximum(abs.(dEVσ))
+println("checking gradient")
 
-solve_vf_all!(evs, tmpv, prim, θt, σ1, 0.2, false)
-for (i,xi) in enumerate(pdct)
-    z, u, v, s = xi
-    EVσ1[i] = sitdevsig[z, u+σ1*v, v, s]
-end
-ev1 = deepcopy(evs.EV)
+@views maxv, idx =  findmax(abs.(grad[1:end-1,:,:,:,:,:,:,:] .- fdgrad[1:end-1,:,:,:,:,:,:,:]))
+println("worst value is $maxv at $sub for dlogP WITHOUT σ.")
+@test maxv < 1e-7
 
-solve_vf_all!(evs, tmpv, prim, θt, σ2, 0.2, false)
-for (i,xi) in enumerate(pdct)
-    z, u, v, s = xi
-    EVσ2[i] = sitdevsig[z, u+σ2*v, v, s]
-end
-ev2 = deepcopy(evs.EV)
+println("With σ")
+maxv, idx =  findmax(abs.(grad[end,:,:,:,:,:,:,:] .- fdgrad[end,:,:,:,:,:,:,:]))
+@views mae = mean(abs.(grad[end,:,:,:,:,:,:,:] .- fdgrad[end,:,:,:,:,:,:,:]))
+@views mse = var(grad[end,:,:,:,:,:,:,:] .- fdgrad[end,:,:,:,:,:,:,:])
+@views med = median(abs.(grad[end,:,:,:,:,:,:,:] .- fdgrad[end,:,:,:,:,:,:,:]))
+@views q90 = quantile(vec(abs.(grad[end,:,:,:,:,:,:,:] .- fdgrad[end,:,:,:,:,:,:,:])), 0.9)
+@views sub = ind2sub(grad[end,:,:,:,:,:,:,:], idx)
+vals = getindex.(rngs, sub)
+println("worst value is $maxv at $sub for dlogP. This has characteristics $vals")
+println("MAE = $mae. MSE = $mse. Median abs error = $med. 90pctile = $q90")
 
-(ev2 .- ev1) ./ hh
 
 
-fdEVσ .= (EVσ2 .- EVσ1) ./ hh
-worstval, worsti = findmax(abs.(dEVσ .- fdEVσ))
-worstind = ind2sub(dEVσ, worsti)
-println("In evaluating FD of EV over u&v, worst absdiff at $worstind = $worstval")
-@test worstval < 1e-4
+
+# @test 0.0 < maxv < 1.5e-3
+# @test maxv < maxv_itp
+# @test isapprox(grad, fdgrad, atol=1e-7)
+
+
+
+
+
 
 
 
