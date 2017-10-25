@@ -1,16 +1,17 @@
 export parallel_solve_vf_all!, SharedEV, serial_solve_vf_all!
 
 
-struct SharedEV{T<:Real,N,N2,TT<:Tuple}
-    EV::SharedArray{T,N}
-    dEV::SharedArray{T,N2}
-    dEVσ::SharedArray{T,N}
-    dEVψ::SharedArray{T,N}
+struct SharedEV{N,N2,TT<:Tuple}
+    EV::SharedArray{Float64,N}
+    dEV::SharedArray{Float64,N2}
+    dEVσ::SharedArray{Float64,N}
+    dEVψ::SharedArray{Float64,N}
     itypes::TT
 end
 
 
-function SharedEV(pids::AbstractVector{<:Integer}, θ::AbstractVector{<:Real}, prim::dcdp_primitives{T}, itypes::AbstractVector...) where {T}
+function SharedEV(pids::AbstractVector{<:Integer}, θ::AbstractVector{Float64}, prim::dcdp_primitives, itypes::AbstractVector...)
+    T = Float64
 
     zdims = length.(prim.zspace)
     typedims = length.(itypes)
@@ -29,7 +30,7 @@ function SharedEV(pids::AbstractVector{<:Integer}, θ::AbstractVector{<:Real}, p
     dEVσ = SharedArray{T}( (zdims..., nψ,     nSexp1, typedims...), init = S -> S[Base.localindexes(S)] = zero(T), pids=[1,pids...])
     dEVψ = SharedArray{T}( (zdims..., nψ,     nSexp1, typedims...), init = S -> S[Base.localindexes(S)] = zero(T), pids=[1,pids...])
 
-    return SharedEV{T,N,N+1,typeof(itypes)}(EV,dEV,dEVσ,dEVψ,itypes)
+    return SharedEV{N,N+1,typeof(itypes)}(EV,dEV,dEVσ,dEVψ,itypes)
 end
 
 SharedEV(θ::AbstractVector, prim::dcdp_primitives, itypes::AbstractVector...) = SharedEV(workers(), θ, prim, itypes...)
@@ -47,7 +48,7 @@ end
 
 Return a `dcdp_Emax` object with (reshaped) slices of each array.
 """
-function dcdp_Emax(sev::SharedEV{T,N,N2}, typidx::Integer...) where {T,N,N2}
+function dcdp_Emax(sev::SharedEV{N,N2}, typidx::Integer...) where {N,N2}
     ntyps = length(typidx)
     ntyps == length(sev.itypes)  ||  throw(DimensionMismatch())
 

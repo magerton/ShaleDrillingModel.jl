@@ -5,7 +5,7 @@ export dcdp_primitives,
     dcdp_tmpvars,
     check_EVgrad,
     check_EVgrad!,
-    _ψspace
+    _ψspace, _ψclamp
 
 """
 make primitives. Note: flow payoffs, gradient, and grad wrt `σ` must have the following structure:
@@ -16,12 +16,12 @@ dfσ(θ::AbstractVector{T}, σ::T,   z... , ψ::T,             d::Integer,      
 dfψ(θ::AbstractVector{T}, σ::T,   z... , ψ::T,             d::Integer,                          omroy::Real)
 ```
 """
-struct dcdp_primitives{T<:Real,AM<:AbstractMatrix{T},TT<:Tuple,AV<:AbstractVector{T}}
+struct dcdp_primitives{AM<:AbstractMatrix{Float64},TT<:Tuple,AV<:AbstractVector{Float64}}
     f::Function
     dfθ::Function
     dfσ::Function
     dfψ::Function
-    β::T
+    β::Float64
     wp::well_problem  # structure of endogenous choice vars
     zspace::TT        # z-space (tuple)
     Πz::AM            # transition for z
@@ -32,7 +32,21 @@ end
 
 # help us go from big parameter vector for all types to the relevant one
 _σv(θ::AbstractVector) = θ[end]
-_θt(θ::AbstractVector, geoid::Integer=1, ngeo::Integer=1) = vcat(θ[geoid], θ[ngeo+1:end-1])
+function _θt!(θt::AbstractVector{T}, θ::AbstractVector{T}, geoid::Integer, ngeo::Integer) where {T}
+    nθt = length(θt)
+    length(θ) == nθt + ngeo || throw(DimensionMismatch())
+    θt[1] = θ[geoid]
+    @inbounds @simd for k = 2:nθt
+        θt[k] = θ[k+ngeo-1]
+    end
+    return nθt
+end
+function _θt(θ::AbstractVector{T}, geoid::Integer=1, ngeo::Integer=1) where {T}
+    θt = Vector{T}(length(θ)-ngeo)
+    _θt!(θt, θ, geoid, ngeo)
+    return θt
+end
+
 _θt(θ::AbstractVector, geoid::Integer, prim::dcdp_primitives) = _θt(θ, geoid, prim.ngeo)
 
 _nθt(θ::AbstractVector, ngeo::Integer) = length(θ)-ngeo
@@ -49,6 +63,9 @@ _ndex(prim::dcdp_primitives) = exploratory_dmax(prim.wp)+1
 _ψspace(prim::dcdp_primitives) = prim.ψspace
 _ψspace(prim::dcdp_primitives, a, b) = _ψspace(prim)
 _ψspace(prim::dcdp_primitives, a)    = _ψspace(prim)
+_ψclamp(x::Real, prim::dcdp_primitives, a, b) = clamp(x, extrema(_ψspace(prim, a, b))...)
+_ψclamp(x::Real, prim::dcdp_primitives, a) = clamp(x, extrema(_ψspace(prim, a))...)
+_ψclamp(x::Real, prim::dcdp_primitives) = clamp(x, extrema(_ψspace(prim))...)
 
 sprime_idx(prim::dcdp_primitives, i::Integer) = sprime_idx(prim.wp, i)
 wp_info(prim::dcdp_primitives, i::Integer) = wp_info(prim.wp, i)
@@ -60,20 +77,20 @@ size(prim::dcdp_primitives) = _nz(prim), _nψ(prim), _nS(prim)
 
 # --------------------- Emax --------------------------
 
-struct dcdp_Emax{T<:Real,A1<:AbstractArray{T,3},A2<:AbstractArray{T,4}}
+struct dcdp_Emax{A1<:AbstractArray{Float64,3},A2<:AbstractArray{Float64,4}}
     EV::A1
     dEV::A2
     dEV_σ::A1
     dEV_ψ::A1
 end
 
-dcdp_Emax(EV::AbstractArray3{T}, dEV::AbstractArray4{T}, dEV_σ::AbstractArray3{T}, dEV_ψ::AbstractArray3{T}) where {T<:Real} =  dcdp_Emax{T,typeof(EV),typeof(dEV)}(EV,dEV,dEV_σ,dEV_ψ)
+dcdp_Emax(EV::AbstractArray3{T}, dEV::AbstractArray4{T}, dEV_σ::AbstractArray3{T}, dEV_ψ::AbstractArray3{T}) where {T<:Float64} =  dcdp_Emax{typeof(EV),typeof(dEV)}(EV,dEV,dEV_σ,dEV_ψ)
 
-function dcdp_Emax(θt::AbstractVector, p::dcdp_primitives{T}) where {T}
-    EV   = zeros(T, _nz(p), _nψ(p),             _nS(p))
-    dEV  = zeros(T, _nz(p), _nψ(p), length(θt), _nS(p))
-    dEVσ = zeros(T, _nz(p), _nψ(p),        _nSexp(p)+1)
-    dEVψ = zeros(T, _nz(p), _nψ(p),        _nSexp(p)+1)
+function dcdp_Emax(θt::AbstractVector, p::dcdp_primitives)
+    EV   = zeros(Float64, _nz(p), _nψ(p),             _nS(p))
+    dEV  = zeros(Float64, _nz(p), _nψ(p), length(θt), _nS(p))
+    dEVσ = zeros(Float64, _nz(p), _nψ(p),        _nSexp(p)+1)
+    dEVψ = zeros(Float64, _nz(p), _nψ(p),        _nSexp(p)+1)
     dcdp_Emax(EV,dEV,dEVσ,dEVψ)
 end
 
@@ -93,7 +110,7 @@ end
 
 # --------------------- tmp vars --------------------------
 
-struct dcdp_tmpvars{T<:Real,AM<:AbstractMatrix{T}}
+struct dcdp_tmpvars{T<:Float64,AM<:AbstractMatrix{Float64}}
     uin::Array{T,4}
     uex::Array{T,3}
 
@@ -116,9 +133,9 @@ end
 
 
 
-function dcdp_tmpvars(nθt::Integer, prim::dcdp_primitives{T}) where {T}
+function dcdp_tmpvars(nθt::Integer, prim::dcdp_primitives)
 
-
+    T = Float64
     nz, nψ, nS = size(prim)
     nd = _nd(prim)
     ndex, nSexp = _ndex(prim), _nSexp(prim)

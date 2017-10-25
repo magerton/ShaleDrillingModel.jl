@@ -27,6 +27,8 @@ let itypidx = (4,1),
             z = rand.(zspace)
             uv = (0.6, 0.6)
 
+            # FIXME: I CHANGED THE FUNCTION ARGUMENTS
+            # function logP!(grad::AbstractVector{T}, tmp::AbstractVector, θfull::AbstractVector, prim::dcdp_primitives, isev::ItpSharedEV, uv::NTuple{2,<:Real}, z::Tuple, d_obs::Integer, s_idx::Integer, itypidx::Tuple, dograd::Bool=true) where {T}
             lp = logP!(grad, tmp, θfull, prim, isev, true, itypidx, uv, d+1, s_idx, z...)
 
             for k in 1:length(θfull)
@@ -36,8 +38,12 @@ let itypidx = (4,1),
                 θ1[k] -= h
                 θ2[k] += h
                 serial_solve_vf_all!(shev, tmpv, prim, θ1, Val{true})
+                # FIXME: I CHANGED THE FUNCTION ARGUMENTS
+                # function logP!(grad::AbstractVector{T}, tmp::AbstractVector, θfull::AbstractVector, prim::dcdp_primitives, isev::ItpSharedEV, uv::NTuple{2,<:Real}, z::Tuple, d_obs::Integer, s_idx::Integer, itypidx::Tuple, dograd::Bool=true) where {T}
                 lp1 = logP!(Vector{T}(0), tmp, θ1, prim, isev, false, itypidx, uv, d+1, s_idx, z...)
                 serial_solve_vf_all!(shev, tmpv, prim, θ2, Val{true})
+                # FIXME: I CHANGED THE FUNCTION ARGUMENTS
+                # function logP!(grad::AbstractVector{T}, tmp::AbstractVector, θfull::AbstractVector, prim::dcdp_primitives, isev::ItpSharedEV, uv::NTuple{2,<:Real}, z::Tuple, d_obs::Integer, s_idx::Integer, itypidx::Tuple, dograd::Bool=true) where {T}
                 lp2 = logP!(Vector{T}(0), tmp, θ2, prim, isev, false, itypidx, uv, d+1, s_idx, z...)
                 fdgrad[k] = (lp2-lp1)/(θ2[k] - θ1[k])
             end

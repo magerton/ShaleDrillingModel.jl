@@ -8,7 +8,7 @@ struct ItpSharedEV{A1<:Interpolations.AbstractInterpolation,A2<:Interpolations.A
   itypes::TT
 end
 
-function ItpSharedEV(sev::SharedEV{T,N,N2}, p::dcdp_primitives, σ::Real, flag::Interpolations.Flag=Linear()) where {T,N,N2}
+function ItpSharedEV(sev::SharedEV{N,N2}, p::dcdp_primitives, σ::Real=1.0, flag::Interpolations.Flag=Linear()) where {N,N2}
 
     ntyp = length(sev.itypes)
     nθ = size(sev.dEV, N2-ntyp-1)

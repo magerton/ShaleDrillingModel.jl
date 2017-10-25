@@ -31,6 +31,8 @@ for CI in CR
     uv,z = uvs[CI], zs[CI]
     for s_idx in 1:length(wp)
         for d in ShaleDrillingModel.action_iter(wp, s_idx)
+            # FIXME: I CHANGED THE FUNCTION ARGUMENTS
+            # function logP!(grad::AbstractVector{T}, tmp::AbstractVector, θfull::AbstractVector, prim::dcdp_primitives, isev::ItpSharedEV, uv::NTuple{2,<:Real}, z::Tuple, d_obs::Integer, s_idx::Integer, itypidx::Tuple, dograd::Bool=true) where {T}
             @views lp = logP!(grad[:,d+1, s_idx, CI], tmp, θfull, prim, ishev, dograd, CI.I, uv, d+1, s_idx, z...)
         end
     end
@@ -51,6 +53,8 @@ for k in 1:length(θfull)
         uv,z = uvs[CI], zs[CI]
         for s_idx in 1:length(wp)
             for d in ShaleDrillingModel.action_iter(wp, s_idx)
+                # FIXME: I CHANGED THE FUNCTION ARGUMENTS
+                # function logP!(grad::AbstractVector{T}, tmp::AbstractVector, θfull::AbstractVector, prim::dcdp_primitives, isev::ItpSharedEV, uv::NTuple{2,<:Real}, z::Tuple, d_obs::Integer, s_idx::Integer, itypidx::Tuple, dograd::Bool=true) where {T}
                 @views ll = logP!(grad[:,d+1, s_idx, CI], tmp, θ1, prim, ishev, dograd, CI.I, uv, d+1, s_idx, z...)
                 fdgrad[k,d+1, s_idx, CI] -= ll
             end
@@ -62,6 +66,8 @@ for k in 1:length(θfull)
         uv,z = uvs[CI], zs[CI]
         for s_idx in 1:length(wp)
             for d in ShaleDrillingModel.action_iter(wp, s_idx)
+                # FIXME: I CHANGED THE FUNCTION ARGUMENTS
+                # function logP!(grad::AbstractVector{T}, tmp::AbstractVector, θfull::AbstractVector, prim::dcdp_primitives, isev::ItpSharedEV, uv::NTuple{2,<:Real}, z::Tuple, d_obs::Integer, s_idx::Integer, itypidx::Tuple, dograd::Bool=true) where {T}
                 @views ll = logP!(grad[:,d+1, s_idx, CI], tmp, θ2, prim, ishev, dograd, CI.I, uv, d+1, s_idx, z...)
                 fdgrad[k,d+1,s_idx,CI] += ll
                 fdgrad[k,d+1,s_idx,CI] /= hh
