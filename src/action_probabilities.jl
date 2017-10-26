@@ -1,16 +1,15 @@
 export logP!
 
 # θt::AbstractVector{Float64},
-function logP!(grad::AbstractVector{T}, tmp::Vector{T}, θt::Vector{T}, θfull::AbstractVector{T}, prim::dcdp_primitives, isev::ItpSharedEV, uv::NTuple{2,T}, z::Tuple, d_obs::Integer, s_idx::Integer, itypidx::Tuple, dograd::Bool=true) where {T}
+function logP!(grad::AbstractVector{T}, tmp::Vector{T}, θt::Vector{T}, θfull::AbstractVector{T}, prim::dcdp_primitives{T}, isev::ItpSharedEV, uv::NTuple{2,T}, z::Tuple, d_obs::Integer, s_idx::Integer, itypidx::Tuple, dograd::Bool=true) where {T<:Real}
 
   # unpack information about current state
   roy, geo = getitype.(isev.itypes, itypidx)
-  omroy = 1.0 - roy
+  omroy = one(T) - roy
 
   # gradient & coef views
-  # θt = @view(θfull[[geo, prim.ngeo+1:end-1...]])
-  # _θt!(θt, θfull, geoid, prim.ngeo)
-  nθt = _θt!(θt, θfull, geo, prim.ngeo)
+  # TODO: room for performance improvement if don't have to copy this over?
+  _θt!(θt, θfull, prim, geo)
   lenθfull = length(θfull)
   σ = θfull[lenθfull]
 
@@ -33,17 +32,20 @@ function logP!(grad::AbstractVector{T}, tmp::Vector{T}, θt::Vector{T}, θfull::
 
   dograd ||  return ubV[d_obs] - logsumexp(ubV)
 
-  logp = ubV[d_obs] - logsumexp_and_softmax!(ubV)
+  # do this in two steps so that we don't accientally overwrite ubV[d_obs] with Pr(d_obs)
+  logp = ubV[d_obs]
+  logp -= logsumexp_and_softmax!(ubV)
+
   nSexp1 = _nSexp(prim)+1
 
   @inbounds for di in dmxp1rng
-    wt = di==d_obs ? 1.0 - ubV[di] : -ubV[di]
+    wt = di==d_obs ? one(T) - ubV[di] : -ubV[di]
     dim1 = di-1
     s_idxp = prim.wp.Sprimes[di,s_idx]  # TODO: create a proper function mapping sprime_idx to sprime_idx_for_σ given s_idx & wp/prim
 
-    for k in Base.OneTo(nθt)
-      gk = k == 1 ? geo : prim.ngeo + k - 1
-      grad[gk] += wt * (prim.dfθ( θt, σ, z..., ψ, k, dim1,   s.d1, Dgt0, omroy)::T + prim.β * isev.dEV[z..., ψ, k, s_idxp, itypidx...] )
+    for k in Base.OneTo(_nθt(prim))
+      gk = k == 1 ? geo : _ngeo(prim) + k - 1
+      grad[gk] += wt * (prim.dfθ( θt, σ, z..., ψ, k, dim1, s.d1, Dgt0, omroy)::T + prim.β * isev.dEV[z..., ψ, k, s_idxp, itypidx...] )
     end
 
     if !Dgt0

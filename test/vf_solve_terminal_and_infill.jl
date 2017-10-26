@@ -20,8 +20,6 @@ end
 # ---------------- Regime 1 VFI and PFI - test gradient ------------------
 
 let θ1 = similar(θt), θ2 = similar(θt), fdEV = similar(evs.dEV), roy = 0.2, tmp=tmpv
-    zero!(fdEV)
-
     for k = 1:length(θt)
         h = peturb(θt[k])
         θ1 .= θt
@@ -33,7 +31,7 @@ let θ1 = similar(θt), θ2 = similar(θt), fdEV = similar(evs.dEV), roy = 0.2, 
         fillflows_grad!(tmpv, prim, θ1, σv, roy)
         solve_vf_terminal!(evs)
         solve_vf_infill!(evs, tmp, prim, false)
-        fdEV[:,:,k,:] .-= evs.EV
+        fdEV[:,:,k,:] .= -evs.EV
 
         fillflows_grad!(tmpv, prim, θ2, σv, roy)
         solve_vf_terminal!(evs)
@@ -45,10 +43,14 @@ let θ1 = similar(θt), θ2 = similar(θt), fdEV = similar(evs.dEV), roy = 0.2, 
     solve_vf_terminal!(evs)
     solve_vf_infill!(evs, tmp, prim, true)
 
-    @test fdEV ≈ evs.dEV
+    @views maxv, idx = findmax(abs.(fdEV[:,:,2:end,:].-evs.dEV[:,:,2:end,:]))
+    @views sub = ind2sub(fdEV[:,:,2:end,:], idx)
+    @show "worst value is $maxv at $sub for dθ[2:end]"
+
     maxv, idx = findmax(abs.(fdEV.-evs.dEV))
     sub = ind2sub(fdEV, idx)
     @show "worst value is $maxv at $sub"
+    # @test fdEV ≈ evs.dEV
     @test 0.0 < maxv < 1.0
     @test all(isfinite.(evs.dEV))
     @test all(isfinite.(fdEV))

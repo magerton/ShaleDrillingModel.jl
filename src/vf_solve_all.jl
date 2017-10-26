@@ -20,8 +20,8 @@ end
 
 
 solve_vf_all!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θ::AbstractVector,   σ::Real, roy::AbstractFloat, dograd::Bool ; kwargs...) = solve_vf_all!(evs, t, p, θ, σ, roy, Val{dograd}; kwargs...)
-solve_vf_all!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θ::AbstractVector, roy::Real, geoid::Integer, dograd::Type     ; kwargs...) = solve_vf_all!(evs, t, p, _θt(θ, geoid, p), _σv(θ), roy, dograd; kwargs...)
-solve_vf_all!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θ::AbstractVector, roy::Real, geoid::Integer, dograd::Bool=true; kwargs...) = solve_vf_all!(evs, t, p, _θt(θ, geoid, p), _σv(θ), roy, Val{dograd}; kwargs...)
+solve_vf_all!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θ::AbstractVector, roy::Real, geoid::Integer, dograd::Type     ; kwargs...) = solve_vf_all!(evs, t, p, _θt(θ, p, geoid), _σv(θ), roy, dograd; kwargs...)
+solve_vf_all!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θ::AbstractVector, roy::Real, geoid::Integer, dograd::Bool=true; kwargs...) = solve_vf_all!(evs, t, p, _θt(θ, p, geoid), _σv(θ), roy, Val{dograd}; kwargs...)
 
 
 # function solve_vf_all!(

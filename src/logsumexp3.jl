@@ -11,25 +11,15 @@ function logsumexp_and_softmax!(r::AbstractArray{T}, x::AbstractArray{T}) where 
     length(r) == n || throw(DimensionMismatch("Inconsistent array lengths."))
     isempty(x) && return -T(Inf)
 
-    if n == 1
-      r[1] = one(T)
-      return x[1]
-    end
-
     u = maximum(x)                                       # max value used to re-center
     abs(u) == Inf && return any(isnan, x) ? T(NaN) : u   # check for non-finite values
 
     s = zero(T)
-    one_to_n = Base.OneTo(n)
-    @inbounds for i in one_to_n
+    @inbounds @simd for i in 1:n
         s += ( r[i] = exp(x[i] - u) )
     end
-    invs = one(T) / s
-
-    @inbounds for i in one_to_n
-        r[i] *= invs
-    end
-
+    invs = one(T)/s
+    r .*= invs
     return log(s) + u
 end
 

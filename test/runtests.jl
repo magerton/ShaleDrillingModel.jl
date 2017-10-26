@@ -23,12 +23,12 @@ wp = well_problem(dmx,4,10)
 zspace, ψspace, dspace, d1space, vspace = (pspace,), linspace(-6.0, 6.0, nψ), 0:dmx, 0:1, linspace(-3.0, 3.0, nv)
 # nd, ns, nθ = length(dspace), length(wp), length(θt)
 
-prim = dcdp_primitives(u_add, udθ_add, udσ_add, udψ_add, β, wp, zspace, Πp1, ψspace, ngeo)
-tmpv = dcdp_tmpvars(length(θt), prim)
-evs = dcdp_Emax(θt, prim)
+prim = dcdp_primitives(u_add, udθ_add, udσ_add, udψ_add, β, wp, zspace, Πp1, ψspace, ngeo, length(θt))
+tmpv = dcdp_tmpvars(prim)
+evs = dcdp_Emax(prim)
 
 # check sizes of models
-ShaleDrillingModel.check_size(θt, prim, evs)
+ShaleDrillingModel.check_size(prim, evs)
 
 
 println("testing flow gradients")
@@ -54,17 +54,18 @@ solve_vf_all!(evs, tmpv, prim, θt, σv, 0.2, Val{true})
 
 # ------------------------------- action ----------------------------------
 
-rmprocs(workers())
-pids = addprocs()
-@everywhere @show pwd()
-@everywhere using ShaleDrillingModel
+# rmprocs(workers())
+# pids = addprocs()
+# @everywhere @show pwd()
+# @everywhere using ShaleDrillingModel
 
-sev = SharedEV(pids, vcat(θt, σv), prim, royalty_rates, 1:1)
-@eval @everywhere begin
-    set_g_dcdp_primitives($prim)
-    set_g_dcdp_tmpvars($tmpv)
-    set_g_SharedEV($sev)
-end
+pids = [1,]
+sev = SharedEV(pids, prim, royalty_rates, 1:1)
+# @eval @everywhere begin
+#     set_g_dcdp_primitives($prim)
+#     set_g_dcdp_tmpvars($tmpv)
+#     set_g_SharedEV($sev)
+# end
 
 isev = ItpSharedEV(sev, prim, σv)
 θfull = vcat(θt,σv)
@@ -88,7 +89,7 @@ fdgrad .= zero(T)
 
 
 θttmp = Vector{Float64}(length(θfull) - prim.ngeo)
-@show @code_warntype logP!(Vector{Float64}(5), tmp, θttmp, θfull, prim, isev, (1.,1.), (1.2,), 1, 1, (1,1,), true)
+@code_warntype logP!(Vector{Float64}(5), tmp, θttmp, θfull, prim, isev, (1.,1.), (1.2,), 1, 1, (1,1,), true)
 
 # parallel_solve_vf_all!(sev, θfull, Val{dograd})
 # println("solved round 1. doing logP")

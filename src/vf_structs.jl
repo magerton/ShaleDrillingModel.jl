@@ -5,7 +5,13 @@ export dcdp_primitives,
     dcdp_tmpvars,
     check_EVgrad,
     check_EVgrad!,
-    _ψspace, _ψclamp
+    _ψspace,
+    _ψclamp,
+    _nθt,
+    _θt!,
+    _zspace,
+    _ngeo
+
 
 """
 make primitives. Note: flow payoffs, gradient, and grad wrt `σ` must have the following structure:
@@ -16,48 +22,48 @@ dfσ(θ::AbstractVector{T}, σ::T,   z... , ψ::T,             d::Integer,      
 dfψ(θ::AbstractVector{T}, σ::T,   z... , ψ::T,             d::Integer,                          omroy::Real)
 ```
 """
-struct dcdp_primitives{AM<:AbstractMatrix{Float64},TT<:Tuple,AV<:AbstractVector{Float64}}
+struct dcdp_primitives{T<:Real,AM<:AbstractMatrix{T},TT<:Tuple,AV<:AbstractVector{T}}
     f::Function
     dfθ::Function
     dfσ::Function
     dfψ::Function
-    β::Float64
+    β::T
     wp::well_problem  # structure of endogenous choice vars
     zspace::TT        # z-space (tuple)
     Πz::AM            # transition for z
     # nψ::Int         # num ψ types (information)
     ψspace::AV        # ψspace = u + σv*v
     ngeo::Int         # num geology types
+    nθt::Int          # Num parameters in flow payoffs
 end
 
 # help us go from big parameter vector for all types to the relevant one
 _σv(θ::AbstractVector) = θ[end]
-function _θt!(θt::AbstractVector{T}, θ::AbstractVector{T}, geoid::Integer, ngeo::Integer) where {T}
-    nθt = length(θt)
+
+function _θt!(θt::AbstractVector{T}, θ::AbstractVector{T}, nθt::Integer, ngeo::Integer=1, geoid::Integer=1) where {T}
     length(θ) == nθt + ngeo || throw(DimensionMismatch())
     θt[1] = θ[geoid]
     @inbounds @simd for k = 2:nθt
         θt[k] = θ[k+ngeo-1]
     end
-    return nθt
-end
-function _θt(θ::AbstractVector{T}, geoid::Integer=1, ngeo::Integer=1) where {T}
-    θt = Vector{T}(length(θ)-ngeo)
-    _θt!(θt, θ, geoid, ngeo)
     return θt
 end
 
-_θt(θ::AbstractVector, geoid::Integer, prim::dcdp_primitives) = _θt(θ, geoid, prim.ngeo)
+_θt!(θt::AbstractVector, θ::AbstractVector,    prim::dcdp_primitives, geoid::Integer=1) = _θt!(θt, θ, _nθt(prim), _ngeo(prim), geoid)
+_θt(                     θ::AbstractVector{T}, prim::dcdp_primitives, geoid::Integer=1) where {T} = _θt!(Vector{T}(_nθt(prim)), θ, prim, geoid)
+_θt(θ::AbstractVector, geoid::Integer, prim::dcdp_primitives) = _θt(θ, geoid, _ngeo(prim))
 
-_nθt(θ::AbstractVector, ngeo::Integer) = length(θ)-ngeo
-_nθt(θ::AbstractVector, prim::dcdp_primitives) = _nθt(θ, prim.ngeo)
+# functions to retrieve elements from dcdp_primitives
+_nθt(   prim::dcdp_primitives) = prim.nθt
+_ngeo(  prim::dcdp_primitives) = prim.ngeo
+_nz(    prim::dcdp_primitives) = size(prim.Πz,1)
+_nψ(    prim::dcdp_primitives) = length(prim.ψspace) # prim.nψ
+_nS(    prim::dcdp_primitives) = _nS(prim.wp)
+_nSexp( prim::dcdp_primitives) = _nSexp(prim.wp)
+_nd(    prim::dcdp_primitives) = dmax(prim.wp)+1
+_ndex(  prim::dcdp_primitives) = exploratory_dmax(prim.wp)+1
 
-_nz(prim::dcdp_primitives) = size(prim.Πz,1)
-_nψ(prim::dcdp_primitives) = length(prim.ψspace) # prim.nψ
-_nS(prim::dcdp_primitives) = _nS(prim.wp)
-_nSexp(prim::dcdp_primitives) = _nSexp(prim.wp)
-_nd(prim::dcdp_primitives) = dmax(prim.wp)+1
-_ndex(prim::dcdp_primitives) = exploratory_dmax(prim.wp)+1
+_zspace(prim::dcdp_primitives) = prim.zspace
 
 # just in case we have things lying around...
 _ψspace(prim::dcdp_primitives) = prim.ψspace
@@ -77,33 +83,33 @@ size(prim::dcdp_primitives) = _nz(prim), _nψ(prim), _nS(prim)
 
 # --------------------- Emax --------------------------
 
-struct dcdp_Emax{A1<:AbstractArray{Float64,3},A2<:AbstractArray{Float64,4}}
+struct dcdp_Emax{T<:Real,A1<:AbstractArray{T,3},A2<:AbstractArray{T,4}}
     EV::A1
     dEV::A2
     dEV_σ::A1
     dEV_ψ::A1
 end
 
-dcdp_Emax(EV::AbstractArray3{T}, dEV::AbstractArray4{T}, dEV_σ::AbstractArray3{T}, dEV_ψ::AbstractArray3{T}) where {T<:Float64} =  dcdp_Emax{typeof(EV),typeof(dEV)}(EV,dEV,dEV_σ,dEV_ψ)
+dcdp_Emax(EV::AbstractArray3{T}, dEV::AbstractArray4{T}, dEV_σ::AbstractArray3{T}, dEV_ψ::AbstractArray3{T}) where {T} =  dcdp_Emax{T,typeof(EV),typeof(dEV)}(EV,dEV,dEV_σ,dEV_ψ)
 
-function dcdp_Emax(θt::AbstractVector, p::dcdp_primitives)
-    EV   = zeros(Float64, _nz(p), _nψ(p),             _nS(p))
-    dEV  = zeros(Float64, _nz(p), _nψ(p), length(θt), _nS(p))
-    dEVσ = zeros(Float64, _nz(p), _nψ(p),        _nSexp(p)+1)
-    dEVψ = zeros(Float64, _nz(p), _nψ(p),        _nSexp(p)+1)
+function dcdp_Emax(p::dcdp_primitives{T}) where {T}
+    EV   = zeros(T, _nz(p), _nψ(p),          _nS(p))
+    dEV  = zeros(T, _nz(p), _nψ(p), _nθt(p), _nS(p))
+    dEVσ = zeros(T, _nz(p), _nψ(p),          _nSexp(p)+1)
+    dEVψ = zeros(T, _nz(p), _nψ(p),          _nSexp(p)+1)
     dcdp_Emax(EV,dEV,dEVσ,dEVψ)
 end
 
 # --------------------- check conformable --------------------------
 
-function check_size(θt::AbstractVector, prim::dcdp_primitives, evs::dcdp_Emax)
+function check_size(prim::dcdp_primitives, evs::dcdp_Emax)
     nz, nψ, nS = size(prim)
-    nθ, nd = length(θt), _nd(prim)
+    nθ, nd = _nθt(prim), _nd(prim)
     ndex, nSexp = _ndex(prim), _nSexp(prim)
 
-    prod(length.(prim.zspace)) == nz   ||  throw(error("Πz and zspace not compatible"))
-    (nz,nψ,nS)      == size(evs.EV)   || throw(error("EV not conformable"))
-    (nz,nψ,nθ,nS)   == size(evs.dEV)   || throw(error("dEV not conformable"))
+    prod(length.(_zspace(prim))) == nz   ||  throw(error("Πz and zspace not compatible"))
+    (nz,nψ,nS)      == size(evs.EV)      || throw(error("EV not conformable"))
+    (nz,nψ,nθ,nS)   == size(evs.dEV)     || throw(error("dEV not conformable"))
     (nz,nψ,nSexp+1) == size(evs.dEV_σ) == size(evs.dEV_ψ) || throw(error("dEV_σ or dEV_ψ not conformable"))
     return true
 end
@@ -133,11 +139,12 @@ end
 
 
 
-function dcdp_tmpvars(nθt::Integer, prim::dcdp_primitives)
+function dcdp_tmpvars(prim::dcdp_primitives)
 
     T = Float64
     nz, nψ, nS = size(prim)
     nd = _nd(prim)
+    nθt = _nθt(prim)
     ndex, nSexp = _ndex(prim), _nSexp(prim)
 
     nθt > nψ &&  throw(error("Must have more length(ψspace) > length(θt)"))
@@ -168,8 +175,6 @@ function dcdp_tmpvars(nθt::Integer, prim::dcdp_primitives)
     return dcdp_tmpvars(uin,uex,duin,duex,duexσ,duexψ,ubVfull,dubVfull,dubV_σ,dubV_ψ,q,lse,tmp,Πψtmp,IminusTEVp)
 end
 
-dcdp_tmpvars(θfull::AbstractVector, prim::dcdp_primitives) = dcdp_tmpvars(_nθt(θfull,prim), prim)
-
 
 function zero!(t::dcdp_tmpvars)
     zero!(t.uin  )
@@ -196,40 +201,7 @@ function zero!(evs::dcdp_Emax)
 end
 
 
-
-
-
-
-
-# function _θt!(θt::AbstractVector, θfull::AbstractVector, geoid::Integer, ngeo::Integer=1)
-#     nfull = length(θfull)
-#     nt = length(θt)
-#     nt == nfull - ngeo  || throw(DimensionMismatch())
-#     1 <= geoid <= ngeo  || throw(DomainError())
-#
-#     # updating
-#     θt[1] = θfull[geoid]
-#     @inbounds @simd for i = 2:nt
-#         θt[i] = θfull[i + ngeo]
-#     end
-#     return θfull[end]  # return σ
-# end
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+# ------------------------------ thoughts on if have adaptive grid for ψ -----------------------------
 
 
 # _ψspace(prim::dcdp_primitives, minψ::Real, maxψ::Real) = linspace(minψ, maxψ, prim.nψ)

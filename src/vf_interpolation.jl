@@ -1,6 +1,6 @@
 export ItpSharedEV
 
-struct ItpSharedEV{A1<:Interpolations.AbstractInterpolation,A2<:Interpolations.AbstractInterpolation,A3<:Interpolations.AbstractInterpolation,TT<:Tuple}
+struct ItpSharedEV{T,A1<:Interpolations.AbstractInterpolation{T},A2<:Interpolations.AbstractInterpolation{T},A3<:Interpolations.AbstractInterpolation{T},TT<:Tuple}
   EV::A1
   dEV::A2
   dEVσ::A3
@@ -8,18 +8,19 @@ struct ItpSharedEV{A1<:Interpolations.AbstractInterpolation,A2<:Interpolations.A
   itypes::TT
 end
 
-function ItpSharedEV(sev::SharedEV{N,N2}, p::dcdp_primitives, σ::Real=1.0, flag::Interpolations.Flag=Linear()) where {N,N2}
+function ItpSharedEV(sev::SharedEV{T,N,N2,TT}, p::dcdp_primitives, σ::Real=1.0, flag::Interpolations.Flag=Linear()) where {T,N,N2,TT}
 
     ntyp = length(sev.itypes)
-    nθ = size(sev.dEV, N2-ntyp-1)
+    nθ = _nθt(p)
     nS = _nS(p)
     nSexp1 = _nSexp(p)+1
 
-    scalegrid(x::Range{T}) where {T<:AbstractFloat} = x
-    scalegrid(x::Integer) = 1:x
-    scalegrid(x::AbstractVector) = 1:length(x)
+    scalegrid(x::Range{S}) where {S<:AbstractFloat} = x
+    scalegrid(x::Integer) = Base.OneTo(x)
+    scalegrid(x::AbstractVector) = Base.OneTo(length(x))
+
     splinetype(r::Union{StepRange,StepRangeLen}, flag::Interpolations.Flag) = BSpline(flag)
-    splinetype(r::UnitRange                    , flag::Interpolations.Flag) = NoInterp()
+    splinetype(r::AbstractUnitRange            , flag::Interpolations.Flag) = NoInterp()
 
     scl_EV   = scalegrid.((p.zspace..., _ψspace(p,σ),         nS, sev.itypes...))
     scl_dEV  = scalegrid.((p.zspace..., _ψspace(p,σ), nθ,     nS, sev.itypes...))
@@ -30,18 +31,18 @@ function ItpSharedEV(sev::SharedEV{N,N2}, p::dcdp_primitives, σ::Real=1.0, flag
     it_dEVσ  = interpolate!(sev.dEVσ, splinetype.(scl_dEVσ, flag), OnGrid())
     it_dEVψ  = interpolate!(sev.dEVψ, splinetype.(scl_dEVσ, flag), OnGrid())
 
-    sit_EV   = Interpolations.scale(it_EV    , scl_EV...)
-    sit_dEV  = Interpolations.scale(it_dEV   , scl_dEV...)
-    sit_dEVσ = Interpolations.scale(it_dEVσ  , scl_dEVσ...)
-    sit_dEVψ = Interpolations.scale(it_dEVψ  , scl_dEVσ...)
+    sit_EV   = Interpolations.scale(it_EV   , scl_EV...)
+    sit_dEV  = Interpolations.scale(it_dEV  , scl_dEV...)
+    sit_dEVσ = Interpolations.scale(it_dEVσ , scl_dEVσ...)
+    sit_dEVψ = Interpolations.scale(it_dEVψ , scl_dEVσ...)
 
-    return ItpSharedEV(sit_EV, sit_dEV, sit_dEVσ, sit_dEVψ, sev.itypes)
+    return ItpSharedEV{T,typeof(sit_EV),typeof(sit_dEV),typeof(sit_dEVσ),TT}(sit_EV, sit_dEV, sit_dEVσ, sit_dEVψ, sev.itypes)
 end
 
-function ItpSharedEV(σ::Real)
+function ItpSharedEV(σ::Real, flag::Interpolations.Flag=Linear())
   global g_SharedEV
   global g_dcdp_primitives
-  return ItpSharedEV(g_SharedEV, g_dcdp_primitives, σ)
+  return ItpSharedEV(g_SharedEV, g_dcdp_primitives, σ, flag)
 end
 
 @GenGlobal g_ItpSharedEV
