@@ -89,7 +89,13 @@ fdgrad .= zero(T)
 
 
 θttmp = Vector{Float64}(length(θfull) - prim.ngeo)
-@code_warntype logP!(Vector{Float64}(5), tmp, θttmp, θfull, prim, isev, (1.,1.), (1.2,), 1, 1, (1,1,), true)
+logP!(Vector{Float64}(5), tmp, θttmp, θfull, prim, isev, (1.,1.), (1.2,), 1, 1, (1,1,), true)
+
+# -----------------------
+
+serial_solve_vf_all!(sev, tmpv, prim, θfull, Val{false}; maxit0=12, maxit1=20, vftol=1e-10)
+# parallel_solve_vf_all!(sev, θfull, Val{false}; maxit0=12, maxit1=20, vftol=1e-10)
+
 
 # parallel_solve_vf_all!(sev, θfull, Val{dograd})
 # println("solved round 1. doing logP")

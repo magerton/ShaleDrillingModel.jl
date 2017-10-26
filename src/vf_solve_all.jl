@@ -4,7 +4,7 @@ export solve_vf_all!
 function solve_vf_all!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θ::AbstractVector, σ::Real, roy::AbstractFloat, dograd::Type{Val{false}}; kwargs...)
     fillflows!(t, p, θ, σ, roy)
     solve_vf_terminal!(evs)
-    solve_vf_infill!(evs, t, p, dograd, kwargs...)
+    solve_vf_infill!(evs, t, p, dograd; kwargs...)
     learningUpdate!(evs, t, p, σ, dograd)
     solve_vf_explore!(evs, t, p, dograd)
 end
@@ -13,7 +13,7 @@ end
 function solve_vf_all!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θ::AbstractVector, σ::Real, roy::AbstractFloat, dograd::Type{Val{true}}; kwargs...)
     fillflows_grad!(t, p, θ, σ, roy)
     solve_vf_terminal!(evs)
-    solve_vf_infill!(evs, t, p, dograd, kwargs...)
+    solve_vf_infill!(evs, t, p, dograd; kwargs...)
     learningUpdate!(evs, t, p, σ, dograd)
     solve_vf_explore!(evs, t, p, dograd)
 end

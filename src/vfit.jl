@@ -64,7 +64,7 @@ end
 
 # --------------------------- pfit until convergence ----------------------------
 
-function solve_inf_pfit!(EV0::AbstractMatrix, ubV::AbstractArray3, ΔEV::AbstractMatrix, tmp::AbstractMatrix, IminusTEVp::AbstractMatrix, Πz::AbstractMatrix, β::Real; maxit::Integer=20, vftol::Real=1e-11)
+function solve_inf_pfit!(EV0::AbstractMatrix, ubV::AbstractArray3, ΔEV::AbstractMatrix, tmp::AbstractMatrix, IminusTEVp::AbstractMatrix, Πz::AbstractMatrix, β::Real; maxit::Integer=30, vftol::Real=1e-11)
     iter = zero(maxit)
     while true
         bnds = pfit!(EV0, ubV, ΔEV, tmp, IminusTEVp, Πz, β; vftol=vftol)
