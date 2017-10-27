@@ -19,7 +19,7 @@ end
 
 # ---------------- Regime 1 VFI and PFI - test gradient ------------------
 
-let θ1 = similar(θt), θ2 = similar(θt), fdEV = similar(evs.dEV), roy = 0.2, tmp=tmpv
+let θ1 = similar(θt), θ2 = similar(θt), fdEV = similar(evs.dEV), itype = (0.2,1), tmp=tmpv
     for k = 1:length(θt)
         h = peturb(θt[k])
         θ1 .= θt
@@ -28,18 +28,18 @@ let θ1 = similar(θt), θ2 = similar(θt), fdEV = similar(evs.dEV), roy = 0.2, 
         θ2[k] += h
         hh = θ2[k] - θ1[k]
 
-        fillflows_grad!(tmpv, prim, θ1, σv, roy)
+        fillflows_grad!(tmpv, prim, θ1, σv, itype...)
         solve_vf_terminal!(evs)
         solve_vf_infill!(evs, tmp, prim, false)
         fdEV[:,:,k,:] .= -evs.EV
 
-        fillflows_grad!(tmpv, prim, θ2, σv, roy)
+        fillflows_grad!(tmpv, prim, θ2, σv, itype...)
         solve_vf_terminal!(evs)
         solve_vf_infill!(evs, tmp, prim, false)
         fdEV[:,:,k,:] .+= evs.EV
         fdEV[:,:,k,:] ./= hh
     end
-    fillflows_grad!(tmpv, prim, θt, σv, roy)
+    fillflows_grad!(tmpv, prim, θt, σv, itype...)
     solve_vf_terminal!(evs)
     solve_vf_infill!(evs, tmp, prim, true)
 

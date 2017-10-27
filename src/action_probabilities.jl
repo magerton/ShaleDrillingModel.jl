@@ -5,7 +5,6 @@ function logP!(grad::AbstractVector{T}, tmp::Vector{T}, θt::Vector{T}, θfull::
 
   # unpack information about current state
   roy, geo = getitype.(isev.itypes, itypidx)
-  omroy = one(T) - roy
 
   # gradient & coef views
   # TODO: room for performance improvement if don't have to copy this over?
@@ -27,7 +26,7 @@ function logP!(grad::AbstractVector{T}, tmp::Vector{T}, θt::Vector{T}, θfull::
 
   @inbounds for di in dmxp1rng
     s_idxp = prim.wp.Sprimes[di,s_idx]
-    ubV[di] = prim.f(θt, σ, z..., ψ, di-1, s.d1, Dgt0, omroy)::T + prim.β * isev.EV[z..., ψ, s_idxp, itypidx...]
+    ubV[di] = prim.f(θt, σ, z..., ψ, di-1, s.d1, Dgt0, roy, geo)::T + prim.β * isev.EV[z..., ψ, s_idxp, itypidx...]
   end
 
   dograd ||  return ubV[d_obs] - logsumexp(ubV)
@@ -45,12 +44,12 @@ function logP!(grad::AbstractVector{T}, tmp::Vector{T}, θt::Vector{T}, θfull::
 
     for k in Base.OneTo(_nθt(prim))
       gk = k == 1 ? geo : _ngeo(prim) + k - 1
-      grad[gk] += wt * (prim.dfθ( θt, σ, z..., ψ, k, dim1, s.d1, Dgt0, omroy)::T + prim.β * isev.dEV[z..., ψ, k, s_idxp, itypidx...] )
+      grad[gk] += wt * (prim.dfθ( θt, σ, z..., ψ, k, dim1, s.d1, Dgt0, roy, geo)::T + prim.β * isev.dEV[z..., ψ, k, s_idxp, itypidx...] )
     end
 
     if !Dgt0
-      dpsi = prim.dfψ(θt, σ, z..., ψ, dim1, omroy)::T + prim.β * isev.dEVψ[z..., ψ, min(s_idxp,nSexp1), itypidx...]
-      dsig = prim.dfσ(θt, σ, z..., ψ, dim1, omroy)::T + prim.β * isev.dEVσ[z..., ψ, min(s_idxp,nSexp1), itypidx...]
+      dpsi = prim.dfψ(θt, σ, z..., ψ, dim1, roy, geo)::T + prim.β * isev.dEVψ[z..., ψ, min(s_idxp,nSexp1), itypidx...]
+      dsig = prim.dfσ(θt, σ, z..., ψ, dim1, roy, geo)::T + prim.β * isev.dEVσ[z..., ψ, min(s_idxp,nSexp1), itypidx...]
       grad[lenθfull] += wt * (dpsi*v + dsig)
     end
   end

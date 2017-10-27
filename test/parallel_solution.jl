@@ -5,7 +5,7 @@ pids = addprocs()
 @everywhere @show pwd()
 @everywhere using ShaleDrillingModel
 
-sev = SharedEV(pids, vcat(θt, σv), prim, royalty_rates, 1:1)
+sev = SharedEV(pids, prim, royalty_rates, 1:1)
 @eval @everywhere begin
     set_g_dcdp_primitives($prim)
     set_g_dcdp_tmpvars($tmpv)
@@ -26,3 +26,17 @@ zero!(sev)
 @test !all(sev.dEVψ .== 0.0)
 
 rmprocs(workers())
+
+
+
+# rmprocs(workers())
+# pids = addprocs()
+# @everywhere @show pwd()
+# @everywhere using ShaleDrillingModel
+# @eval @everywhere begin
+#     set_g_dcdp_primitives($prim)
+#     set_g_dcdp_tmpvars($tmpv)
+#     set_g_SharedEV($sev)
+# end
+# parallel_solve_vf_all!(sev, θfull, Val{dograd})
+# parallel_solve_vf_all!(sev, θfull, Val{false}; maxit0=12, maxit1=20, vftol=1e-10)

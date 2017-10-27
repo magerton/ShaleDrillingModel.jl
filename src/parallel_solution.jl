@@ -87,7 +87,7 @@ end
 
 function solve_vf_all!(sev::SharedEV, tmpv::dcdp_tmpvars, prim::dcdp_primitives, θ::AbstractVector, dograd::Type, typidx::Integer...; kwargs...)
     evs, typs = dcdp_Emax(sev, typidx...)
-    solve_vf_all!(evs, tmpv, prim, θ, typs..., dograd; kwargs...)
+    solve_vf_all!(evs, tmpv, prim, θ, typs, dograd; kwargs...)
 end
 
 function serial_solve_vf_all!(sev::SharedEV, tmpv::dcdp_tmpvars, prim::dcdp_primitives, θ::AbstractVector, dograd::Type; kwargs...)

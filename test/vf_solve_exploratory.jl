@@ -6,7 +6,7 @@ let EV1 = similar(evs.EV),
     t = tmpv,
     p = prim,
     σ = σv,
-    roy = 0.2,
+    itype = (0.2,1),
     θ1 = similar(θt),
     θ2 = similar(θt),
     fdEV = similar(evs.dEV)
@@ -29,14 +29,14 @@ let EV1 = similar(evs.EV),
         θ2[k] += h
         hh = θ2[k] - θ1[k]
 
-        fillflows_grad!(tmpv, prim, θ1, σv, roy)
+        fillflows_grad!(tmpv, prim, θ1, σv, itype...)
         solve_vf_terminal!(evs)
         solve_vf_infill!(evs, tmpv, prim, false)
         learningUpdate!(evs, tmpv, prim, σv)
         solve_vf_explore!(evs, tmpv, prim, false)
         fdEV[:,:,k,:] .= -evs.EV
 
-        fillflows_grad!(tmpv, prim, θ2, σv, roy)
+        fillflows_grad!(tmpv, prim, θ2, σv, itype...)
         solve_vf_terminal!(evs)
         solve_vf_infill!(evs, tmpv, prim, false)
         learningUpdate!(evs, tmpv, prim, σv)
@@ -48,7 +48,7 @@ let EV1 = similar(evs.EV),
 
     # ----------------- analytic -----------------
 
-    fillflows_grad!(tmpv, prim, θt, σv, roy)
+    fillflows_grad!(tmpv, prim, θt, σv, itype...)
     solve_vf_terminal!(evs)
     solve_vf_infill!(evs, tmpv, prim, true)
     learningUpdate!(evs, tmpv, prim, σv)
@@ -84,7 +84,7 @@ let T = Float64,
     t = tmpv,
     p = prim,
     σ = σv,
-    roy = 0.2,
+    itype = (0.2,1),
     θ1 = similar(θt),
     θ2 = similar(θt),
     fdEVσ = zeros(T, size(evs.EV)),
@@ -101,7 +101,7 @@ let T = Float64,
     hh = σ2 - σ1
 
     zero!(tmpv)
-    fillflows_grad!(tmpv, prim, θt, σ1, roy)
+    fillflows_grad!(tmpv, prim, θt, σ1, itype...)
     solve_vf_terminal!(evs)
     solve_vf_infill!(evs, tmpv, prim, false)
     learningUpdate!(evs, tmpv, prim, σ1)
@@ -110,7 +110,7 @@ let T = Float64,
     fdEVσ .= -evs.EV
 
     zero!(tmpv)
-    fillflows_grad!(tmpv, prim, θt, σ2, roy)
+    fillflows_grad!(tmpv, prim, θt, σ2, itype...)
     solve_vf_terminal!(evs)
     solve_vf_infill!(evs, tmpv, prim, false)
     learningUpdate!(evs, tmpv, prim, σ2)
@@ -123,7 +123,7 @@ let T = Float64,
     # ----------------- analytic -----------------
 
     zero!(tmpv)
-    fillflows_grad!(tmpv, prim, θt, σv, roy)
+    fillflows_grad!(tmpv, prim, θt, σv, itype...)
     solve_vf_terminal!(evs)
     solve_vf_infill!(evs, tmpv, prim, true)
     learningUpdate!(evs, tmpv, prim, σv, Val{true})

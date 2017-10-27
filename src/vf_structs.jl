@@ -16,10 +16,10 @@ export dcdp_primitives,
 """
 make primitives. Note: flow payoffs, gradient, and grad wrt `σ` must have the following structure:
 ```julia
-f(  θ::AbstractVector{T}, σ::T,   z... , ψ::T,             d::Integer, d1::Integer, Dgt0::Bool, omroy::Real)
-df( θ::AbstractVector{T}, σ::T,   z... , ψ::T, k::Integer, d::Integer, d1::Integer, Dgt0::Bool, omroy::Real)
-dfσ(θ::AbstractVector{T}, σ::T,   z... , ψ::T,             d::Integer,                          omroy::Real)
-dfψ(θ::AbstractVector{T}, σ::T,   z... , ψ::T,             d::Integer,                          omroy::Real)
+f(  θ::AbstractVector{T}, σ::T,   z... , ψ::T,             d::Integer, d1::Integer, Dgt0::Bool, roy::Real, geoid::Real)
+df( θ::AbstractVector{T}, σ::T,   z... , ψ::T, k::Integer, d::Integer, d1::Integer, Dgt0::Bool, roy::Real, geoid::Real)
+dfσ(θ::AbstractVector{T}, σ::T,   z... , ψ::T,             d::Integer,                          roy::Real, geoid::Real)
+dfψ(θ::AbstractVector{T}, σ::T,   z... , ψ::T,             d::Integer,                          roy::Real, geoid::Real)
 ```
 """
 struct dcdp_primitives{T<:Real,AM<:AbstractMatrix{T},TT<:Tuple,AV<:AbstractVector{T}}
@@ -42,7 +42,7 @@ _σv(θ::AbstractVector) = θ[end]
 
 function _θt!(θt::AbstractVector{T}, θ::AbstractVector{T}, nθt::Integer, ngeo::Integer=1, geoid::Integer=1) where {T}
     length(θ) == nθt + ngeo || throw(DimensionMismatch())
-    θt[1] = θ[geoid]
+    θt[1] = ngeo == 1 ? θ[1] : θ[geoid]
     @inbounds @simd for k = 2:nθt
         θt[k] = θ[k+ngeo-1]
     end
