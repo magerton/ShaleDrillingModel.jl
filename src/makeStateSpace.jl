@@ -98,19 +98,20 @@ max_action(   p::well_problem, i::Integer) = _max_action(  i, dmax(p), Dmax(p), 
 _dp1space(    p::well_problem, i::Integer) = _dp1space(    i, dmax(p), Dmax(p), p.endpts)
 _first_action(p::well_problem, i::Integer) = _first_action(i, dmax(p), Dmax(p), p.endpts)
 
+_sprime(      p::well_problem, i::Integer, d::Integer) = _sprime(i, d, p.endpts)
+
 
 action0(           p::well_problem, i::Integer) = _sprime( i, _first_action(p,i), p.endpts)
         sprime_itr(p::well_problem, i::Integer) = _sprimes(i, dmax(p), Dmax(p), p.endpts)
-@inline sprime_idx(p::well_problem, i::Integer) = @views  wp.Sprime[1:_num_actions(p,i), i]
+@inline sprime_idx(p::well_problem, i::Integer) = @views  p.Sprime[1:_num_actions(p,i), i]
 
 
 exploratory_terminal(p::well_problem) = exploratory_terminal(p.endpts)
-state_idx(s::state, wp::well_problem) = state_idx(s.τ, s.D, s.d1, dmax(wp), Dmax(wp), τmax(wp))
+state_idx(p::well_problem, s::state) = state_idx(s.τ, s.D, s.d1, dmax(p), Dmax(p), τmax(p))
+wp_info(p::well_problem, i::Integer) = (_dp1space(p,i), sprime_idx(p,i), horizon(p,i), state(p,i), )
 
-wp_info(wp::well_problem, i::Integer) = (_dp1space(wp,i), sprime_idx(wp,i), horizon(wp,i), state(wp,i), )
 
-
-terminal_state_ind(wp::well_problem) = wp.endpts[4]
+terminal_state_ind(p::well_problem) = p.endpts[4]
 
 
 inf_fm_lrn(        p::well_problem) = inf_fm_lrn(dmax(p), p.endpts)

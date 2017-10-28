@@ -40,10 +40,8 @@ println("testing flow gradients")
 println("testing transition derivatives")
 @test check_dΠψ(σv, ψspace)
 
-if false
-    include("test_utility.jl")
-    include("test_transition.jl")
-end
+include("test_utility.jl")
+include("test_transition.jl")
 
 
 println("filling per-period payoffs")
@@ -58,17 +56,7 @@ zero!(tmpv)
 solve_vf_all!(evs, tmpv, prim, θt, σv, (0.2, 1), Val{true})
 
 include("test_dpsi.jl")
-
-
-include("parallel_solution.jl")
-
-# ------------------------------- action ----------------------------------
-
 include("action_probabilities_new.jl")
-
-
-# include("pre-action-probabilities.jl")
-# include("action_probabilities.jl")
-
+include("parallel_solution.jl")
 
 #

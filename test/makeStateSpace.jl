@@ -1,6 +1,6 @@
 dmx, Dmx, τmx = (5, 10, 7)
 ep = ShaleDrillingModel.end_pts(dmx,Dmx,τmx)
-SS = state_space(dmx,Dmx,τmx)
+SS = ShaleDrillingModel.state_space(dmx,Dmx,τmx)
 
 SS[1:τmx+1]                         # Exploratory
 SS[  τmx+1+(1:dmx+1)]               # Exploratory Terminal + post exploratory

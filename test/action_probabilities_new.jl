@@ -19,11 +19,11 @@ let pids = [1,],
     zero!(sev)
     CR = CartesianRange(length.(idxs))
 
-
     let uv = (1.,1.), z = (1.2,), dp1 = 1, s = 1, itypidx = (1, 1,)
-        logP!(Vector{Float64}(5), tmp, θttmp, θfull, prim, isev, uv, z, dp1, s, itypidx, true)
+        logP!(Vector{Float64}(idx_sz[1]), tmp, θttmp, θfull, prim, isev, uv, z, dp1, s, itypidx, true)
     end
     # -----------------------
+
 
     dograd = true
     serial_solve_vf_all!(sev, tmpv, prim, θfull, Val{dograd}; maxit0=12, maxit1=20, vftol=1e-10)
@@ -32,7 +32,7 @@ let pids = [1,],
     for CI in CR
         zi, ui, vi, di, si, ri, gi = CI.I
         z, u, v, d, s, r, g = getindex.(rngs, CI.I)
-        if d <= dmax(wp,s)+1
+        if d ∈ ShaleDrillingModel._dp1space(prim.wp, s) && !(s ∈ ShaleDrillingModel.ind_lrn(prim.wp.endpts))
             @views lp = logP!(grad[:,CI], tmp, θttmp, θfull, prim, isev,  (u,v), (z,), d, s, (ri, gi,), dograd)
         end
     end
@@ -52,7 +52,7 @@ let pids = [1,],
         for CI in CR
             zi, ui, vi, di, si, ri, gi = CI.I
             z, u, v, d, s, r, g = getindex.(rngs, CI.I)
-            if d <= dmax(wp,s)+1
+            if d ∈ ShaleDrillingModel._dp1space(prim.wp, s) && !(s ∈ ShaleDrillingModel.ind_lrn(prim.wp.endpts))
                 fdgrad[k,CI] -= logP!(Vector{T}(0), tmp, θttmp, θ1, prim, isev, (u,v), (z,), d, s, (ri,gi), dograd)
             end
         end
@@ -63,7 +63,7 @@ let pids = [1,],
         for CI in CR
             zi, ui, vi, di, si, ri, gi = CI.I
             z, u, v, d, s, r, g = getindex.(rngs, CI.I)
-            if d <= dmax(wp,s)+1
+            if d ∈ ShaleDrillingModel._dp1space(prim.wp, s) && !(s ∈ ShaleDrillingModel.ind_lrn(prim.wp.endpts))
                 fdgrad[k,CI] += logP!(Vector{T}(0), tmp, θttmp, θ2, prim, isev, (u,v), (z,), d, s, (ri,gi), dograd)
                 fdgrad[k,CI] /= hh
             end
