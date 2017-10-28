@@ -32,7 +32,7 @@ let pids = [1,],
     for CI in CR
         zi, ui, vi, di, si, ri, gi = CI.I
         z, u, v, d, s, r, g = getindex.(rngs, CI.I)
-        if d ∈ ShaleDrillingModel._dp1space(prim.wp, s) && !(s ∈ ShaleDrillingModel.ind_lrn(prim.wp.endpts))
+        if d ∈ ShaleDrillingModel._dp1space(prim.wp, s) # && !(s ∈ ShaleDrillingModel.ind_lrn(prim.wp.endpts))
             @views lp = logP!(grad[:,CI], tmp, θttmp, θfull, prim, isev,  (u,v), (z,), d, s, (ri, gi,), dograd)
         end
     end
@@ -52,7 +52,7 @@ let pids = [1,],
         for CI in CR
             zi, ui, vi, di, si, ri, gi = CI.I
             z, u, v, d, s, r, g = getindex.(rngs, CI.I)
-            if d ∈ ShaleDrillingModel._dp1space(prim.wp, s) && !(s ∈ ShaleDrillingModel.ind_lrn(prim.wp.endpts))
+            if d ∈ ShaleDrillingModel._dp1space(prim.wp, s) # && !(s ∈ ShaleDrillingModel.ind_lrn(prim.wp.endpts))
                 fdgrad[k,CI] -= logP!(Vector{T}(0), tmp, θttmp, θ1, prim, isev, (u,v), (z,), d, s, (ri,gi), dograd)
             end
         end
@@ -63,7 +63,7 @@ let pids = [1,],
         for CI in CR
             zi, ui, vi, di, si, ri, gi = CI.I
             z, u, v, d, s, r, g = getindex.(rngs, CI.I)
-            if d ∈ ShaleDrillingModel._dp1space(prim.wp, s) && !(s ∈ ShaleDrillingModel.ind_lrn(prim.wp.endpts))
+            if d ∈ ShaleDrillingModel._dp1space(prim.wp, s) # && !(s ∈ ShaleDrillingModel.ind_lrn(prim.wp.endpts))
                 fdgrad[k,CI] += logP!(Vector{T}(0), tmp, θttmp, θ2, prim, isev, (u,v), (z,), d, s, (ri,gi), dograd)
                 fdgrad[k,CI] /= hh
             end

@@ -1,4 +1,4 @@
-dmx, Dmx, τmx = (5, 10, 7)
+dmx, Dmx, τmx = (5, 6, 1)
 ep = ShaleDrillingModel.end_pts(dmx,Dmx,τmx)
 SS = ShaleDrillingModel.state_space(dmx,Dmx,τmx)
 
@@ -25,7 +25,7 @@ a = SS, [
 for (i,s) in enumerate(SS)
     for d in ShaleDrillingModel._actionspace(i,dmx,Dmx,ep)
         if ShaleDrillingModel._regime(i,ep) != :learn
-            @test ShaleDrillingModel.OLDsprime(s,d,Dmx,dmx) == SS[ShaleDrillingModel._sprime(i,d,ep)]
+            Base.Test.@test ShaleDrillingModel.OLDsprime(s,d,Dmx,dmx) == SS[ShaleDrillingModel._sprime(i,d,ep)]
         end
     end
 end
@@ -36,8 +36,8 @@ wp = well_problem(3,6,10)
 
 idxs = [ShaleDrillingModel.explore_state_inds(wp)..., ShaleDrillingModel.infill_state_inds(wp)..., ShaleDrillingModel.terminal_state_ind(wp)..., ShaleDrillingModel.learn_state_inds(wp)...]
 
-@test idxs ⊆ 1:length(wp)
-@test 1:length(wp) ⊆ idxs
+Base.Test.@test idxs ⊆ 1:length(wp)
+Base.Test.@test 1:length(wp) ⊆ idxs
 
 
 

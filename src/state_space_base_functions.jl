@@ -73,7 +73,7 @@ end
 function _actionspace(s::Integer, dmx::Integer, Dmx::Integer, endpts::NTuple{4,Int})::UnitRange{Int}
     s <= endpts[1] && throw(DomainError())
     s <= endpts[2] && return 0:dmx
-    s <= endpts[3] && return _D(s,endpts):_D(s,endpts)
+    s <= endpts[3] && return 0:0
     s <= endpts[4] && return 0:min((Dmx-_D(s,endpts)),dmx)
     throw(DomainError())
 end
@@ -83,7 +83,7 @@ end
 function _first_action(s::Integer, dmx::Integer, Dmx::Integer, endpts::NTuple{4,Int})::Int
     s <= endpts[1] && throw(DomainError())
     s <= endpts[2] && return 0
-    s <= endpts[3] && return D(s,endpts)
+    s <= endpts[3] && return 0
     s <= endpts[4] && return 0
     throw(DomainError())
 end
@@ -92,7 +92,7 @@ end
 function _max_action(s::Integer, dmx::Integer, Dmx::Integer, endpts::NTuple{4,Int})::Int
     s <= endpts[1] && throw(DomainError())
     s <= endpts[2] && return dmx
-    s <= endpts[3] && return D(s,endpts)
+    s <= endpts[3] && return 0
     s <= endpts[4] && return min((Dmx-_D(s,endpts)),dmx)
     throw(DomainError())
 end
@@ -114,7 +114,7 @@ end
     elseif s == endpts[2]+1
         return s
     elseif s <= endpts[3]
-        return endpts[3] + 2*d - 1
+        return endpts[3] + 2*(s-endpts[2])-3  # was return endpts[3] + 2*d - 1. note d=(s-endpts[2]-1)
     elseif s == endpts[4]
         return s
     elseif s < endpts[4]
