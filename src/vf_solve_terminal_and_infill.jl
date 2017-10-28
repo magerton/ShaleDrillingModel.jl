@@ -1,23 +1,28 @@
 export solve_vf_terminal!, solve_vf_infill!, zero!
 
 
-function zero!(x::AbstractArray{T}) where {T<:Real}
-    @inbounds @simd for i in eachindex(x)
-        x[i] = zero(T)
-    end
+zero!(x::AbstractArray{T}) where {T<:Real} = fill!(x, zero(T))
+
+function solve_vf_terminal!(EV::AbstractArray3)
+    @views zero!(EV[:,:,end])
+    @views zero!(EV[:,:,exploratory_terminal(wp)])
 end
 
-solve_vf_terminal!(EV::AbstractArray3) = @views zero!(EV[:,:,end])
 
-
-function solve_vf_terminal!(EV::AbstractArray3, dEV::AbstractArray4, dEV_σ::AbstractArray3, dEV_ψ::AbstractArray3)
+function solve_vf_terminal!(EV::AbstractArray3, dEV::AbstractArray4, dEV_σ::AbstractArray3, dEV_ψ::AbstractArray3, wp::well_problem)
     @views zero!(EV[:,:,end])
     @views zero!(dEV[:,:,:,end])
     @views zero!(dEV_σ[:,:,end])
     @views zero!(dEV_ψ[:,:,end])
+    exp_trm = exploratory_terminal(wp)
+    @views zero!(EV[   :,:,  exp_trm])
+    @views zero!(dEV[  :,:,:,exp_trm])
+    @views zero!(dEV_σ[:,:,  exp_trm])
+    @views zero!(dEV_ψ[:,:,  exp_trm])
 end
 
-solve_vf_terminal!(evs::dcdp_Emax) = solve_vf_terminal!(evs.EV, evs.dEV, evs.dEV_σ, evs.dEV_ψ)
+solve_vf_terminal!(evs::dcdp_Emax, wp::well_problem) = solve_vf_terminal!(evs.EV, evs.dEV, evs.dEV_σ, evs.dEV_ψ, wp)
+solve_vf_terminal!(evs::dcdp_Emax, prim::dcdp_primitives) = solve_vf_terminal!(evs.EV, evs.dEV, evs.dEV_σ, evs.dEV_ψ, prim.wp)
 
 # ---------------------------------------------
 
@@ -51,7 +56,7 @@ function solve_vf_infill!(
 
     # ------------------------ compute things ----------------------------------
 
-    for i in infill_state_inds(wp)
+    for i in ind_inf(wp)
         idxd, idxs, horzn, s = wp_info(wp, i)
 
         ubV  = @view(ubVfull[:,:,idxd])

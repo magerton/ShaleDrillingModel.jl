@@ -13,7 +13,7 @@ function ItpSharedEV(sev::SharedEV{T,N,N2,TT}, p::dcdp_primitives, σ::Real=1.0,
     ntyp = length(sev.itypes)
     nθ = _nθt(p)
     nS = _nS(p)
-    nSexp1 = _nSexp(p)+1
+    nSexp1 = _nSexp(p)
 
     scalegrid(x::Range{S}) where {S<:AbstractFloat} = x
     scalegrid(x::Integer) = Base.OneTo(x)

@@ -95,8 +95,8 @@ dcdp_Emax(EV::AbstractArray3{T}, dEV::AbstractArray4{T}, dEV_σ::AbstractArray3{
 function dcdp_Emax(p::dcdp_primitives{T}) where {T}
     EV   = zeros(T, _nz(p), _nψ(p),          _nS(p))
     dEV  = zeros(T, _nz(p), _nψ(p), _nθt(p), _nS(p))
-    dEVσ = zeros(T, _nz(p), _nψ(p),          _nSexp(p)+1)
-    dEVψ = zeros(T, _nz(p), _nψ(p),          _nSexp(p)+1)
+    dEVσ = zeros(T, _nz(p), _nψ(p),          _nSexp(p))
+    dEVψ = zeros(T, _nz(p), _nψ(p),          _nSexp(p))
     dcdp_Emax(EV,dEV,dEVσ,dEVψ)
 end
 
@@ -107,12 +107,15 @@ function check_size(prim::dcdp_primitives, evs::dcdp_Emax)
     nθ, nd = _nθt(prim), _nd(prim)
     ndex, nSexp = _ndex(prim), _nSexp(prim)
 
-    prod(length.(_zspace(prim))) == nz   ||  throw(error("Πz and zspace not compatible"))
-    (nz,nψ,nS)      == size(evs.EV)      || throw(error("EV not conformable"))
-    (nz,nψ,nθ,nS)   == size(evs.dEV)     || throw(error("dEV not conformable"))
-    (nz,nψ,nSexp+1) == size(evs.dEV_σ) == size(evs.dEV_ψ) || throw(error("dEV_σ or dEV_ψ not conformable"))
+    prod(length.(_zspace(prim))) == nz ||  throw(error("Πz and zspace not compatible"))
+    (nz,nψ,nS)      == size(evs.EV)    ||  throw(error("EV not conformable"))
+    (nz,nψ,nθ,nS)   == size(evs.dEV)   ||  throw(error("dEV not conformable"))
+    (nz,nψ,nSexp)   == size(evs.dEV_σ) ||  throw(error("dEV_σ not conformable"))
+    (nz,nψ,nSexp)   == size(evs.dEV_ψ) ||  throw(error("dEV_ψ not conformable"))
     return true
 end
+
+
 
 # --------------------- tmp vars --------------------------
 
@@ -137,6 +140,19 @@ struct dcdp_tmpvars{T<:Float64,AM<:AbstractMatrix{Float64}}
     IminusTEVp::AM
 end
 
+function check_size(prim::dcdp_primitives, t::dcdp_tmpvars)
+    nz, nψ, nS = size(prim)
+    nθ, nd = _nθt(prim), _nd(prim)
+    ndex, nSexp = _ndex(prim), _nSexp(prim)
+
+    # TODO: allow dmaxp1 to vary with regime
+
+    (nz,nψ,nθ,nd) == size(t.duex)     || throw(DimensionMismatch())
+    (nz,nψ,nd)    == size(t.q)        || throw(DimensionMismatch())
+    (nz,nψ,nθ,nd) == size(t.dubVfull) || throw(DimensionMismatch())
+    (nz,nψ,nd)    == size(t.dubV_σ)   || throw(DimensionMismatch())
+    (nz,nψ,nd)    == size(t.dubV_ψ)   || throw(DimensionMismatch())
+end
 
 
 function dcdp_tmpvars(prim::dcdp_primitives)

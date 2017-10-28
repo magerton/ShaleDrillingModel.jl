@@ -14,7 +14,7 @@ function solve_vf_explore!(
     )
 
     nz,nψ,nS = size(EV)
-    nSexp1, dmaxp1, nd = _nSexp(wp)+1, exploratory_dmax(wp)+1, dmax(wp)+1
+    nSexp, dmaxp1, nd = _nSexp(wp), exploratory_dmax(wp)+1, dmax(wp)+1
 
     dograd = (length(dEV) > 0)
 
@@ -26,8 +26,8 @@ function solve_vf_explore!(
     if dograd
         nθ = size(dEV,3)
         (nz,nψ,nθ,nS)     == size(dEV)      || throw(DimensionMismatch())
-        (nz,nψ,nSexp1)    == size(dEV_σ)    || throw(DimensionMismatch())
-        (nz,nψ,nSexp1)    == size(dEV_ψ)    || throw(DimensionMismatch())
+        (nz,nψ,nSexp)     == size(dEV_σ)    || throw(DimensionMismatch())
+        (nz,nψ,nSexp)     == size(dEV_ψ)    || throw(DimensionMismatch())
         (nz,nψ,nθ,dmaxp1) == size(duex)     || throw(DimensionMismatch())
         (nz,nψ,dmaxp1)    == size(q)        || throw(DimensionMismatch())
         (nz,nψ,nθ,nd)     == size(dubVfull) || throw(DimensionMismatch())
@@ -48,8 +48,8 @@ function solve_vf_explore!(
         if dograd
             # TODO: assumes that u(0) = 0
             @views dubV[:,:,:,1] .= β .* dEV[:,:,:,ip]
-            @views dubV_σ[:,:,1] .= β .* dEV_σ[:,:,min(ip,nSexp1)]  # TODO: use a more general function. max is b/c we don't use regime2 but need TVC
-            @views dubV_ψ[:,:,1] .= β .* dEV_ψ[:,:,min(ip,nSexp1)]  # TODO: use a more general function. max is b/c we don't use regime2 but need TVC
+            @views dubV_σ[:,:,1] .= β .* dEV_σ[:,:,ip]
+            @views dubV_ψ[:,:,1] .= β .* dEV_ψ[:,:,ip]
 
             # this does EV0 & ∇EV0
             @views vfit!(EV[:,:,i], dEV[:,:,:,i], ubV, dubV, q, lse, tmp, Πz)

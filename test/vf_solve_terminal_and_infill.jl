@@ -4,14 +4,10 @@ let EV = evs.EV,
     dEV_σ = evs.dEV_σ,
     dEV_ψ = evs.dEV_ψ,
     t = tmpv,
-    p = prim,
-    idxs = [ShaleDrillingModel.explore_state_inds(wp)..., ShaleDrillingModel.infill_state_inds(wp)..., ShaleDrillingModel.terminal_state_ind(wp)...]
-
-    @test idxs ⊆ 1:length(wp)
-    @test 1:length(wp) ⊆ idxs
+    p = prim
 
     # full VFI
-    ShaleDrillingModel.solve_vf_terminal!(EV, dEV, dEV_σ, dEV_ψ)
+    ShaleDrillingModel.solve_vf_terminal!(EV, dEV, dEV_σ, dEV_ψ, wp)
     ShaleDrillingModel.solve_vf_infill!(EV, t.uin, t.ubVfull, t.lse, t.tmp, t.IminusTEVp, p.wp, p.Πz, p.β)
     ShaleDrillingModel.solve_vf_infill!(EV, dEV, t.uin, t.duin, t.ubVfull, t.dubVfull, t.lse, t.tmp, t.IminusTEVp, p.wp, p.Πz, p.β)
     @test !all(EV .== 0.)
@@ -29,18 +25,18 @@ let θ1 = similar(θt), θ2 = similar(θt), fdEV = similar(evs.dEV), itype = (0.
         hh = θ2[k] - θ1[k]
 
         fillflows_grad!(tmpv, prim, θ1, σv, itype...)
-        solve_vf_terminal!(evs)
+        solve_vf_terminal!(evs, prim)
         solve_vf_infill!(evs, tmp, prim, false)
         fdEV[:,:,k,:] .= -evs.EV
 
         fillflows_grad!(tmpv, prim, θ2, σv, itype...)
-        solve_vf_terminal!(evs)
+        solve_vf_terminal!(evs, prim)
         solve_vf_infill!(evs, tmp, prim, false)
         fdEV[:,:,k,:] .+= evs.EV
         fdEV[:,:,k,:] ./= hh
     end
     fillflows_grad!(tmpv, prim, θt, σv, itype...)
-    solve_vf_terminal!(evs)
+    solve_vf_terminal!(evs, prim)
     solve_vf_infill!(evs, tmp, prim, true)
 
     @views maxv, idx = findmax(abs.(fdEV[:,:,2:end,:].-evs.dEV[:,:,2:end,:]))

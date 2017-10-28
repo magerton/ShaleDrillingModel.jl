@@ -22,10 +22,13 @@ let nψ = 2501,
 
     pdct = Base.product( zspace..., ψspace, 1:nSexp)
     dEVσ  = Array{T}(size(pdct))
-    EVσ1  = 0.0 * similar(dEVσ)
-    EVσ2  = 0.0 * similar(dEVσ)
-    fdEVσ = 0.0 * similar(dEVσ)
-    dψ    = 0.0 * similar(dEVσ)
+    EVσ1  = 0.0 .* similar(dEVσ)
+    EVσ2  = 0.0 .* similar(dEVσ)
+    fdEVσ = 0.0 .* similar(dEVσ)
+    dψ    = 0.0 .* similar(dEVσ)
+
+    check_size(prim, tmpv)
+    check_size(prim, evs)
 
     solve_vf_all!(evs, tmpv, prim, θt, σv, itype, Val{true})
     for (i,xi) in enumerate(pdct)
@@ -68,8 +71,6 @@ let nψ = 2501,
     @test 0.0 < maxv < 1.5e-3
     @test maxv < maxv_itp*1.1
 end
-
-
 
 
 

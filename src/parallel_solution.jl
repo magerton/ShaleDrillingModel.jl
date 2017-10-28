@@ -22,7 +22,7 @@ function SharedEV(pids::AbstractVector{<:Integer}, prim::dcdp_primitives{T}, ity
     nψ = _nψ(prim)
     nθ = _nθt(prim)
     nS = _nS(prim)
-    nSexp1 = _nSexp(prim)+1
+    nSexp1 = _nSexp(prim)
 
     # initialize SharedArrays and start them at 0 (super-important for infinite horizon problems)
     EV   = SharedArray{T}( (zdims..., nψ,     nS,     typedims...), init = S -> S[Base.localindexes(S)] = zero(T), pids=[1,pids...])

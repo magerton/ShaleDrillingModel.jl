@@ -30,26 +30,26 @@ let EV1 = similar(evs.EV),
         hh = θ2[k] - θ1[k]
 
         fillflows_grad!(tmpv, prim, θ1, σv, itype...)
-        solve_vf_terminal!(evs)
+        solve_vf_terminal!(evs, prim)
         solve_vf_infill!(evs, tmpv, prim, false)
-        learningUpdate!(evs, tmpv, prim, σv)
+        learningUpdate!(evs, tmpv, prim, σv, false)
         solve_vf_explore!(evs, tmpv, prim, false)
         fdEV[:,:,k,:] .= -evs.EV
 
         fillflows_grad!(tmpv, prim, θ2, σv, itype...)
-        solve_vf_terminal!(evs)
+        solve_vf_terminal!(evs, prim)
         solve_vf_infill!(evs, tmpv, prim, false)
-        learningUpdate!(evs, tmpv, prim, σv)
+        learningUpdate!(evs, tmpv, prim, σv, false)
         solve_vf_explore!(evs, tmpv, prim, false)
 
         fdEV[:,:,k,:] .+= evs.EV
         fdEV[:,:,k,:] ./= hh
     end
 
-    # ----------------- analytic -----------------
+        # ----------------- analytic -----------------
 
     fillflows_grad!(tmpv, prim, θt, σv, itype...)
-    solve_vf_terminal!(evs)
+    solve_vf_terminal!(evs, prim)
     solve_vf_infill!(evs, tmpv, prim, true)
     learningUpdate!(evs, tmpv, prim, σv)
     solve_vf_explore!(evs, tmpv, prim, true)
@@ -102,7 +102,7 @@ let T = Float64,
 
     zero!(tmpv)
     fillflows_grad!(tmpv, prim, θt, σ1, itype...)
-    solve_vf_terminal!(evs)
+    solve_vf_terminal!(evs, prim)
     solve_vf_infill!(evs, tmpv, prim, false)
     learningUpdate!(evs, tmpv, prim, σ1)
     fdubv .= -tmpv.ubVfull
@@ -111,7 +111,7 @@ let T = Float64,
 
     zero!(tmpv)
     fillflows_grad!(tmpv, prim, θt, σ2, itype...)
-    solve_vf_terminal!(evs)
+    solve_vf_terminal!(evs, prim)
     solve_vf_infill!(evs, tmpv, prim, false)
     learningUpdate!(evs, tmpv, prim, σ2)
     fdubv .+= tmpv.ubVfull
@@ -124,14 +124,14 @@ let T = Float64,
 
     zero!(tmpv)
     fillflows_grad!(tmpv, prim, θt, σv, itype...)
-    solve_vf_terminal!(evs)
+    solve_vf_terminal!(evs, prim)
     solve_vf_infill!(evs, tmpv, prim, true)
     learningUpdate!(evs, tmpv, prim, σv, Val{true})
     @test fdubv ≈ tmpv.dubV_σ
     solve_vf_explore!(evs, tmpv, prim, true)
 
     # now test dσ
-    nsexp1 = _nSexp(wp)+1
+    nsexp1 = _nSexp(wp)
     fdEVσvw = @view(fdEVσ[:,:,1:nsexp1])
     @test size(fdEVσvw) == size(evs.dEV_σ)
     @views maxv, idx = findmax(abs.(fdEVσvw.-evs.dEV_σ))
