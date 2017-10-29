@@ -65,7 +65,7 @@ function dcdp_Emax(sev::SharedEV{T,N,N2}, typidx::Integer...) where {T,N,N2}
     (zdims..., nψ,     nS,     typdims...) == size(sev.EV)   || throw(DimensionMismatch())
     (zdims..., nψ, nθ, nS,     typdims...) == size(sev.dEV)  || throw(DimensionMismatch())
     (zdims..., nψ,     nSexp1, typdims...) == size(sev.dEVσ) || throw(DimensionMismatch())
-    (zdims..., nψ,     nSexp1, typdims...) == size(sev.dEVψ) || throw(DimensionMismatch())
+    # (zdims..., nψ,     nSexp1, typdims...) == size(sev.dEVψ) || throw(DimensionMismatch())
 
     colons(n) = ntuple((x)-> Colon(), n)
     nz = prod(zdims)
@@ -73,12 +73,12 @@ function dcdp_Emax(sev::SharedEV{T,N,N2}, typidx::Integer...) where {T,N,N2}
     @views EV   = reshape(sev.EV[  colons(dimz+2)..., typidx...], nz, nψ,     nS)
     @views dEV  = reshape(sev.dEV[ colons(dimz+3)..., typidx...], nz, nψ, nθ, nS)
     @views dEVσ = reshape(sev.dEVσ[colons(dimz+2)..., typidx...], nz, nψ,     nSexp1)
-    @views dEVψ = reshape(sev.dEVψ[colons(dimz+2)..., typidx...], nz, nψ,     nSexp1)
+    # @views dEVψ = reshape(sev.dEVψ[colons(dimz+2)..., typidx...], nz, nψ,     nSexp1)
 
 
     typs = getindex.(sev.itypes, typidx)
 
-    return dcdp_Emax(EV, dEV, dEVσ, dEVψ), typs
+    return dcdp_Emax(EV, dEV, dEVσ), typs
 end
 
 # -------------------------------------------------------------------

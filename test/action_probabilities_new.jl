@@ -71,31 +71,32 @@ let pids = [1,],
     end
 
     println("checking gradient")
-    @views fdgrad_vw0 = fdgrad[1:end-1,:,:,:,:,:,:,:]
-    @views fdgrad_vw1 = fdgrad[end    ,:,:,:,:,:,:,:]
-    @views grad_vw0   =   grad[1:end-1,:,:,:,:,:,:,:]
-    @views grad_vw1   =   grad[end    ,:,:,:,:,:,:,:]
 
-    @test !all(fdgrad_vw0 .== 0.0)
-    @test !all(grad_vw0 .== 0.0)
-    @test all(isfinite.(fdgrad_vw0))
-    @test all(isfinite.(grad_vw0))
+    @test !all(fdgrad .== 0.0)
+    @test !all(grad .== 0.0)
+    @test all(isfinite.(fdgrad))
+    @test all(isfinite.(grad))
 
 
-    maxv, idx =  findmax(abs.(fdgrad_vw0 .- grad_vw0))
-    sub = ind2sub(size(grad_vw0), idx)
-    println("worst value is $maxv at $sub for dlogP WITHOUT σ.")
+    maxv, idx =  findmax(abs.(fdgrad .- grad))
+    println("worst value is $maxv at $(ind2sub(fdgrad, idx)) for dlogP")
     @test maxv < 1e-7
-
-    println("With σ")
-    maxv, idx =  findmax(abs.(fdgrad_vw1 .- grad_vw1))
-    mae = mean(abs.(fdgrad_vw1 .- grad_vw1))
-    mse = var(fdgrad_vw1 .- grad_vw1)
-    med = median(abs.(fdgrad_vw1 .- grad_vw1))
-    q90 = quantile(vec(abs.(fdgrad_vw1 .- grad_vw1)), 0.9)
-    sub = ind2sub(grad_vw1, idx)
-    vals = getindex.(rngs, sub)
-    println("worst value is $maxv at $sub for dlogP. This has characteristics $vals")
-    println("MAE = $mae. MSE = $mse. Median abs error = $med. 90pctile = $q90")
-    @test 0.0 < maxv < 0.1
+    @test fdgrad ≈ grad
 end
+
+
+
+
+
+
+# println("With σ")
+# maxv, idx =  findmax(abs.(fdgrad_vw1 .- grad_vw1))
+# mae = mean(abs.(fdgrad_vw1 .- grad_vw1))
+# mse = var(fdgrad_vw1 .- grad_vw1)
+# med = median(abs.(fdgrad_vw1 .- grad_vw1))
+# q90 = quantile(vec(abs.(fdgrad_vw1 .- grad_vw1)), 0.9)
+# sub = ind2sub(grad_vw1, idx)
+# vals = getindex.(rngs, sub)
+# println("worst value is $maxv at $sub for dlogP. This has characteristics $vals")
+# println("MAE = $mae. MSE = $mse. Median abs error = $med. 90pctile = $q90")
+# @test 0.0 < maxv < 0.1

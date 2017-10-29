@@ -1,13 +1,12 @@
 
 let EV = evs.EV,
     dEV = evs.dEV,
-    dEV_σ = evs.dEV_σ,
-    dEV_ψ = evs.dEV_ψ,
+    dEVσ = evs.dEVσ,
     t = tmpv,
     p = prim
 
     # full VFI
-    ShaleDrillingModel.solve_vf_terminal!(EV, dEV, dEV_σ, dEV_ψ, wp)
+    ShaleDrillingModel.solve_vf_terminal!(EV, dEV, dEVσ, wp)
     ShaleDrillingModel.solve_vf_infill!(EV, t.uin, t.ubVfull, t.lse, t.tmp, t.IminusTEVp, p.wp, p.Πz, p.β)
     ShaleDrillingModel.solve_vf_infill!(EV, dEV, t.uin, t.duin, t.ubVfull, t.dubVfull, t.lse, t.tmp, t.IminusTEVp, p.wp, p.Πz, p.β)
     @test !all(EV .== 0.)

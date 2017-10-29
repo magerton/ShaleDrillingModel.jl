@@ -50,7 +50,7 @@ function logP!(grad::AbstractVector{T}, tmp::Vector{T}, θt::Vector{T}, θfull::
     end
 
     if !Dgt0
-      dpsi = prim.dfψ(θt, σ, z..., ψ, d, roy, geo)::T + prim.β * isev.dEVψ[z..., ψ, _sprime(prim.wp, s_idx, d), itypidx...]
+      dpsi = prim.dfψ(θt, σ, z..., ψ, d, roy, geo)::T + prim.β * gradient_d(length(z)+1, isev.EV, z..., ψ, _sprime(prim.wp, s_idx, d), itypidx...)
       dsig = prim.dfσ(θt, σ, z..., ψ, d, roy, geo)::T + prim.β * isev.dEVσ[z..., ψ, _sprime(prim.wp, s_idx, d), itypidx...]
       grad[lenθfull] += wt * (dpsi*v + dsig)
     end

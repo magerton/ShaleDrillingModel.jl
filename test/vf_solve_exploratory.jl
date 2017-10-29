@@ -13,8 +13,7 @@ let EV1 = similar(evs.EV),
 
     zero!(evs.EV)
     zero!(evs.dEV)
-    zero!(evs.dEV_σ)
-    zero!(evs.dEV_ψ)
+    zero!(evs.dEVσ)
     zero!(tmpv)
     zero!(EV1)
     zero!(EV2)
@@ -133,19 +132,19 @@ let T = Float64,
     # now test dσ
     nsexp1 = _nSexp(wp)
     fdEVσvw = @view(fdEVσ[:,:,1:nsexp1])
-    @test size(fdEVσvw) == size(evs.dEV_σ)
-    @views maxv, idx = findmax(abs.(fdEVσvw.-evs.dEV_σ))
+    @test size(fdEVσvw) == size(evs.dEVσ)
+    @views maxv, idx = findmax(abs.(fdEVσvw.-evs.dEVσ))
     sub = ind2sub(fdEVσvw, idx)
     @show "worst value is $maxv at $sub for dσ"
     @show extrema(fdEVσvw)
-    @show extrema(evs.dEV_σ)
+    @show extrema(evs.dEVσ)
 
-    maximum(abs.((evs.dEV_σ .- fdEVσvw)[:,:,2:end-1]))
+    maximum(abs.((evs.dEVσ .- fdEVσvw)[:,:,2:end-1]))
 
-    @test all(isfinite.(evs.dEV_σ))
+    @test all(isfinite.(evs.dEVσ))
     @test all(isfinite.(fdEVσvw))
     @test 0.0 < maxv < 0.1
 
-    @test fdEVσvw ≈ evs.dEV_σ
+    @test fdEVσvw ≈ evs.dEVσ
     println("dEV/dσ looks ok! :)")
 end

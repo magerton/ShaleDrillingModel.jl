@@ -11,19 +11,19 @@ function check_EVjac(e::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θ::Abst
     nk = length(θ)
     EVfd  = zeros(T, size(e.EV))
     dEV   = zeros(T, size(e.dEV))
-    dEV_σ = zeros(T, size(e.dEV_σ))
+    dEVσ = zeros(T, size(e.dEVσ))
 
     e.EV .= 0.0
     e.dEV .= 0.0
-    e.dEV_σ .= 0.0
+    e.dEVσ .= 0.0
 
     solve_vf_all!(e, t, p, θ, σ, roy, Val{true})
 
     dEV .= e.dEV
-    dEV_σ .= e.dEV_σ
+    dEVσ .= e.dEVσ
 
     all(isfinite.(dEV)) || throw(error("dEV not finite"))
-    all(isfinite.(dEV_σ)) || throw(error("dEV_σ not finite"))
+    all(isfinite.(dEVσ)) || throw(error("dEVσ not finite"))
 
     for k in 1:nk
         θ1 .= θ
@@ -59,7 +59,7 @@ function check_EVjac(e::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θ::Abst
         EVfd .-= e.EV
         EVfd ./= hh
         fdvw = @view(EVfd[:,:,1:_nSexp(p)])
-        dEVvw = @view(dEV_σ[:,:,k,1:end-1])
+        dEVvw = @view(dEVσ[:,:,k,1:end-1])
         all(isfinite.(fdvw)) || throw(error("finite diff check not finite for v[$k] = v"))
 
         @views fdvw ≈ dEVvw  ||  warn("Bad grad for  v[$k] = $v")

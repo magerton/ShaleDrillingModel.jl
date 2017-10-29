@@ -25,7 +25,6 @@ royalty_types = 1:length(royalty_rates)
 nψ, dmx, nz, nv, ngeo =  51, 3, size(Πp1,1), 51, 1
 wp = well_problem(dmx,4,10)
 zspace, ψspace, dspace, d1space, vspace = (pspace,), linspace(-6.0, 6.0, nψ), 0:dmx, 0:1, linspace(-3.0, 3.0, nv)
-# nd, ns, nθ = length(dspace), length(wp), length(θt)
 
 prim = dcdp_primitives(u_addlin, udθ_addlin, udσ_addlin, udψ_addlin, β, wp, zspace, Πp1, ψspace, ngeo, length(θt))
 tmpv = dcdp_tmpvars(prim)
@@ -47,6 +46,7 @@ include("test_transition.jl")
 println("filling per-period payoffs")
 @views fillflows!(prim.f, tmpv.uin[:,:,:,   1], tmpv.uin[:,:,:,   2],  tmpv.uex, θt, σv, makepdct(prim, θt, Val{:u},  σv), 0.25, 1)
 fillflows_grad!(tmpv, prim, θt, σv, 0.2, 1)
+
 include("logsumexp3.jl")
 
 include("vf_solve_terminal_and_infill.jl")
@@ -55,8 +55,23 @@ include("vf_solve_exploratory.jl")
 zero!(tmpv)
 solve_vf_all!(evs, tmpv, prim, θt, σv, (0.2, 1), Val{true})
 
+include("vf_interpolation.jl")
+
 include("test_dpsi.jl")
-include("action_probabilities_new.jl")
 include("parallel_solution.jl")
+
+include("action_probabilities_new.jl")
+
+
+
+
+
+
+
+
+
+
+
+
 
 #

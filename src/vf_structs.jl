@@ -19,7 +19,7 @@ make primitives. Note: flow payoffs, gradient, and grad wrt `σ` must have the f
 f(  θ::AbstractVector{T}, σ::T,   z... , ψ::T,             d::Integer, d1::Integer, Dgt0::Bool, roy::Real, geoid::Real)
 df( θ::AbstractVector{T}, σ::T,   z... , ψ::T, k::Integer, d::Integer, d1::Integer, Dgt0::Bool, roy::Real, geoid::Real)
 dfσ(θ::AbstractVector{T}, σ::T,   z... , ψ::T,             d::Integer,                          roy::Real, geoid::Real)
-dfψ(θ::AbstractVector{T}, σ::T,   z... , ψ::T,             d::Integer,                          roy::Real, geoid::Real)
+# dfψ(θ::AbstractVector{T}, σ::T,   z... , ψ::T,             d::Integer,                          roy::Real, geoid::Real)
 ```
 """
 struct dcdp_primitives{T<:Real,AM<:AbstractMatrix{T},TT<:Tuple,AV<:AbstractVector{T}}
@@ -86,18 +86,19 @@ size(prim::dcdp_primitives) = _nz(prim), _nψ(prim), _nS(prim)
 struct dcdp_Emax{T<:Real,A1<:AbstractArray{T,3},A2<:AbstractArray{T,4}}
     EV::A1
     dEV::A2
-    dEV_σ::A1
-    dEV_ψ::A1
+    dEVσ::A1
+    # dEV_ψ::A1
 end
 
-dcdp_Emax(EV::AbstractArray3{T}, dEV::AbstractArray4{T}, dEV_σ::AbstractArray3{T}, dEV_ψ::AbstractArray3{T}) where {T} =  dcdp_Emax{T,typeof(EV),typeof(dEV)}(EV,dEV,dEV_σ,dEV_ψ)
+# dcdp_Emax(EV::AbstractArray3{T}, dEV::AbstractArray4{T}, dEVσ::AbstractArray3{T}, dEV_ψ::AbstractArray3{T}) where {T} =  dcdp_Emax{T,typeof(EV),typeof(dEV)}(EV,dEV,dEVσ,dEV_ψ)
+dcdp_Emax(EV::AbstractArray3{T}, dEV::AbstractArray4{T}, dEVσ::AbstractArray3{T}) where {T} =  dcdp_Emax{T,typeof(EV),typeof(dEV)}(EV,dEV,dEVσ)
 
 function dcdp_Emax(p::dcdp_primitives{T}) where {T}
     EV   = zeros(T, _nz(p), _nψ(p),          _nS(p))
     dEV  = zeros(T, _nz(p), _nψ(p), _nθt(p), _nS(p))
     dEVσ = zeros(T, _nz(p), _nψ(p),          _nSexp(p))
-    dEVψ = zeros(T, _nz(p), _nψ(p),          _nSexp(p))
-    dcdp_Emax(EV,dEV,dEVσ,dEVψ)
+    # dEVψ = zeros(T, _nz(p), _nψ(p),          _nSexp(p))
+    dcdp_Emax(EV,dEV,dEVσ) # ,dEVψ)
 end
 
 # --------------------- check conformable --------------------------
@@ -110,8 +111,8 @@ function check_size(prim::dcdp_primitives, evs::dcdp_Emax)
     prod(length.(_zspace(prim))) == nz ||  throw(error("Πz and zspace not compatible"))
     (nz,nψ,nS)      == size(evs.EV)    ||  throw(error("EV not conformable"))
     (nz,nψ,nθ,nS)   == size(evs.dEV)   ||  throw(error("dEV not conformable"))
-    (nz,nψ,nSexp)   == size(evs.dEV_σ) ||  throw(error("dEV_σ not conformable"))
-    (nz,nψ,nSexp)   == size(evs.dEV_ψ) ||  throw(error("dEV_ψ not conformable"))
+    (nz,nψ,nSexp)   == size(evs.dEVσ) ||  throw(error("dEVσ not conformable"))
+    # (nz,nψ,nSexp)   == size(evs.dEV_ψ) ||  throw(error("dEV_ψ not conformable"))
     return true
 end
 
@@ -126,12 +127,12 @@ struct dcdp_tmpvars{T<:Float64,AM<:AbstractMatrix{Float64}}
     duin::Array{T,5}
     duex::Array{T,4}
     duexσ::Array{T,3}
-    duexψ::Array{T,3}
+    # duexψ::Array{T,3}
 
     ubVfull::Array{T,3}
     dubVfull::Array{T,4}
     dubV_σ::Array{T,3}
-    dubV_ψ::Array{T,3}
+    # dubV_ψ::Array{T,3}
 
     q::Array{T,3}
     lse::Matrix{T}
@@ -151,7 +152,7 @@ function check_size(prim::dcdp_primitives, t::dcdp_tmpvars)
     (nz,nψ,nd)    == size(t.q)        || throw(DimensionMismatch())
     (nz,nψ,nθ,nd) == size(t.dubVfull) || throw(DimensionMismatch())
     (nz,nψ,nd)    == size(t.dubV_σ)   || throw(DimensionMismatch())
-    (nz,nψ,nd)    == size(t.dubV_ψ)   || throw(DimensionMismatch())
+    # (nz,nψ,nd)    == size(t.dubV_ψ)   || throw(DimensionMismatch())
 end
 
 
@@ -171,13 +172,13 @@ function dcdp_tmpvars(prim::dcdp_primitives)
     duin  = zeros(T,nz,nψ,nθt,nd,2)
     duex  = zeros(T,nz,nψ,nθt,ndex)
     duexσ = zeros(T,nz,nψ,ndex)
-    duexψ = zeros(T,nz,nψ,ndex)
+    # duexψ = zeros(T,nz,nψ,ndex)
 
     # choice-specific value functions
     ubVfull  = zeros(T,nz,nψ,nd)
     dubVfull = zeros(T,nz,nψ,nθt,nd)
     dubV_σ   = zeros(T,nz,nψ,ndex)
-    dubV_ψ   = zeros(T,nz,nψ,ndex)
+    # dubV_ψ   = zeros(T,nz,nψ,ndex)
 
     # other tempvars
     q        = zeros(T,nz,nψ,nd)
@@ -188,7 +189,8 @@ function dcdp_tmpvars(prim::dcdp_primitives)
     Πψtmp = Matrix{T}(nψ,nψ)
     IminusTEVp = ensure_diagonal(prim.Πz)
 
-    return dcdp_tmpvars(uin,uex,duin,duex,duexσ,duexψ,ubVfull,dubVfull,dubV_σ,dubV_ψ,q,lse,tmp,Πψtmp,IminusTEVp)
+    # return dcdp_tmpvars(uin,uex,duin,duex,duexσ,duexψ,ubVfull,dubVfull,dubV_σ,dubV_ψ,q,lse,tmp,Πψtmp,IminusTEVp)
+    return dcdp_tmpvars(uin,uex,duin,duex,duexσ,ubVfull,dubVfull,dubV_σ,q,lse,tmp,Πψtmp,IminusTEVp)
 end
 
 
@@ -198,11 +200,11 @@ function zero!(t::dcdp_tmpvars)
     zero!(t.duin )
     zero!(t.duex )
     zero!(t.duexσ)
-    zero!(t.duexψ)
+    # zero!(t.duexψ)
     zero!(t.ubVfull )
     zero!(t.dubVfull)
     zero!(t.dubV_σ  )
-    zero!(t.dubV_ψ  )
+    # zero!(t.dubV_ψ  )
     zero!(t.q       )
     zero!(t.lse     )
     zero!(t.tmp     )
@@ -212,8 +214,8 @@ end
 function zero!(evs::dcdp_Emax)
     zero!(evs.EV)
     zero!(evs.dEV)
-    zero!(evs.dEV_σ)
-    zero!(evs.dEV_ψ)
+    zero!(evs.dEVσ)
+    # zero!(evs.dEV_ψ)
 end
 
 

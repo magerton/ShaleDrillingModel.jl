@@ -9,20 +9,20 @@ function solve_vf_terminal!(EV::AbstractArray3)
 end
 
 
-function solve_vf_terminal!(EV::AbstractArray3, dEV::AbstractArray4, dEV_σ::AbstractArray3, dEV_ψ::AbstractArray3, wp::well_problem)
+function solve_vf_terminal!(EV::AbstractArray3, dEV::AbstractArray4, dEVσ::AbstractArray3, wp::well_problem)
     @views zero!(EV[:,:,end])
     @views zero!(dEV[:,:,:,end])
-    @views zero!(dEV_σ[:,:,end])
-    @views zero!(dEV_ψ[:,:,end])
+    @views zero!(dEVσ[:,:,end])
+    # @views zero!(dEV_ψ[:,:,end])
     exp_trm = exploratory_terminal(wp)
     @views zero!(EV[   :,:,  exp_trm])
     @views zero!(dEV[  :,:,:,exp_trm])
-    @views zero!(dEV_σ[:,:,  exp_trm])
-    @views zero!(dEV_ψ[:,:,  exp_trm])
+    @views zero!(dEVσ[:,:,  exp_trm])
+    # @views zero!(dEV_ψ[:,:,  exp_trm])
 end
 
-solve_vf_terminal!(evs::dcdp_Emax, wp::well_problem) = solve_vf_terminal!(evs.EV, evs.dEV, evs.dEV_σ, evs.dEV_ψ, wp)
-solve_vf_terminal!(evs::dcdp_Emax, prim::dcdp_primitives) = solve_vf_terminal!(evs.EV, evs.dEV, evs.dEV_σ, evs.dEV_ψ, prim.wp)
+solve_vf_terminal!(evs::dcdp_Emax, wp::well_problem) = solve_vf_terminal!(evs.EV, evs.dEV, evs.dEVσ, wp)
+solve_vf_terminal!(evs::dcdp_Emax, prim::dcdp_primitives) = solve_vf_terminal!(evs.EV, evs.dEV, evs.dEVσ, prim.wp)
 
 # ---------------------------------------------
 

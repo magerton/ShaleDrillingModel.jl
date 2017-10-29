@@ -112,7 +112,6 @@ function fillflows_grad!(t::dcdp_tmpvars, p::dcdp_primitives, θ::AbstractVector
     @views fillflows!(p.f,   t.uin[:,:,:,   1], t.uin[:,:,:,   2],  t.uex, θ, σ, makepdct(p, θ, Val{:u},  σ), itype...)
     @views fillflows!(p.dfθ, t.duin[:,:,:,:,1], t.duin[:,:,:,:,2], t.duex, θ, σ, makepdct(p, θ, Val{:du}, σ), itype...)
     fillflows!(p.dfσ, t.duexσ,                                             θ, σ, makepdct(p, θ, Val{:u},  σ), itype...)
-    fillflows!(p.dfψ, t.duexψ,                                             θ, σ, makepdct(p, θ, Val{:u},  σ), itype...)
 end
 
 
