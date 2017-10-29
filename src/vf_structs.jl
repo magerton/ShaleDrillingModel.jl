@@ -5,12 +5,13 @@ export dcdp_primitives,
     dcdp_tmpvars,
     check_EVgrad,
     check_EVgrad!,
+    _zspace,
     _ψspace,
     _ψclamp,
     _nθt,
-    _θt!,
-    _zspace,
-    _ngeo
+    _ngeo,
+    _θt,
+    _σv
 
 
 """
@@ -34,24 +35,20 @@ struct dcdp_primitives{T<:Real,AM<:AbstractMatrix{T},TT<:Tuple,AV<:AbstractVecto
     # nψ::Int         # num ψ types (information)
     ψspace::AV        # ψspace = u + σv*v
     ngeo::Int         # num geology types
-    nθt::Int          # Num parameters in flow payoffs
+    nθt::Int          # Num parameters in flow payoffs MINUS 1 for σv
 end
 
 # help us go from big parameter vector for all types to the relevant one
 _σv(θ::AbstractVector) = θ[end]
 
-function _θt!(θt::AbstractVector{T}, θ::AbstractVector{T}, nθt::Integer, ngeo::Integer=1, geoid::Integer=1) where {T}
-    length(θ) == nθt + ngeo || throw(DimensionMismatch())
-    θt[1] = ngeo == 1 ? θ[1] : θ[geoid]
-    @inbounds @simd for k = 2:nθt
-        θt[k] = θ[k+ngeo-1]
-    end
-    return θt
-end
+# This is b/c the type of SubArray differs depending on whether ngeo == geoid (linear indexing or not)
+_θt(x::AbstractVector, nθt::Integer, ngeo::Integer, geoid::Integer, ::Type{Val{false}}) = view(x, [geoid, ngeo+(1:nθt-1)...])
+_θt(x::AbstractVector, nθt::Integer, ngeo::Integer, geoid::Integer, ::Type{Val{true}} ) = view(x, ngeo+(0:nθt-1))
 
-_θt!(θt::AbstractVector, θ::AbstractVector,    prim::dcdp_primitives, geoid::Integer=1) = _θt!(θt, θ, _nθt(prim), _ngeo(prim), geoid)
-_θt(                     θ::AbstractVector{T}, prim::dcdp_primitives, geoid::Integer=1) where {T} = _θt!(Vector{T}(_nθt(prim)), θ, prim, geoid)
-_θt(θ::AbstractVector, geoid::Integer, prim::dcdp_primitives) = _θt(θ, geoid, _ngeo(prim))
+_θt(x::AbstractVector, nθt::Integer, ngeo::Integer, geoid::Integer)         = _θt(x,  nθt,        ngeo,       geoid, Val{geoid==ngeo})
+_θt(x::AbstractVector, prim::dcdp_primitives, geoid::Integer)               = _θt(x, _nθt(prim), _ngeo(prim), geoid, Val{geoid==_ngeo(prim)})
+_θt(x::AbstractVector, prim::dcdp_primitives, geoid::Integer, geogeo::Type) = _θt(x, _nθt(prim), _ngeo(prim), geoid, geogeo)
+
 
 # functions to retrieve elements from dcdp_primitives
 _nθt(   prim::dcdp_primitives) = prim.nθt

@@ -17,7 +17,7 @@ end
 @GenGlobal g_ItpSharedEV
 
 
-function ItpSharedEV(sev::SharedEV{T,N,N2,TT}, p::dcdp_primitives, σ::Real=1.0, ψflag::Flag=Quadratic(InPlace())) where {T,N,N2,TT}
+function ItpSharedEV(sev::SharedEV{T,N,N2,TT}, p::dcdp_primitives, σ::Real=1.0; ψflag::Flag=Quadratic(InPlace())) where {T,N,N2,TT}
 
     # dimensions of things
     ntyp = length(sev.itypes)

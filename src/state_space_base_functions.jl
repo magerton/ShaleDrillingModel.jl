@@ -25,7 +25,7 @@ function state_idx(τ::Integer, D::Integer, d1::Integer, dmx::Integer, Dmx::Inte
     τ>=0           && return (τmx + 1) - τ
     D==0  && τ==-1 && return (τmx + 1) + (1 +  0 )
     D<Dmx && τ==-1 && return (τmx + 1) + (1 + dmx) + 1 + 2*(D - 1) + (1-d1)
-    D==Dmx         && return (τmx + 1) + (1 + dmx) + 1 + 2*(Dmx-1) + 1
+    D==Dmx         && return (τmx + 1) + (1 + dmx) + 1 + 2*(Dmx-1)   # drop last +1 since we have d1=1 at terminal
     throw(error("invalid state"))
 end
 
