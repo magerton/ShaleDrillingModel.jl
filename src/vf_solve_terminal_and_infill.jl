@@ -77,7 +77,7 @@ function solve_vf_infill!(
         elseif horzn == :Infinite
             solve_inf_vfit!(EV0, ubV, lse, tmp, Πz, β; maxit=maxit0, vftol=vftol)
             converged, iter, bnds = solve_inf_pfit!(EV0, ubV, lse, tmp, IminusTEVp, Πz, β; maxit=maxit1, vftol=vftol)
-            converged || warn("Did not converge at state $i after $iter pfit. McQueen-Porteus bnds: $bnds")
+            # converged || warn("Did not converge at state $i after $iter pfit. McQueen-Porteus bnds: $bnds")
             if dograd
                 # TODO: only allows 0-payoff if no action
                 ubV[:,:,1] .= β .* EV0
