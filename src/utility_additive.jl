@@ -25,6 +25,36 @@ end
 udσ_add(θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * ψ * -2.0 * σ / (one(T)+σ^2)^2
 udψ_add(θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * _ρ2(σ)
 
+
+# ---------------------------------------------------------------------------
+
+export u_adddisc, udθ_adddisc, udσ_adddisc, udψ_adddisc
+
+function u_adddisc(θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer,             d1::Integer, Dgt0::Bool, roy::Real, geoid::Real) where {T}
+    d == 0 && return zero(T)
+
+    u = exp(logp) * (one(T)-roy) * (Dgt0  ? θ[1]+θ[2]*ψ  :  θ[1]+θ[2]*ψ*_ρ2(σ) )  + (d==1 ?  θ[3] : θ[4])
+    d>1      && (u *= d)
+    d1 == 1  && (u += θ[5])
+
+    return T(u)
+end
+
+
+function udθ_adddisc(θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
+    d == 0  && return zero(T)
+
+    k == 1  && return  convert(T,d) * exp(logp) * (one(T)-roy)
+    k == 2  && return  convert(T,d) * exp(logp) * (one(T)-roy) * (Dgt0 ? ψ : ψ * _ρ2(σ))
+    k == 3  && return  d  == 1 ? one(T)  : zero(T)
+    k == 4  && return  d  == 1 ? zero(T) : convert(T,d)
+    k == 5  && return  d1 == 1 ? one(T)  : zero(T)
+    throw(error("$k out of bounds"))
+end
+
+udσ_adddisc(θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * θ[2] * ψ * -2.0 * σ / (one(T)+σ^2)^2
+udψ_adddisc(θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * θ[2] * _ρ2(σ)
+
 # ---------------------------------------------------------------------------
 
 export u_addlin, udθ_addlin, udσ_addlin, udψ_addlin
