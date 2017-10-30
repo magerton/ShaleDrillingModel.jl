@@ -42,12 +42,12 @@ end
 _σv(θ::AbstractVector) = θ[end]
 
 # This is b/c the type of SubArray differs depending on whether ngeo == geoid (linear indexing or not)
-_θt(x::AbstractVector, nθt::Integer, ngeo::Integer, geoid::Integer, ::Type{Val{false}}) = view(x, [geoid, ngeo+(1:nθt-1)...])
-_θt(x::AbstractVector, nθt::Integer, ngeo::Integer, geoid::Integer, ::Type{Val{true}} ) = view(x, ngeo+(0:nθt-1))
+_θt(x::AbstractVector, nθt::Integer, ngeo::Integer, geoid::Integer, ::Type{Val{false}}, p1::Integer=0) = view(x, [geoid, ngeo+(1:nθt-1+p1)...])
+_θt(x::AbstractVector, nθt::Integer, ngeo::Integer, geoid::Integer, ::Type{Val{true}} , p1::Integer=0) = view(x, ngeo+(0:nθt-1+p1))
 
-_θt(x::AbstractVector, nθt::Integer, ngeo::Integer, geoid::Integer)         = _θt(x,  nθt,        ngeo,       geoid, Val{geoid==ngeo})
-_θt(x::AbstractVector, prim::dcdp_primitives, geoid::Integer)               = _θt(x, _nθt(prim), _ngeo(prim), geoid, Val{geoid==_ngeo(prim)})
-_θt(x::AbstractVector, prim::dcdp_primitives, geoid::Integer, geogeo::Type) = _θt(x, _nθt(prim), _ngeo(prim), geoid, geogeo)
+_θt(x::AbstractVector, nθt::Integer, ngeo::Integer, geoid::Integer,         p1::Integer=0) = _θt(x,  nθt,        ngeo,       geoid, Val{ngeo        ∈ (1,geoid)}, p1)
+_θt(x::AbstractVector, prim::dcdp_primitives, geoid::Integer,               p1::Integer=0) = _θt(x, _nθt(prim), _ngeo(prim), geoid, Val{_ngeo(prim) ∈ (1,geoid)}, p1)
+_θt(x::AbstractVector, prim::dcdp_primitives, geoid::Integer, geogeo::Type, p1::Integer=0) = _θt(x, _nθt(prim), _ngeo(prim), geoid, geogeo,                       p1)
 
 
 # functions to retrieve elements from dcdp_primitives

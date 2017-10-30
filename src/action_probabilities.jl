@@ -1,6 +1,9 @@
 export logP!
 
-function logP!(grad::AbstractVector{T}, tmp::Vector{T}, θt::AbstractVector{T}, σ::T, prim::dcdp_primitives{T}, isev::ItpSharedEV, uv::NTuple{2,T}, z::Tuple, d_obs::Integer, s_idx::Integer, itypidx::Tuple, dograd::Bool=true) where {T<:Real}
+nplus1_impl(N::Integer) = :(Val{$(N+1)})
+@generated nplus1(::Type{Val{N}}) where {N} = nplus1_impl(N)
+
+function logP!(grad::AbstractVector{T}, tmp::Vector{T}, θt::AbstractVector{T}, σ::T, prim::dcdp_primitives{T}, isev::ItpSharedEV, uv::NTuple{2,T}, z::NTuple{NZ,Real}, d_obs::Integer, s_idx::Integer, itypidx::NTuple{NI,Real}, dograd::Bool=true) where {T<:Real,NZ,NI}
 
   if dograd
     length(grad) == length(θt)+1 || throw(DimensionMismatch())
@@ -42,7 +45,7 @@ function logP!(grad::AbstractVector{T}, tmp::Vector{T}, θt::AbstractVector{T}, 
     end
 
     if !Dgt0
-      dpsi = prim.dfψ(θt, σ, z..., ψ, d, roy, geo)::T + prim.β * gradient_d(length(z)+1, isev.EV, z..., ψ, sp_idx, itypidx...)
+      dpsi = prim.dfψ(θt, σ, z..., ψ, d, roy, geo)::T + prim.β * gradient_d(nplus1(Val{NZ}), isev.EV, z..., ψ, sp_idx, itypidx...)::T
       dsig = prim.dfσ(θt, σ, z..., ψ, d, roy, geo)::T + prim.β * isev.dEVσ[z..., ψ, sp_idx, itypidx...]
       grad[end] += wt * (dpsi*v + dsig)
     end

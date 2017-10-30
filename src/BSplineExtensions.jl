@@ -64,12 +64,12 @@ function gradient_d_impl(d::Integer, itp::Type{BSplineInterpolation{T,N,TCoefs,I
 
         $gradient_exprs
 
-        g
+        g::T
     end
 end
 
 
-gradient_d(d::Integer, itp::BSplineInterpolation, xs::Number...) = gradient_d(Val{d}, itp, xs...)
+# gradient_d(d::Integer, itp::BSplineInterpolation, xs::Number...) = gradient_d(Val{d}, itp, xs...)
 
 
 @generated function gradient_d(::Type{Val{d}}, itp::BSplineInterpolation{T,N}, xs::Number...) where {d,T,N}
@@ -78,7 +78,7 @@ gradient_d(d::Integer, itp::BSplineInterpolation, xs::Number...) = gradient_d(Va
     gradient_d_impl(d, itp)
 end
 
-@generated function gradient_d(d, sitp::ScaledInterpolation{T,N,ITPT,IT}, xs::Number...) where {T,N,ITPT,IT}
+@generated function gradient_d(dval::Type{Val{d}}, sitp::ScaledInterpolation{T,N,ITPT,IT}, xs::Number...) where {d,T,N,ITPT,IT}
     length(xs) == N || throw(DimensionMismatch("Must index into $N-dimensional scaled interpolation object with exactly $N indices (you used $(length(xs)))"))
 
     interp_types = length(IT.parameters) == N ? IT.parameters : tuple([IT.parameters[1] for _ in 1:N]...)
@@ -86,8 +86,8 @@ end
     interp_indices = map(i -> interp_dimens[i] ? :(coordlookup(sitp.ranges[$i], xs[$i])) : :(xs[$i]), 1:N)
 
     quote
-        g = gradient_d(Val{d}, sitp.itp, $(interp_indices...))
-        return rescale_gradient(sitp.ranges[d], g)
+        g = gradient_d(dval, sitp.itp, $(interp_indices...))
+        return rescale_gradient(sitp.ranges[d], g)::T
     end
 end
 

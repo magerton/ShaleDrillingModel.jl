@@ -1,6 +1,6 @@
 # using BSplineExtensions
-# using Interpolations
-# using Interpolations: BSplineInterpolation, tweight, scale
+using Interpolations
+using Interpolations: BSplineInterpolation, tweight, scale
 using Base.Test
 
 x = SharedArray{Float64}(100, 100, 10, 10)
@@ -43,9 +43,9 @@ x2211 .= x
 x1111 .= x
 
 # interpolate w/ homemade algorithm and see what we get!
-myitp_2210 = BSplineInterpolation(tweight(x2210), x2210, it2210, OnGrid(), Val{0}())
-myitp_2211 = BSplineInterpolation(tweight(x2211), x2211, it2211, OnGrid(), Val{0}())
-myitp_1111 = BSplineInterpolation(tweight(x1111), x1111, it1111, OnGrid(), Val{0}())
+myitp_2210 = BSplineInterpolation(tweight(x2210), x2210, it2210, OnCell(), Val{0}())
+myitp_2211 = BSplineInterpolation(tweight(x2211), x2211, it2211, OnCell(), Val{0}())
+myitp_1111 = BSplineInterpolation(tweight(x1111), x1111, it1111, OnCell(), Val{0}())
 
 @test typeof(myitp_2210) == typeof(itp_2210)
 @test typeof(myitp_2211) == typeof(itp_2211)
@@ -68,6 +68,7 @@ gradient_d_impl(3, typeof(itp_2210))
 
 
 
+
 function test_grad_d(itp::BSplineInterpolation, x::Number...)
     g = Interpolations.gradient(itp, x...)
     for d = 1:length(g)
@@ -76,6 +77,9 @@ function test_grad_d(itp::BSplineInterpolation, x::Number...)
 end
 
 xs = 1.2, 2.2, 3.2, Int(4)
+@code_warntype gradient_d(Val{1}, itp_2210, xs...)
+gradient!(Vector{Float64}(3), itp_2210, xs...)
+
 test_grad_d(itp_2210, xs...)
 test_grad_d(itp_1111, xs...)
 test_grad_d(itp_2211, xs...)
