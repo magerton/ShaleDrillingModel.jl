@@ -33,6 +33,15 @@ evs = dcdp_Emax(prim)
 # check sizes of models
 ShaleDrillingModel.check_size(prim, evs)
 
+let p1 = dcdp_primitives_addlin(β, wp, zspace, Πp1, ψspace),
+    p2 = dcdp_primitives_add(β, wp, zspace, Πp1, ψspace),
+    p3 = dcdp_primitives_adddisc(β, wp, zspace, Πp1, ψspace),
+    σ = 2.0 # 14.9407
+
+    @test check_flowgrad([-1.19016, 0.0232, 0.91084, -3.16599, -1.2374, 2.23388], σ, p1, 0.2, 1)
+    @test check_flowgrad([-1.19016, -3.16599, -1.2374, 2.23388],                  σ, p2, 0.2, 1)
+    @test check_flowgrad([-1.19016, 0.91084, -3.16599, -1.2374, 2.23388],         σ, p3, 0.2, 1)
+end
 
 println("testing flow gradients")
 @test check_flowgrad(θt, σv, prim, 0.2, 1)

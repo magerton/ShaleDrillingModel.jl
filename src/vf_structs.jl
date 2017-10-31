@@ -1,6 +1,9 @@
 import Base: size
 
 export dcdp_primitives,
+    dcdp_primitives_addlin,
+    dcdp_primitives_add,
+    dcdp_primitives_adddisc,
     dcdp_Emax,
     dcdp_tmpvars,
     check_EVgrad,
@@ -37,6 +40,12 @@ struct dcdp_primitives{T<:Real,AM<:AbstractMatrix{T},TT<:Tuple,AV<:AbstractVecto
     ngeo::Int         # num geology types
     nθt::Int          # Num parameters in flow payoffs MINUS 1 for σv
 end
+
+
+@inline dcdp_primitives_addlin( β::Real, wp::well_problem, zspace::NTuple{N,AbstractVector}, Πz::AbstractMatrix, ψspace::AbstractVector) where {N} = dcdp_primitives(u_addlin,  udθ_addlin,  udσ_addlin,  udψ_addlin,  β, wp, zspace, Πz, ψspace, 1,  6)
+@inline dcdp_primitives_add(    β::Real, wp::well_problem, zspace::NTuple{N,AbstractVector}, Πz::AbstractMatrix, ψspace::AbstractVector) where {N} = dcdp_primitives(u_add,     udθ_add,     udσ_add,     udψ_add,     β, wp, zspace, Πz, ψspace, 10, 4)
+@inline dcdp_primitives_adddisc(β::Real, wp::well_problem, zspace::NTuple{N,AbstractVector}, Πz::AbstractMatrix, ψspace::AbstractVector) where {N} = dcdp_primitives(u_adddisc, udθ_adddisc, udσ_adddisc, udψ_adddisc, β, wp, zspace, Πz, ψspace, 10, 5)
+
 
 # help us go from big parameter vector for all types to the relevant one
 _σv(θ::AbstractVector) = θ[end]
