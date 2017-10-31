@@ -26,17 +26,17 @@ nψ, dmx, nz, nv, ngeo =  51, 3, size(Πp1,1), 51, 1
 wp = well_problem(dmx,4,10)
 zspace, ψspace, dspace, d1space, vspace = (pspace,), linspace(-6.0, 6.0, nψ), 0:dmx, 0:1, linspace(-3.0, 3.0, nv)
 
-prim = dcdp_primitives(u_addlin, udθ_addlin, udσ_addlin, udψ_addlin, β, wp, zspace, Πp1, ψspace, ngeo, length(θt))
+prim = dcdp_primitives(:addlin, β, wp, zspace, Πp1, ψspace)
 tmpv = dcdp_tmpvars(prim)
 evs = dcdp_Emax(prim)
 
 # check sizes of models
 ShaleDrillingModel.check_size(prim, evs)
 
-let p1 = dcdp_primitives_addlin(β, wp, zspace, Πp1, ψspace),
-    p2 = dcdp_primitives_add(β, wp, zspace, Πp1, ψspace),
-    p3 = dcdp_primitives_adddisc(β, wp, zspace, Πp1, ψspace),
-    p4 = dcdp_primitives_addlincost(β, wp, zspace, Πp1, ψspace),
+let p1 = dcdp_primitives(:addlin,     β, wp, zspace, Πp1, ψspace),
+    p2 = dcdp_primitives(:add,        β, wp, zspace, Πp1, ψspace),
+    p3 = dcdp_primitives(:adddisc,    β, wp, zspace, Πp1, ψspace),
+    p4 = dcdp_primitives(:addlincost, β, wp, zspace, Πp1, ψspace),
     σ = 2.0 # 14.9407
 
     @test check_flowgrad([-1.19016, 0.0232, 0.91084, -3.16599, -1.2374, 2.23388], σ, p1, 0.2, 1)
@@ -44,6 +44,8 @@ let p1 = dcdp_primitives_addlin(β, wp, zspace, Πp1, ψspace),
     @test check_flowgrad([-1.19016, 0.91084, -3.16599, -1.2374, 2.23388],         σ, p3, 0.2, 1)
     @test check_flowgrad([-1.19016, 0.91084, -3.16599, -1.2374, 2.23388, 4.0, 1.0], σ, p4, 0.2, 1)
 end
+
+flow(prim).parameters[1]
 
 println("testing flow gradients")
 @test check_flowgrad(θt, σv, prim, 0.2, 1)
@@ -55,7 +57,7 @@ include("test_transition.jl")
 
 
 println("filling per-period payoffs")
-@views fillflows!(prim.f, tmpv.uin[:,:,:,   1], tmpv.uin[:,:,:,   2],  tmpv.uex, θt, σv, makepdct(prim, θt, Val{:u},  σv), 0.25, 1)
+@views fillflows!(flow(prim), flow, tmpv.uin[:,:,:,   1], tmpv.uin[:,:,:,   2],  tmpv.uex, θt, σv, makepdct(prim, θt, Val{:u},  σv), 0.25, 1)
 fillflows_grad!(tmpv, prim, θt, σv, 0.2, 1)
 
 include("logsumexp3.jl")

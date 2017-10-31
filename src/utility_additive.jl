@@ -1,9 +1,16 @@
-export u_add, udθ_add, udσ_add, udψ_add
+export flow, flowdθ, flowdσ, flowdψ
 
-θ0_uadd = [0.275755, -2.12373, -1.89473, -1.92316, -1.38247, -1.36998, -1.255, -1.28068, -1.28891, -1.29613, -1.28014, -2.11996, -0.818109, 1.85105, 0.566889]
-θ1_uadd = [2.1556, 0.0296533, -0.515811, -0.881202, -0.784622, -0.445394, -0.578085, -0.541829, -0.444618, -0.738266, -1.09538, -3.79588, -2.68135, 1.23406, 0.207407]
+"""
+make primitives. Note: flow payoffs, gradient, and grad wrt `σ` must have the following structure:
+```julia
+f(  ::Type{Val{FF}}, θ::AbstractVector{T}, σ::T,   z... , ψ::T,             d::Integer, d1::Integer, Dgt0::Bool, roy::Real, geoid::Real)
+df( ::Type{Val{FF}}, θ::AbstractVector{T}, σ::T,   z... , ψ::T, k::Integer, d::Integer, d1::Integer, Dgt0::Bool, roy::Real, geoid::Real)
+dfσ(::Type{Val{FF}}, θ::AbstractVector{T}, σ::T,   z... , ψ::T,             d::Integer,                          roy::Real, geoid::Real)
+dfψ(::Type{Val{FF}}, θ::AbstractVector{T}, σ::T,   z... , ψ::T,             d::Integer,                          roy::Real, geoid::Real)
+```
+"""
 
-function u_add(θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer,             d1::Integer, Dgt0::Bool, roy::Real, geoid::Real) where {T}
+function flow(::Type{Val{:add}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer,             d1::Integer, Dgt0::Bool, roy::Real, geoid::Real) where {T}
     d == 0 && return zero(T)
     u = exp(logp) * (one(T)-roy) * (Dgt0  ? θ[1]+ψ  :  θ[1]+ψ*_ρ2(σ) )  + (d==1 ?  θ[2] : θ[3])
     d>1      && (u *= convert(T,d))
@@ -12,7 +19,7 @@ function u_add(θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer,     
 end
 
 
-function udθ_add(θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
+function flowdθ(::Type{Val{:add}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
     d == 0  && return zero(T)
 
     k == 1  && return  convert(T,d) * exp(logp) * (one(T)-roy)
@@ -22,15 +29,13 @@ function udθ_add(θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d
     throw(error("$k out of bounds"))
 end
 
-udσ_add(θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * ψ * -2.0 * σ / (one(T)+σ^2)^2
-udψ_add(θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * _ρ2(σ)
+flowdσ(::Type{Val{:add}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * ψ * -2.0 * σ / (one(T)+σ^2)^2
+flowdψ(::Type{Val{:add}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * _ρ2(σ)
 
 
 # ---------------------------------------------------------------------------
 
-export u_adddisc, udθ_adddisc, udσ_adddisc, udψ_adddisc
-
-function u_adddisc(θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer,             d1::Integer, Dgt0::Bool, roy::Real, geoid::Real) where {T}
+function flow(::Type{Val{:adddisc}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer,             d1::Integer, Dgt0::Bool, roy::Real, geoid::Real) where {T}
     d == 0 && return zero(T)
 
     u = exp(logp) * (one(T)-roy) * (Dgt0  ? θ[1]+θ[2]*ψ  :  θ[1]+θ[2]*ψ*_ρ2(σ) )  + (d==1 ?  θ[3] : θ[4])
@@ -41,7 +46,7 @@ function u_adddisc(θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer, 
 end
 
 
-function udθ_adddisc(θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
+function flowdθ(::Type{Val{:adddisc}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
     d == 0  && return zero(T)
 
     k == 1  && return  convert(T,d) * exp(logp) * (one(T)-roy)
@@ -52,14 +57,12 @@ function udθ_adddisc(θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integ
     throw(error("$k out of bounds"))
 end
 
-udσ_adddisc(θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * θ[2] * ψ * -2.0 * σ / (one(T)+σ^2)^2
-udψ_adddisc(θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * θ[2] * _ρ2(σ)
+flowdσ(::Type{Val{:adddisc}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * θ[2] * ψ * -2.0 * σ / (one(T)+σ^2)^2
+flowdψ(::Type{Val{:adddisc}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * θ[2] * _ρ2(σ)
 
 # ---------------------------------------------------------------------------
 
-export u_addlin, udθ_addlin, udσ_addlin, udψ_addlin
-
-function u_addlin(θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer,             d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
+function flow(::Type{Val{:addlin}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer,             d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
     d == 0 && return zero(T)
     u = exp(logp) * (one(T)-roy) * (Dgt0  ? θ[1] + θ[2]*geoid + θ[3]*ψ  :  θ[1] + θ[2]*geoid + θ[3]*ψ*_ρ2(σ) )  + (d==1 ?  θ[4] : θ[5])
     d>1      && (u *= d)
@@ -68,7 +71,7 @@ function u_addlin(θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer,  
 end
 
 
-function udθ_addlin(θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
+function flowdθ(::Type{Val{:addlin}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
     d == 0  && return zero(T)
 
     k == 1  && return  convert(T,d) * exp(logp) * (one(T)-roy)
@@ -82,14 +85,12 @@ function udθ_addlin(θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Intege
     throw(error("$k out of bounds"))
 end
 
-udσ_addlin(θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * θ[3] * exp(logp) * (one(T)-roy) * ψ * -2.0 * σ / (one(T)+σ^2)^2
-udψ_addlin(θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * θ[3] * exp(logp) * (one(T)-roy) * _ρ2(σ)
+flowdσ(::Type{Val{:addlin}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * θ[3] * exp(logp) * (one(T)-roy) * ψ * -2.0 * σ / (one(T)+σ^2)^2
+flowdψ(::Type{Val{:addlin}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * θ[3] * exp(logp) * (one(T)-roy) * _ρ2(σ)
 
 # -------------------------------- cost heterogeneity -----------------------------------
 
-export u_addlincost, udθ_addlincost, udσ_addlincost, udψ_addlincost
-
-function u_addlincost(θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer,             d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
+function flow(::Type{Val{:addlincost}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer,             d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
     d == 0 && return zero(T)
     u = exp(logp) * (one(T)-roy) * (Dgt0  ? θ[1] + θ[2]*geoid + θ[3]*ψ  :  θ[1] + θ[2]*geoid + θ[3]*ψ*_ρ2(σ) )  + (d==1 ?  θ[4] : θ[5])
     Dgt0     || (u += θ[6])
@@ -99,7 +100,7 @@ function u_addlincost(θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Intege
 end
 
 
-function udθ_addlincost(θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
+function flowdθ(::Type{Val{:addlincost}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
     d == 0  && return zero(T)
 
     k == 1  && return  convert(T,d) * exp(logp) * (one(T)-roy)
@@ -114,5 +115,5 @@ function udθ_addlincost(θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::In
     throw(error("$k out of bounds"))
 end
 
-udσ_addlincost(θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * θ[3] * exp(logp) * (one(T)-roy) * ψ * -2.0 * σ / (one(T)+σ^2)^2
-udψ_addlincost(θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * θ[3] * exp(logp) * (one(T)-roy) * _ρ2(σ)
+flowdσ(::Type{Val{:addlincost}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * θ[3] * exp(logp) * (one(T)-roy) * ψ * -2.0 * σ / (one(T)+σ^2)^2
+flowdψ(::Type{Val{:addlincost}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * θ[3] * exp(logp) * (one(T)-roy) * _ρ2(σ)

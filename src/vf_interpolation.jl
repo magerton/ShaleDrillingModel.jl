@@ -6,7 +6,6 @@ struct ItpSharedEV{T,A1<:Interpolations.AbstractInterpolation{T},A2<:Interpolati
   EV::A1
   dEV::A2
   dEVσ::A3
-  # dEVψ::A3
   itypes::TT
 end
 

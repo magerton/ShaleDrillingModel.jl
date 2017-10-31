@@ -45,7 +45,7 @@ let pids = [1,],
 
     dograd = false
     for k in 1:length(θfull)
-        println("θfull[$k]...")
+        print("θfull[$k]...")
         θ1 .= θfull
         θ2 .= θfull
         h = peturb(θfull[k])
@@ -58,7 +58,7 @@ let pids = [1,],
 
 
         serial_solve_vf_all!(sev, tmpv, prim, θ1, Val{dograd}; maxit0=12, maxit1=20, vftol=1e-10)
-        println("logp: θ[$k]-h")
+        print("logp: θ[$k]-h")
         for CI in CR
             zi, ui, vi, di, si, ri, gi = CI.I
             z, u, v, d, s, r, g = getindex.(rngs, CI.I)
@@ -68,9 +68,9 @@ let pids = [1,],
             end
         end
 
-        println("solving again for logp: θ[$k]+h")
+        println("solving again for logp: θ[$k]+h....")
         serial_solve_vf_all!(sev, tmpv, prim, θ2, Val{dograd}; maxit0=12, maxit1=20, vftol=1e-10)
-        println("updating fdgrad")
+        print("updating fdgrad\n")
         for CI in CR
             zi, ui, vi, di, si, ri, gi = CI.I
             z, u, v, d, s, r, g = getindex.(rngs, CI.I)

@@ -1,11 +1,8 @@
 import Base: size
 
 export dcdp_primitives,
-    dcdp_primitives_addlin,
-    dcdp_primitives_add,
-    dcdp_primitives_adddisc,
-    dcdp_primitives_addlincost,
     dcdp_Emax,
+    flow,
     dcdp_tmpvars,
     check_EVgrad,
     check_EVgrad!,
@@ -17,21 +14,7 @@ export dcdp_primitives,
     _θt,
     _σv
 
-
-"""
-make primitives. Note: flow payoffs, gradient, and grad wrt `σ` must have the following structure:
-```julia
-f(  θ::AbstractVector{T}, σ::T,   z... , ψ::T,             d::Integer, d1::Integer, Dgt0::Bool, roy::Real, geoid::Real)
-df( θ::AbstractVector{T}, σ::T,   z... , ψ::T, k::Integer, d::Integer, d1::Integer, Dgt0::Bool, roy::Real, geoid::Real)
-dfσ(θ::AbstractVector{T}, σ::T,   z... , ψ::T,             d::Integer,                          roy::Real, geoid::Real)
-# dfψ(θ::AbstractVector{T}, σ::T,   z... , ψ::T,             d::Integer,                          roy::Real, geoid::Real)
-```
-"""
-struct dcdp_primitives{T<:Real,AM<:AbstractMatrix{T},TT<:Tuple,AV<:AbstractVector{T}}
-    f::Function
-    dfθ::Function
-    dfσ::Function
-    dfψ::Function
+struct dcdp_primitives{FF,T<:Real,AM<:AbstractMatrix{T},TT<:Tuple,AV<:AbstractVector{T}}
     β::T
     wp::well_problem  # structure of endogenous choice vars
     zspace::TT        # z-space (tuple)
@@ -42,10 +25,16 @@ struct dcdp_primitives{T<:Real,AM<:AbstractMatrix{T},TT<:Tuple,AV<:AbstractVecto
     nθt::Int          # Num parameters in flow payoffs MINUS 1 for σv
 end
 
-@inline dcdp_primitives_addlincost( β::Real, wp::well_problem, zspace::NTuple{N,AbstractVector}, Πz::AbstractMatrix, ψspace::AbstractVector) where {N} = dcdp_primitives(u_addlincost,  udθ_addlincost,  udσ_addlincost,  udψ_addlincost,  β, wp, zspace, Πz, ψspace, 1,  7)
-@inline dcdp_primitives_addlin(     β::Real, wp::well_problem, zspace::NTuple{N,AbstractVector}, Πz::AbstractMatrix, ψspace::AbstractVector) where {N} = dcdp_primitives(u_addlin,  udθ_addlin,  udσ_addlin,  udψ_addlin,  β, wp, zspace, Πz, ψspace, 1,  6)
-@inline dcdp_primitives_add(        β::Real, wp::well_problem, zspace::NTuple{N,AbstractVector}, Πz::AbstractMatrix, ψspace::AbstractVector) where {N} = dcdp_primitives(u_add,     udθ_add,     udσ_add,     udψ_add,     β, wp, zspace, Πz, ψspace, 10, 4)
-@inline dcdp_primitives_adddisc(    β::Real, wp::well_problem, zspace::NTuple{N,AbstractVector}, Πz::AbstractMatrix, ψspace::AbstractVector) where {N} = dcdp_primitives(u_adddisc, udθ_adddisc, udσ_adddisc, udψ_adddisc, β, wp, zspace, Πz, ψspace, 10, 5)
+function dcdp_primitives(FF::Symbol, β::T, wp::well_problem, zspace::TT, Πz::AM, ψspace::AV) where {T,TT,AM,AV}
+    FF == :addlincost && (ns = (1,  7))
+    FF == :addlin     && (ns = (1,  6))
+    FF == :add        && (ns = (10, 4))
+    FF == :adddisc    && (ns = (10, 5))
+
+    return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, ns...)
+end
+
+flow(prim::dcdp_primitives{FF}) where {FF} = FF
 
 
 # help us go from big parameter vector for all types to the relevant one
@@ -100,7 +89,7 @@ end
 # dcdp_Emax(EV::AbstractArray3{T}, dEV::AbstractArray4{T}, dEVσ::AbstractArray3{T}, dEV_ψ::AbstractArray3{T}) where {T} =  dcdp_Emax{T,typeof(EV),typeof(dEV)}(EV,dEV,dEVσ,dEV_ψ)
 dcdp_Emax(EV::AbstractArray3{T}, dEV::AbstractArray4{T}, dEVσ::AbstractArray3{T}) where {T} =  dcdp_Emax{T,typeof(EV),typeof(dEV)}(EV,dEV,dEVσ)
 
-function dcdp_Emax(p::dcdp_primitives{T}) where {T}
+function dcdp_Emax(p::dcdp_primitives{FF,T}) where {FF,T}
     EV   = zeros(T, _nz(p), _nψ(p),          _nS(p))
     dEV  = zeros(T, _nz(p), _nψ(p), _nθt(p), _nS(p))
     dEVσ = zeros(T, _nz(p), _nψ(p),          _nSexp(p))

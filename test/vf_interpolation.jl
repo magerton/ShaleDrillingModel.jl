@@ -1,5 +1,5 @@
 
-let prim = dcdp_primitives(u_addlin, udθ_addlin, udσ_addlin, udψ_addlin, β, wp, zspace, Πp1, ψspace, ngeo, length(θt)),
+let prim = dcdp_primitives(:addlin, β, wp, zspace, Πp1, ψspace),
     tmpv = dcdp_tmpvars(prim),
     sev = SharedEV([1,], prim, [1./8.], 1:1),
     EVcopy = similar(sev.EV),

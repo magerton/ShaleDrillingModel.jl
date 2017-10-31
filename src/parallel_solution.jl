@@ -10,7 +10,7 @@ struct SharedEV{T,N,N2,TT<:Tuple}
 end
 
 
-function SharedEV(pids::AbstractVector{<:Integer}, prim::dcdp_primitives{T}, itypes::AbstractVector...) where {T}
+function SharedEV(pids::AbstractVector{<:Integer}, prim::dcdp_primitives{FF,T}, itypes::AbstractVector...) where {FF,T}
 
     zdims = length.(prim.zspace)
     typedims = length.(itypes)

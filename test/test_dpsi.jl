@@ -4,7 +4,7 @@ let nψ = 31,
     wp = well_problem(dmx,4,10),
     ψspace = linspace(-6.0, 6.0, nψ),
     vspace = linspace(-3.0, 3.0, nv),
-    prim = dcdp_primitives(u_addlin, udθ_addlin, udσ_addlin, udψ_addlin, β, wp, zspace, Πp1, ψspace, ngeo, length(θt)),
+    prim = dcdp_primitives(:addlin, β, wp, zspace, Πp1, ψspace),
     tmpv = dcdp_tmpvars(prim),
     evs = dcdp_Emax(prim),
     σv = 0.5,
@@ -32,7 +32,7 @@ let nψ = 31,
     for (i,xi) in enumerate(pdct)
         z, u, v, s = xi
         ψ = u + σv*v
-        dpsi = gradient_d(length(prim.zspace)+1, sitev.EV, z, ψ, s, 1, 1)
+        dpsi = gradient_d(Val{length(prim.zspace)+1}, sitev.EV, z, ψ, s, 1, 1)
         dEVσ[i] = dpsi*v + sitev.dEVσ[z,ψ,s,1,1]
     end
 

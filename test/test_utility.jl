@@ -6,11 +6,11 @@ let duex = similar(tmpv.duexσ), fduex = similar(tmpv.uex), itype=(0.2,8), p=pri
 
     pdct = Base.product(zspace..., ψspace, 0:dmax(wp), 0:0, false )
 
-    fillflows!(p.f,  duex, θt, σ1, pdct, itype...)
-    fillflows!(p.f, fduex, θt, σ2, pdct, itype...)
+    fillflows!(flow(p), flow,  duex, θt, σ1, pdct, itype...)
+    fillflows!(flow(p), flow, fduex, θt, σ2, pdct, itype...)
     fduex .-= duex
     fduex ./= hh
-    fillflows!(p.dfσ, duex, θt, σv, makepdct(p, θt, Val{:u}, σv), itype...)
+    fillflows!(flow(p), flowdσ, duex, θt, σv, makepdct(p, θt, Val{:u}, σv), itype...)
 
     @views maxv, idx = findmax(abs.(duex .- fduex))
     sub = ind2sub(duex, idx)
