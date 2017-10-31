@@ -1,3 +1,5 @@
+using Interpolations: Flag, Quadratic, InPlace
+
 export ItpSharedEV
 
 struct ItpSharedEV{T,A1<:Interpolations.AbstractInterpolation{T},A2<:Interpolations.AbstractInterpolation{T},A3<:Interpolations.AbstractInterpolation{T},TT<:Tuple}
@@ -105,4 +107,42 @@ end
 function unsafegetityp(sev::Union{SharedEV,ItpSharedEV}, itypidx::Tuple)
     length(sev.itypes) == length(itypidx) || throw(DimensionMismatch())
     return unsafegetityp.(sev.itypes, itypidx)
+end
+
+
+
+
+
+
+
+
+
+
+
+
+# -------------------------------------------------------------
+
+function set_up_dcdp_workers(pids::AbstractVector{<:Integer}, prim::dcdp_primitives, typegrids::AbstractVector...; σ0::Real=1.0, ψflag::Interpolations.Flag=Quadratic(InPlace()), kwargs...)
+
+    println("initialize shared arrays")
+    sev = SharedEV(pids, prim, typegrids...)
+
+    println("setting up tmpvars")
+    @eval @everywhere begin
+        # Inner loop setup
+        set_g_dcdp_primitives($prim)
+        set_g_dcdp_tmpvars( dcdp_tmpvars(get_g_dcdp_primitives()) )
+        set_g_SharedEV($sev)
+
+        set_g_ItpSharedEV( ItpSharedEV(get_g_SharedEV(), get_g_dcdp_primitives(), $σ0; ψflag=$ψflag) )
+    end
+
+    println("worker dcdp problems setup")
+
+    # add a few checks
+    fetch(@spawn size(get_g_SharedEV().EV))   == size(sev.EV)               ||  throw(error("remote sharedEV not created (?)"))
+    fetch(@spawn get_g_SharedEV().EV  === get_g_ItpSharedEV().EV.itp.coefs) ||  throw(error("remote sharedEV not linked to ItpSharedEV"))
+    fetch(@spawn get_g_SharedEV().EV) === sev.EV                            ||  throw(error("remote sharedEV not same object as local"))
+
+    return sev, get_g_ItpSharedEV()
 end

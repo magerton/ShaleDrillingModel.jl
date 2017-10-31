@@ -1,4 +1,4 @@
-export parallel_solve_vf_all!, SharedEV, serial_solve_vf_all!
+export parallel_solve_vf_all!, SharedEV, serial_solve_vf_all!, set_up_dcdp_workers
 
 
 struct SharedEV{T,N,N2,TT<:Tuple}
@@ -114,16 +114,6 @@ function parallel_solve_vf_all!(sev::SharedEV, θ::AbstractVector, dograd::Type;
 end
 
 parallel_solve_vf_all!(sev::SharedEV, θ::AbstractVector, dograd::Bool; kwargs...) = parallel_solve_vf_all!(sev, θ, Val{dograd}; kwargs...)
-
-
-
-
-
-
-
-
-
-
 
 
 
