@@ -3,7 +3,7 @@ export logP!
 nplus1_impl(N::Integer) = :(Val{$(N+1)})
 @generated nplus1(::Type{Val{N}}) where {N} = nplus1_impl(N)
 
-function logP!(grad::AbstractVector{T}, tmp::Vector{T}, θt::AbstractVector{T}, σ::T, prim::dcdp_primitives{FF,T}, isev::ItpSharedEV, uv::NTuple{2,T}, z::NTuple{NZ,Real}, d_obs::Integer, s_idx::Integer, itypidx::NTuple{NI,Real}, dograd::Bool=true) where {FF,T<:Real,NZ,NI}
+@inline function logP!(grad::AbstractVector{T}, tmp::Vector{T}, θt::AbstractVector{T}, σ::T, prim::dcdp_primitives{FF,T}, isev::ItpSharedEV, uv::NTuple{2,T}, z::NTuple{NZ,Real}, d_obs::Integer, s_idx::Integer, itypidx::NTuple{NI,Real}, dograd::Bool=true) where {FF,T<:Real,NZ,NI}
 
   if dograd
     length(grad) == length(θt)+1 || throw(DimensionMismatch())
