@@ -17,6 +17,7 @@ nplus1_impl(N::Integer) = :(Val{$(N+1)})
   Dgt0 = s.D > 0
 
   # information
+  # _ψclamp(uv[1] + σ*uv[2], prim)
   ψ = Dgt0 ? uv[1] : uv[1] + σ*uv[2] # , extrema(_ψspace(prim, σ))...)
   v = uv[2]
 
