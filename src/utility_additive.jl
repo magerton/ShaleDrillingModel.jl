@@ -88,6 +88,40 @@ end
 @inline flowdσ(::Type{Val{:addlin}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * θ[3] * exp(logp) * (one(T)-roy) * ψ * -2.0 * σ / (one(T)+σ^2)^2
 @inline flowdψ(::Type{Val{:addlin}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * θ[3] * exp(logp) * (one(T)-roy) * _ρ2(σ)
 
+
+# ---------------------------------------------------------------------------
+
+@inline function flow(::Type{Val{:linbreak}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer,             d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
+    d == 0 && return zero(T)
+    u = exp(logp) * (one(T)-roy) * (Dgt0  ? θ[1] + θ[2]*geoid + θ[3]*ψ  :  θ[1] + θ[2]*geoid + θ[4]*ψ*_ρ2(σ) )  + (d==1 ?  θ[5] : θ[6])
+    d>1      && (u *= d)
+    d1 == 1  && (u += θ[7])
+    return u::T
+end
+
+
+@inline function flowdθ(::Type{Val{:linbreak}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
+    d == 0  && return zero(T)
+
+    k == 1  && return         convert(T,d) * exp(logp) * (one(T)-roy)
+    k == 2  && return         convert(T,d) * exp(logp) * (one(T)-roy) * convert(T, geoid)
+    k == 3  && return  Dgt0 ? convert(T,d) * exp(logp) * (one(T)-roy) *  ψ : zero(T)
+    k == 4  && return  Dgt0 ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * ψ*_ρ2(σ)
+
+
+    k == 5  && return  d  == 1 ? one(T)  : zero(T)
+    k == 6  && return  d  == 1 ? zero(T) : convert(T,d)
+    k == 7  && return  d1 == 1 ? one(T)  : zero(T)
+
+    throw(error("$k out of bounds"))
+end
+
+@inline flowdσ(::Type{Val{:linbreak}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * θ[4] * exp(logp) * (one(T)-roy) * ψ * -2.0 * σ / (one(T)+σ^2)^2
+@inline flowdψ(::Type{Val{:linbreak}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * θ[4] * exp(logp) * (one(T)-roy) * _ρ2(σ)
+
+
+
+
 # -------------------------------- cost heterogeneity -----------------------------------
 
 # with prices only

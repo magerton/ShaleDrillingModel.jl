@@ -37,12 +37,14 @@ let p1 = dcdp_primitives(:addlin,     β, wp, zspace, Πp1, ψspace),
     p2 = dcdp_primitives(:add,        β, wp, zspace, Πp1, ψspace),
     p3 = dcdp_primitives(:adddisc,    β, wp, zspace, Πp1, ψspace),
     p4 = dcdp_primitives(:addlincost, β, wp, zspace, Πp1, ψspace),
+    p5 = dcdp_primitives(:linbreak,   β, wp, zspace, Πp1, ψspace),
     σ = 2.0 # 14.9407
 
     @test check_flowgrad([-1.19016, 0.0232, 0.91084, -3.16599, -1.2374, 2.23388], σ, p1, 0.2, 1)
     @test check_flowgrad([-1.19016, -3.16599, -1.2374, 2.23388],                  σ, p2, 0.2, 1)
     @test check_flowgrad([-1.19016, 0.91084, -3.16599, -1.2374, 2.23388],         σ, p3, 0.2, 1)
     @test check_flowgrad([-1.19016, 0.91084, -3.16599, -1.2374, 2.23388, 4.0, 1.0], σ, p4, 0.2, 1)
+    @test check_flowgrad([-1.19016, 0.91084, -3.16599, -1.2374, 2.23388, 4.0, 1.0], σ, p5, 0.2, 1)
 end
 
 flow(prim).parameters[1]
