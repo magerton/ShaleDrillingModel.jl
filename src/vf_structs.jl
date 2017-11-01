@@ -30,7 +30,9 @@ function dcdp_primitives(FF::Symbol, β::T, wp::well_problem, zspace::TT, Πz::A
     FF == :addlin     && (ns = (1,  6))
     FF == :add        && (ns = (10, 4))
     FF == :adddisc    && (ns = (10, 5))
-
+    FF == :lintcost   && (ns = (1,  8))
+    FF == :linct      && (ns = (1,  7))
+    
     return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, ns...)
 end
 

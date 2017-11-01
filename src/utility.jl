@@ -92,7 +92,7 @@ function fillflows!(FF::Type, f::Function, X::AbstractArray, θ::AbstractVector,
 end
 
 function fillflows!(FF::Type, f::Function, Xin0::AbstractArray, Xin1::AbstractArray, Xexp::AbstractArray, θ::AbstractVector, σ::T, pdct::Base.Iterators.AbstractProdIterator, itype::Real...) where {T}
-    size(pdct) == size(Xin0) == size(Xin1) == size(Xexp) || throw(DimensionMismatch())
+    length(pdct) == length(Xin0) == length(Xin1) == length(Xexp) || throw(DimensionMismatch())
     @inbounds for (i, st) in enumerate(pdct)
         Xin0[i] = f(FF, θ, σ, st..., 0, true , itype...)
     end
