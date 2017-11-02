@@ -147,6 +147,54 @@ end
     return d == 0 ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * expQ(θ[1], θ[2], θ[3], σ, false, geoid, ψ) * θ[3] * _ρ2(σ)
 end
 
+
+# -----------------------------------------------------------------------------------------------------------------------------
+# --------------------------------------------------- simple: exponential with prices ---------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------------
+
+@inline function revenue(θ1::T, θ2::T, θ3::T, θ4::T, σ::T, logp::Real, Dgt0::Bool, roy::Real, geoid::Real, ψ::Real) where {T<:Real}
+    if Dgt0
+        r = (one(T)-roy) * exp(θ1 + θ2*logp + θ3*geoid + θ4*ψ)
+    else
+        ρ = _ρ(σ)
+        r = (one(T)-roy) * exp(θ1 + θ2*logp + θ3*geoid + θ4*ψ*ρ^2 + 0.5*(1.0-ρ) )
+    end
+    return r::T
+end
+
+@inline function flow(::Type{Val{:allexp}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer,             d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
+    d == 0 && return zero(T)
+    u = revenue(θ[1], θ[2], θ[3], θ[4], σ, logp, Dgt0, roy, geoid, ψ) + (d==1 ?  θ[5] : θ[6])
+    d>1      && (u *= d)
+    d1 == 1  && (u += θ[7])
+    return u::T
+end
+
+@inline function flowdθ(::Type{Val{:allexp}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
+    d == 0  && return zero(T)
+
+    k == 1  && return  convert(T,d) * revenue(θ[1], θ[2], θ[3], θ[4], σ, logp, Dgt0, roy, geoid, ψ)
+    k == 2  && return  convert(T,d) * revenue(θ[1], θ[2], θ[3], θ[4], σ, logp, Dgt0, roy, geoid, ψ) * logp
+    k == 3  && return  convert(T,d) * revenue(θ[1], θ[2], θ[3], θ[4], σ, logp, Dgt0, roy, geoid, ψ) * convert(T,geoid)
+    k == 4  && return  convert(T,d) * revenue(θ[1], θ[2], θ[3], θ[4], σ, logp, Dgt0, roy, geoid, ψ) * ( Dgt0 ? ψ : ψ*_ρ2(σ) )
+
+    k == 5  && return  d  == 1 ? one(T)  : zero(T)
+    k == 6  && return  d  == 1 ? zero(T) : convert(T,d)
+    k == 7  && return  d1 == 1 ? one(T)  : zero(T)
+
+    throw(error("$k out of bounds"))
+end
+
+@inline function flowdσ(::Type{Val{:allexp}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T}
+    d == 0 && return zero(T)
+    ρ = _ρ(σ)
+    return convert(T,d) * revenue(θ[1], θ[2], θ[3], θ[4], σ, logp, false, roy, geoid, ψ) * ( ψ*θ[4]*2.0*ρ - 0.5) * _dρdσ(σ, ρ)
+end
+@inline function flowdψ(::Type{Val{:allexp}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T}
+    return d == 0 ? zero(T) : convert(T,d) * revenue(θ[1], θ[2], θ[3], θ[4], σ, logp, false, roy, geoid, ψ) * θ[4]*_ρ2(σ)
+end
+
+
 # -----------------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------- breaking exponential ---------------------------------------------------------------------
 # -----------------------------------------------------------------------------------------------------------------------------
@@ -154,9 +202,9 @@ end
 @inline function flow(::Type{Val{:breakexp}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer,             d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
     d == 0 && return zero(T)
     if !Dgt0
-        u = exp(logp) * (1.0-roy) * expQ(θ[1], θ[2], θ[3], σ, Dgt0, geoid, ψ) + (d==1 ?  θ[4] : θ[5])
+        u = exp(logp) * (one(T)-roy) * expQ(θ[1], θ[2], θ[3], σ, Dgt0, geoid, ψ) + (d==1 ?  θ[4] : θ[5])
     else
-        u = exp(logp) * (1.0-roy) * expQ(θ[6], θ[7], θ[8], σ, Dgt0, geoid, ψ) + (d==1 ?  θ[9] : θ[10])
+        u = exp(logp) * (one(T)-roy) * expQ(θ[6], θ[7], θ[8], σ, Dgt0, geoid, ψ) + (d==1 ?  θ[9] : θ[10])
     end
     d>1      && (u *= d)
     d1 == 1  && (u += θ[11])
