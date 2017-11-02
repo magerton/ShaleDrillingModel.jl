@@ -221,12 +221,12 @@ end
     k == 5  && return Dgt0 || d >  1 ? zero(T) : one(T)
     k == 6  && return Dgt0 || d == 1 ? zero(T) : convert(T,d)
 
-    k == 7  && return Dgt0           ? zero(T) : convert(T,d) * revenue(θ[7], θ[8], θ[9], θ[10], σ, logp, Dgt0, roy, geoid, ψ)
-    k == 8  && return Dgt0           ? zero(T) : convert(T,d) * revenue(θ[7], θ[8], θ[9], θ[10], σ, logp, Dgt0, roy, geoid, ψ) * logp
-    k == 9  && return Dgt0           ? zero(T) : convert(T,d) * revenue(θ[7], θ[8], θ[9], θ[10], σ, logp, Dgt0, roy, geoid, ψ) * convert(T,geoid)
-    k == 10 && return Dgt0           ? zero(T) : convert(T,d) * revenue(θ[7], θ[8], θ[9], θ[10], σ, logp, Dgt0, roy, geoid, ψ) * ψ *
-    k == 11 && return Dgt0 || d >  1 ? zero(T) : one(T)
-    k == 12 && return Dgt0 || d == 1 ? zero(T) : convert(T,d)
+    k == 7  && return !Dgt0           ? zero(T) : convert(T,d) * revenue(θ[7], θ[8], θ[9], θ[10], σ, logp, Dgt0, roy, geoid, ψ)
+    k == 8  && return !Dgt0           ? zero(T) : convert(T,d) * revenue(θ[7], θ[8], θ[9], θ[10], σ, logp, Dgt0, roy, geoid, ψ) * logp
+    k == 9  && return !Dgt0           ? zero(T) : convert(T,d) * revenue(θ[7], θ[8], θ[9], θ[10], σ, logp, Dgt0, roy, geoid, ψ) * convert(T,geoid)
+    k == 10 && return !Dgt0           ? zero(T) : convert(T,d) * revenue(θ[7], θ[8], θ[9], θ[10], σ, logp, Dgt0, roy, geoid, ψ) * ψ *
+    k == 11 && return !Dgt0 || d >  1 ? zero(T) : one(T)
+    k == 12 && return !Dgt0 || d == 1 ? zero(T) : convert(T,d)
 
     k == 13  && return  d1 == 1 ? one(T)  : zero(T)
 
