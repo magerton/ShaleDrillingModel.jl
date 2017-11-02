@@ -33,7 +33,8 @@ function dcdp_primitives(FF::Symbol, β::T, wp::well_problem, zspace::TT, Πz::A
     FF == :lintcost             && (ns = (1,  8))
     FF == :linct                && (ns = (1,  7))
     FF == :linbreak             && (ns = (1,  7))
-    FF ∈ (:bigbreak, :breakexp) && (ns = (1,  11))
+    FF ∈ (:bigbreak)            && (ns = (1,  11))
+    FF == :breakexp             && (ns = (1,  13))
     FF == :allexp               && (ns = (1, 7))
     return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, ns...)
 end

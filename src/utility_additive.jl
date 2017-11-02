@@ -214,26 +214,27 @@ end
 @inline function flowdθ(::Type{Val{:breakexp}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
     d == 0  && return zero(T)
 
-    k == 1  && return Dgt0           ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * expQ(θ[1], θ[2], θ[3], σ, Dgt0, geoid, ψ)
-    k == 2  && return Dgt0           ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * expQ(θ[1], θ[2], θ[3], σ, Dgt0, geoid, ψ) * convert(T, geoid)
-    k == 3  && return Dgt0           ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * expQ(θ[1], θ[2], θ[3], σ, Dgt0, geoid, ψ) * ψ * _ρ2(σ)
-    k == 4  && return Dgt0 || d >  1 ? zero(T) : one(T)
-    k == 5  && return Dgt0 || d == 1 ? zero(T) : convert(T,d)
+    k == 1  && return Dgt0           ? zero(T) : convert(T,d) * revenue(θ[1], θ[2], θ[3], θ[4], σ, logp, Dgt0, roy, geoid, ψ)
+    k == 2  && return Dgt0           ? zero(T) : convert(T,d) * revenue(θ[1], θ[2], θ[3], θ[4], σ, logp, Dgt0, roy, geoid, ψ) * logp
+    k == 3  && return Dgt0           ? zero(T) : convert(T,d) * revenue(θ[1], θ[2], θ[3], θ[4], σ, logp, Dgt0, roy, geoid, ψ) * convert(T,geoid)
+    k == 4  && return Dgt0           ? zero(T) : convert(T,d) * revenue(θ[1], θ[2], θ[3], θ[4], σ, logp, Dgt0, roy, geoid, ψ) * ψ*_ρ2(σ)
+    k == 5  && return Dgt0 || d >  1 ? zero(T) : one(T)
+    k == 6  && return Dgt0 || d == 1 ? zero(T) : convert(T,d)
 
+    k == 7  && return Dgt0           ? zero(T) : convert(T,d) * revenue(θ[7], θ[8], θ[9], θ[10], σ, logp, Dgt0, roy, geoid, ψ)
+    k == 8  && return Dgt0           ? zero(T) : convert(T,d) * revenue(θ[7], θ[8], θ[9], θ[10], σ, logp, Dgt0, roy, geoid, ψ) * logp
+    k == 9  && return Dgt0           ? zero(T) : convert(T,d) * revenue(θ[7], θ[8], θ[9], θ[10], σ, logp, Dgt0, roy, geoid, ψ) * convert(T,geoid)
+    k == 10 && return Dgt0           ? zero(T) : convert(T,d) * revenue(θ[7], θ[8], θ[9], θ[10], σ, logp, Dgt0, roy, geoid, ψ) * ψ *
+    k == 11 && return Dgt0 || d >  1 ? zero(T) : one(T)
+    k == 12 && return Dgt0 || d == 1 ? zero(T) : convert(T,d)
 
-    k == 6  && return !Dgt0           ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * expQ(θ[6], θ[7], θ[8], σ, Dgt0, geoid, ψ)
-    k == 7  && return !Dgt0           ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * expQ(θ[6], θ[7], θ[8], σ, Dgt0, geoid, ψ) * convert(T, geoid)
-    k == 8  && return !Dgt0           ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * expQ(θ[6], θ[7], θ[8], σ, Dgt0, geoid, ψ) * ψ
-    k == 9  && return !Dgt0 || d >  1 ? zero(T) : one(T)
-    k == 10 && return !Dgt0 || d == 1 ? zero(T) : convert(T,d)
-
-    k == 11  && return  d1 == 1 ? one(T)  : zero(T)
+    k == 13  && return  d1 == 1 ? one(T)  : zero(T)
 
     throw(error("$k out of bounds"))
 end
 
-@inline flowdσ(::Type{Val{:breakexp}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = flowdσ(Val{:addexp}, θ, σ, logp, ψ, d, roy, geoid)
-@inline flowdψ(::Type{Val{:breakexp}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = flowdψ(Val{:addexp}, θ, σ, logp, ψ, d, roy, geoid)
+@inline flowdσ(::Type{Val{:breakexp}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = flowdσ(Val{:allexp}, θ, σ, logp, ψ, d, roy, geoid)
+@inline flowdψ(::Type{Val{:breakexp}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = flowdψ(Val{:allexp}, θ, σ, logp, ψ, d, roy, geoid)
 
 
 # -----------------------------------------------------------------------------------------------------------------------------
