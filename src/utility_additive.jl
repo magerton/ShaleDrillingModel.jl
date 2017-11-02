@@ -70,7 +70,6 @@ end
     return u::T
 end
 
-
 @inline function flowdθ(::Type{Val{:addlin}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
     d == 0  && return zero(T)
 
@@ -88,6 +87,11 @@ end
 @inline flowdσ(::Type{Val{:addlin}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * θ[3] * exp(logp) * (one(T)-roy) * ψ * -2.0 * σ / (one(T)+σ^2)^2
 @inline flowdψ(::Type{Val{:addlin}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * θ[3] * exp(logp) * (one(T)-roy) * _ρ2(σ)
 
+# functions in case we have regime-info
+@inline flow(  FF::Type, θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer, d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T} = flow(  FF, θ, σ, logp, ψ,    d, d1, Dgt0, roy, geoid)
+@inline flowdθ(FF::Type, θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T, k::Integer, d::Integer, d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T} = flowdθ(FF, θ, σ, logp, ψ, k, d, d1, Dgt0, roy, geoid)
+@inline flowdσ(FF::Type, θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer,                          roy::T, geoid::Real) where {T} = flowdσ(FF, θ, σ, logp, ψ,    d,           roy, geoid)
+@inline flowdψ(FF::Type, θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer,                          roy::T, geoid::Real) where {T} = flowdψ(FF, θ, σ, logp, ψ,    d,           roy, geoid)
 
 # ---------------------------------------------------------------------------
 
@@ -120,6 +124,44 @@ end
 @inline flowdψ(::Type{Val{:linbreak}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * θ[4] * exp(logp) * (one(T)-roy) * _ρ2(σ)
 
 
+
+# ---------------------------------------------------------------------------
+
+@inline function flow(::Type{Val{:bigbreak}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer,             d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
+    d == 0 && return zero(T)
+    if Dgt0
+        u = exp(logp) * (one(T)-roy) * ( θ[1] + θ[2]*geoid + θ[3]*ψ )         + (d==1 ?  θ[4] : θ[5])
+    else
+        u = exp(logp) * (one(T)-roy) * ( θ[6] + θ[7]*geoid + θ[8]*ψ*_ρ2(σ) )  + (d==1 ?  θ[9] : θ[10])
+    end
+    d>1      && (u *= d)
+    d1 == 1  && (u += θ[11])
+    return u::T
+end
+
+
+@inline function flowdθ(::Type{Val{:bigbreak}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
+    d == 0  && return zero(T)
+
+    k == 1  && return !Dgt0           ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy)
+    k == 2  && return !Dgt0           ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * convert(T, geoid)
+    k == 3  && return !Dgt0           ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * ψ
+    k == 4  && return !Dgt0 || d >  1 ? zero(T) : one(T)
+    k == 5  && return !Dgt0 || d == 1 ? zero(T) : convert(T,d)
+
+    k == 6  && return  Dgt0           ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy)
+    k == 7  && return  Dgt0           ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * convert(T, geoid)
+    k == 8  && return  Dgt0           ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * ψ * _ρ2(σ)
+    k == 9  && return  Dgt0 || d >  1 ? zero(T) : one(T)
+    k == 10 && return  Dgt0 || d == 1 ? zero(T) : convert(T,d)
+
+    k == 11  && return  d1 == 1 ? one(T)  : zero(T)
+
+    throw(error("$k out of bounds"))
+end
+
+@inline flowdσ(::Type{Val{:bigbreak}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * θ[8] * exp(logp) * (one(T)-roy) * ψ * -2.0 * σ / (one(T)+σ^2)^2
+@inline flowdψ(::Type{Val{:bigbreak}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * θ[8] * exp(logp) * (one(T)-roy) * _ρ2(σ)
 
 
 # -------------------------------- cost heterogeneity -----------------------------------
