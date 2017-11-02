@@ -53,7 +53,7 @@ function check_flowgrad(FF::Type, θ::AbstractVector{T}, σ::T, zspace::Tuple, �
             duθ!(dx,    FF, θ, σ, st,    d1D..., itype...)
             Calculus.finite_difference!(u, θ, dxfd, :central)
             if !(dxfd ≈ dx)
-                warn("Bad θ diff at $st, $d1D. du=$du and fd = $dufd")
+                warn("FF = $FF. Bad θ diff at $st, $d1D. du=$dx and fd = $dxfd")
                 return false
             end
         end

@@ -27,7 +27,7 @@ function ItpSharedEV(sev::SharedEV{T,N,N2,TT}, p::dcdp_primitives, σ::Real=1.0;
     nSexp1 = _nSexp(p)
 
     # form spline specifications
-    splinetype(r::Union{StepRange{<:AbstractFloat},StepRangeLen{<:AbstractFloat}}) = BSpline(Linear())
+    splinetype(r::Union{StepRange{<:AbstractFloat},StepRangeLen{<:AbstractFloat}}) = BSpline(Quadratic(InPlace()))
     splinetype(r::AbstractVector) = NoInterp()
 
     it_z     = splinetype.(p.zspace)

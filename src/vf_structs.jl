@@ -26,15 +26,14 @@ struct dcdp_primitives{FF,T<:Real,AM<:AbstractMatrix{T},TT<:Tuple,AV<:AbstractVe
 end
 
 function dcdp_primitives(FF::Symbol, β::T, wp::well_problem, zspace::TT, Πz::AM, ψspace::AV) where {T,TT,AM,AV}
-    FF == :addlincost && (ns = (1,  7))
-    FF == :addlin     && (ns = (1,  6))
-    FF == :add        && (ns = (10, 4))
-    FF == :adddisc    && (ns = (10, 5))
-    FF == :lintcost   && (ns = (1,  8))
-    FF == :linct      && (ns = (1,  7))
-    FF == :linbreak   && (ns = (1,  7))
-    FF == :bigbreak   && (ns = (1,  11))
-
+    FF == :addlincost           && (ns = (1,  7))
+    FF ∈ (:addlin, :addexp)     && (ns = (1,  6))
+    FF == :add                  && (ns = (10, 4))
+    FF == :adddisc              && (ns = (10, 5))
+    FF == :lintcost             && (ns = (1,  8))
+    FF == :linct                && (ns = (1,  7))
+    FF == :linbreak             && (ns = (1,  7))
+    FF ∈ (:bigbreak, :breakexp) && (ns = (1,  11))
     return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, ns...)
 end
 
