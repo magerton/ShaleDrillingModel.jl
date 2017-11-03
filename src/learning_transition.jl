@@ -73,6 +73,11 @@ function _βΠψ!(P::AbstractMatrix, y1::StepRangeLen, y2::StepRangeLen, θp::Re
 end
 
 _βΠψ!(P::AbstractMatrix, y1::StepRangeLen, θp::Real, β::Real) = _βΠψ!(P, y1, y1, θp, β)
+function _βΠψ!(y1::StepRangeLen{T}, θp::Real, β::Real) where {T}
+    P = Matrix{T}(length(y1),length(y1))
+    _βΠψ!(P, y1, y1, θp, β)
+    return P
+end
 
 # ------------------------------ derivative check -------------------------
 
