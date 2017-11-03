@@ -12,13 +12,12 @@ const AbstractArray3{T} = AbstractArray{T,3}
 const AbstractArray4{T} = AbstractArray{T,4}
 const AbstractArray5{T} = AbstractArray{T,5}
 
-# package code goes here
-include("utility_additive.jl")
-
-
 include("helpers.jl")
 include("learning_transition.jl")
 include("makeStateSpace.jl")
+
+# package code goes here
+include("flow-payoffs.jl")
 
 include("vf_structs.jl")
 include("utility.jl")

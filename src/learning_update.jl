@@ -48,7 +48,7 @@ function learningUpdate!(
     @views dubV1 .+= duex[:,:,:,d2plus]
 
     # ∂EVtilde/∂σ[:,:,2:dmaxp1] = ∂u/∂σ[:,:,2:dmaxp1] + β * dΠψ/dσ ⊗ I * EV[:,:,2:dmaxp1]
-    _βΠψdσ!(Πψtmp, ψspace, σ, β)
+    _βΠψdθρ!(Πψtmp, ψspace, σ, β)
     A_mul_B_md!(dubV_σ1, Πψtmp, EV1, 2)
     dEVσ[:,:,exp2lrn] .= dubV_σ1
     @views dubV_σ1 .+= duexσ[:,:,d2plus]

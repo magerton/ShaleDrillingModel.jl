@@ -9,7 +9,7 @@ let dpi = similar(tmpv.Πψtmp), fdpi = similar(tmpv.Πψtmp)
     ShaleDrillingModel._βΠψ!(fdpi, ψspace, σ2, β)
     fdpi .-= dpi
     fdpi ./= hh
-    ShaleDrillingModel._βΠψdσ!(dpi, ψspace, σv, β)
+    ShaleDrillingModel._βΠψdθρ!(dpi, ψspace, σv, β)
 
     @views maxv, idx = findmax(abs.(dpi .- fdpi))
     sub = ind2sub(fdpi, idx)
@@ -18,17 +18,4 @@ let dpi = similar(tmpv.Πψtmp), fdpi = similar(tmpv.Πψtmp)
     @test 0.0 < maxv < 1e-5
     @test fdpi ≈ dpi
 
-    h = peturb(3.0)
-    hh = 2.0*h
-
-    ShaleDrillingModel._βΠψ!(dpi,  ψspace-h, ψspace, σv, β)
-    ShaleDrillingModel._βΠψ!(fdpi, ψspace+h, ψspace, σv, β)
-    fdpi .-= dpi
-    fdpi ./= hh
-    ShaleDrillingModel._βΠψdψ!(dpi, ψspace, σv, β)
-
-    @views maxv, idx = findmax(abs.(dpi .- fdpi))
-    sub = ind2sub(fdpi, idx)
-    @show "worst value is $maxv at $sub for β dΠ/dψ"
-    @test fdpi ≈ dpi
 end

@@ -10,6 +10,7 @@ dfψ(::Type{Val{FF}}, θ::AbstractVector{T}, σ::T,   z... , ψ::T,             
 ```
 """
 
+
 # functions in case we have regime-info
 @inline flow(  FF::Type, θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer, d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T} = flow(  FF, θ, σ, logp, ψ,    d, d1, Dgt0, roy, geoid)
 @inline flowdθ(FF::Type, θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T, k::Integer, d::Integer, d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T} = flowdθ(FF, θ, σ, logp, ψ, k, d, d1, Dgt0, roy, geoid)
@@ -20,9 +21,9 @@ dfψ(::Type{Val{FF}}, θ::AbstractVector{T}, σ::T,   z... , ψ::T,             
 # --------------------------------------------------- super simple: additive ---------------------------------------------------------------------
 # -----------------------------------------------------------------------------------------------------------------------------
 
-@inline function flow(::Type{Val{:add}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer,             d1::Integer, Dgt0::Bool, roy::Real, geoid::Real) where {T}
+@inline function flow(::Type{Val{:add}}, θ::AbstractVector{T}, tp::T,    logp::T, ψ::T, d::Integer,             d1::Integer, Dgt0::Bool, roy::Real, geoid::Real) where {T}
     d == 0 && return zero(T)
-    u = exp(logp) * (one(T)-roy) * (Dgt0  ? θ[1]+ψ  :  θ[1]+ψ*_ρ2(σ) )  + (d==1 ?  θ[2] : θ[3])
+    u = exp(logp) * (one(T)-roy) * (Dgt0  ? θ[1]+ψ  :  θ[1]+ψ * _ρ2(tp) )  + (d==1 ?  θ[2] : θ[3])
     d>1      && (u *= convert(T,d))
     d1 == 1  && (u += θ[4])
     return u::T
@@ -39,7 +40,7 @@ end
     throw(error("$k out of bounds"))
 end
 
-@inline flowdσ(::Type{Val{:add}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * ψ * -2.0 * σ / (one(T)+σ^2)^2
+@inline flowdσ(::Type{Val{:add}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * ψ * 2 * _ρ(σ) * _dρdθρ(σ)
 @inline flowdψ(::Type{Val{:add}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * _ρ2(σ)
 
 
@@ -69,7 +70,7 @@ end
     throw(error("$k out of bounds"))
 end
 
-@inline flowdσ(::Type{Val{:adddisc}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * θ[2] * ψ * -2.0 * σ / (one(T)+σ^2)^2
+@inline flowdσ(::Type{Val{:adddisc}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * θ[2] * ψ * 2 * _ρ(σ) * _dρdθρ(σ)
 @inline flowdψ(::Type{Val{:adddisc}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * θ[2] * _ρ2(σ)
 
 # -----------------------------------------------------------------------------------------------------------------------------
@@ -84,7 +85,7 @@ end
     return u::T
 end
 
-@inline function flowdθ(::Type{Val{:addlin}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
+function flowdθ(::Type{Val{:addlin}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
     d == 0  && return zero(T)
 
     k == 1  && return  convert(T,d) * exp(logp) * (one(T)-roy)
@@ -98,7 +99,7 @@ end
     throw(error("$k out of bounds"))
 end
 
-@inline flowdσ(::Type{Val{:addlin}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * θ[3] * exp(logp) * (one(T)-roy) * ψ * -2.0 * σ / (one(T)+σ^2)^2
+@inline flowdσ(::Type{Val{:addlin}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * θ[3] * exp(logp) * (one(T)-roy) * ψ * 2 * _ρ(σ)* _dρdθρ(σ)
 @inline flowdψ(::Type{Val{:addlin}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * θ[3] * exp(logp) * (one(T)-roy) * _ρ2(σ)
 
 
@@ -141,7 +142,7 @@ end
 @inline function flowdσ(::Type{Val{:addexp}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T}
     d == 0 && return zero(T)
     ρ = _ρ(σ)
-    return convert(T,d) * exp(logp) * (one(T)-roy) * expQ(θ[1], θ[2], θ[3], σ, false, geoid, ψ) * (θ[3]*ψ*2.0*ρ - 0.5) * _dρdσ(σ, ρ)
+    return convert(T,d) * exp(logp) * (one(T)-roy) * expQ(θ[1], θ[2], θ[3], σ, false, geoid, ψ) * (θ[3]*ψ*2.0*ρ - 0.5) * _dρdθρ(σ)
 end
 @inline function flowdψ(::Type{Val{:addexp}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T}
     return d == 0 ? zero(T) : convert(T,d) * exp(logp) * (one(T)-roy) * expQ(θ[1], θ[2], θ[3], σ, false, geoid, ψ) * θ[3] * _ρ2(σ)
@@ -188,7 +189,7 @@ end
 @inline function flowdσ(::Type{Val{:allexp}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T}
     d == 0 && return zero(T)
     ρ = _ρ(σ)
-    return convert(T,d) * revenue(θ[1], θ[2], θ[3], θ[4], σ, logp, false, roy, geoid, ψ) * ( ψ*θ[4]*2.0*ρ - 0.5) * _dρdσ(σ, ρ)
+    return convert(T,d) * revenue(θ[1], θ[2], θ[3], θ[4], σ, logp, false, roy, geoid, ψ) * ( ψ*θ[4]*2.0*ρ - 0.5) * _dρdσ(σ)
 end
 @inline function flowdψ(::Type{Val{:allexp}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T}
     return d == 0 ? zero(T) : convert(T,d) * revenue(θ[1], θ[2], θ[3], θ[4], σ, logp, false, roy, geoid, ψ) * θ[4]*_ρ2(σ)
@@ -202,12 +203,12 @@ end
 @inline function flow(::Type{Val{:breakexp}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer,             d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
     d == 0 && return zero(T)
     if !Dgt0
-        u = exp(logp) * (one(T)-roy) * expQ(θ[1], θ[2], θ[3], σ, Dgt0, geoid, ψ) + (d==1 ?  θ[4] : θ[5])
+        u = revenue(θ[1], θ[2], θ[3], θ[4], σ, logp, Dgt0, roy, geoid, ψ) + (d==1 ?  θ[5] : θ[6])
     else
-        u = exp(logp) * (one(T)-roy) * expQ(θ[6], θ[7], θ[8], σ, Dgt0, geoid, ψ) + (d==1 ?  θ[9] : θ[10])
+        u = revenue(θ[7], θ[8], θ[9], θ[10], σ, logp, Dgt0, roy, geoid, ψ) + (d==1 ?  θ[11] : θ[12])
     end
     d>1      && (u *= d)
-    d1 == 1  && (u += θ[11])
+    d1 == 1  && (u += θ[13])
     return u::T
 end
 
@@ -217,7 +218,7 @@ end
     k == 1  && return Dgt0           ? zero(T) : convert(T,d) * revenue(θ[1], θ[2], θ[3], θ[4], σ, logp, Dgt0, roy, geoid, ψ)
     k == 2  && return Dgt0           ? zero(T) : convert(T,d) * revenue(θ[1], θ[2], θ[3], θ[4], σ, logp, Dgt0, roy, geoid, ψ) * logp
     k == 3  && return Dgt0           ? zero(T) : convert(T,d) * revenue(θ[1], θ[2], θ[3], θ[4], σ, logp, Dgt0, roy, geoid, ψ) * convert(T,geoid)
-    k == 4  && return Dgt0           ? zero(T) : convert(T,d) * revenue(θ[1], θ[2], θ[3], θ[4], σ, logp, Dgt0, roy, geoid, ψ) * ψ*_ρ2(σ)
+    k == 4  && return Dgt0           ? zero(T) : convert(T,d) * revenue(θ[1], θ[2], θ[3], θ[4], σ, logp, Dgt0, roy, geoid, ψ) * ψ * _ρ2(σ)
     k == 5  && return Dgt0 || d >  1 ? zero(T) : one(T)
     k == 6  && return Dgt0 || d == 1 ? zero(T) : convert(T,d)
 
@@ -267,7 +268,7 @@ end
     throw(error("$k out of bounds"))
 end
 
-@inline flowdσ(::Type{Val{:linbreak}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * θ[4] * exp(logp) * (one(T)-roy) * ψ * -2.0 * σ / (one(T)+σ^2)^2
+@inline flowdσ(::Type{Val{:linbreak}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * θ[4] * exp(logp) * (one(T)-roy) * ψ * 2 * _ρ(σ) * _dρdθρ(σ)
 @inline flowdψ(::Type{Val{:linbreak}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * θ[4] * exp(logp) * (one(T)-roy) * _ρ2(σ)
 
 
@@ -307,7 +308,7 @@ end
     throw(error("$k out of bounds"))
 end
 
-@inline flowdσ(::Type{Val{:bigbreak}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * θ[3] * exp(logp) * (one(T)-roy) * ψ * -2.0 * σ / (one(T)+σ^2)^2
+@inline flowdσ(::Type{Val{:bigbreak}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * θ[3] * exp(logp) * (one(T)-roy) * ψ * 2 * _ρ(σ)* _dρdθρ(σ)
 @inline flowdψ(::Type{Val{:bigbreak}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * θ[3] * exp(logp) * (one(T)-roy) * _ρ2(σ)
 
 

@@ -17,9 +17,8 @@ nplus1_impl(N::Integer) = :(Val{$(N+1)})
   Dgt0 = s.D > 0
 
   # information
-  # _ψclamp(uv[1] + σ*uv[2], prim)
-  ψ = Dgt0 ? uv[1] : uv[1] + σ*uv[2] # , extrema(_ψspace(prim, σ))...)
-  v = uv[2]
+  ρ = _ρ(σ)
+  ψ = Dgt0 ? uv[1] : _ψ1(uv..., ρ)
 
   # containers
   drng = action_iter(prim.wp, s_idx)
@@ -48,7 +47,7 @@ nplus1_impl(N::Integer) = :(Val{$(N+1)})
     if !Dgt0
       dpsi = flowdψ(FF, θt, σ, z..., ψ, d, roy, geo) + prim.β * gradient_d(nplus1(Val{NZ}), isev.EV, z..., ψ, sp_idx, itypidx...)::T
       dsig = flowdσ(FF, θt, σ, z..., ψ, d, roy, geo) + prim.β * isev.dEVσ[z..., ψ, sp_idx, itypidx...]
-      grad[end] += wt * (dpsi*v + dsig)
+      grad[end] += wt * (dpsi*_dψ1dρ(uv..., ρ) + dsig)
     end
   end
 

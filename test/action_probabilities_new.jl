@@ -92,8 +92,8 @@ let pids = [1,],
 
     maxv, idx =  findmax(abs.(fdgrad .- grad))
     println("worst value is $maxv at $(ind2sub(fdgrad, idx)) for dlogP")
-    @test maxv < 1e-7
     @test fdgrad ≈ grad
+    @test maxv < 1.5e-7
 end
 
 

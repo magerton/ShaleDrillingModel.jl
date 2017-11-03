@@ -12,7 +12,7 @@ let prim = dcdp_primitives(:addlin, β, wp, zspace, Πp1, ψspace),
 
     EVcopy .= sev.EV
     @test all(EVcopy .== sev.EV)
-    sitp_test = interpolate!(EVcopy, (BSpline(Linear()), BSpline(Quadratic(InPlace())), NoInterp(), NoInterp(), NoInterp()), OnCell() )
+    sitp_test = interpolate!(EVcopy, (BSpline(Quadratic(InPlace())), BSpline(Quadratic(InPlace())), NoInterp(), NoInterp(), NoInterp()), OnCell() )
     @test sitp_test.coefs === EVcopy
     @test !all(sitp_test.coefs .== sev.EV)
 
