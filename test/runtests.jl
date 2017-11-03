@@ -6,7 +6,7 @@ using Interpolations
 
 include("makeStateSpace.jl")
 
-jldpath = joinpath(Pkg.dir("ShaleDrillingModel"), "data/price-cost-transitions.jld")
+jldpath = joinpath(Pkg.dir("ShaleDrillingData"), "data/price-cost-transitions.jld")
 @load jldpath pspace cspace Πpcr Πp1
 
 # some primitives
@@ -16,7 +16,6 @@ geology_types = 1:10
 royalty_types = 1:length(royalty_rates)
 
 # initial parameters
-[0.275755, ]
 θt = [-2.0, 0.932, 1.0, -2.11996, -0.818109, 1.85105,]
 σv = 0.566889
 θfull = vcat(θt, σv)
@@ -34,7 +33,7 @@ evs = dcdp_Emax(prim)
 ShaleDrillingModel.check_size(prim, evs)
 
 println("testing flow payoffs")
-# include("flow-payoffs.jl")
+include("flow-payoffs.jl")
 
 println("testing flow gradients")
 @test check_flowgrad(θt, σv, prim, 0.2, 1)

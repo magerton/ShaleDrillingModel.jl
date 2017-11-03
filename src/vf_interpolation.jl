@@ -50,9 +50,9 @@ function ItpSharedEV(sev::SharedEV{T,N,N2,TT}, p::dcdp_primitives, σ::Real=1.0;
     scalegrid(x::AbstractVector) = Base.OneTo(length(x))
 
     # scaled interpolation
-    scl_EV   = scalegrid.((p.zspace..., _ψspace(p,σ),         nS, sev.itypes...))
-    scl_dEV  = scalegrid.((p.zspace..., _ψspace(p,σ), nθ,     nS, sev.itypes...))
-    scl_dEVσ = scalegrid.((p.zspace..., _ψspace(p,σ),     nSexp1, sev.itypes...))
+    scl_EV   = scalegrid.((p.zspace..., _ψspace(p),         nS, sev.itypes...))
+    scl_dEV  = scalegrid.((p.zspace..., _ψspace(p), nθ,     nS, sev.itypes...))
+    scl_dEVσ = scalegrid.((p.zspace..., _ψspace(p),     nSexp1, sev.itypes...))
 
     sit_EV   = scale(itp_EV   , scl_EV...)
     sit_dEV  = scale(itp_dEV  , scl_dEV...)

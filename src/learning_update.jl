@@ -61,11 +61,10 @@ function learningUpdate!(
 end
 
 
-learningUpdateψpeturb!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, σ::T, h::T) where {T} = learningUpdate!(t.ubVfull,                       t.uex,                  evs.EV,                     p.wp, t.Πψtmp, _ψspace(p,σ).+h, σ, p.β, h)
-learningUpdate!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, σ::Real, ::Type{Val{false}}) = learningUpdate!(t.ubVfull,                       t.uex,                  evs.EV,                     p.wp, t.Πψtmp, _ψspace(p,σ),    σ, p.β)
-learningUpdate!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, σ::Real, ::Type{Val{true}})  = learningUpdate!(t.ubVfull, t.dubVfull, t.dubV_σ, t.uex, t.duex, t.duexσ, evs.EV, evs.dEV, evs.dEVσ, p.wp, t.Πψtmp, _ψspace(p,σ),    σ, p.β)
+learningUpdateψpeturb!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, σ::T, h::T) where {T} = learningUpdate!(t.ubVfull,                       t.uex,                  evs.EV,                     p.wp, t.Πψtmp, _ψspace(p).+h, σ, p.β, h)
+learningUpdate!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, σ::Real, ::Type{Val{false}}) = learningUpdate!(t.ubVfull,                       t.uex,                  evs.EV,                     p.wp, t.Πψtmp, _ψspace(p),    σ, p.β)
+learningUpdate!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, σ::Real, ::Type{Val{true}})  = learningUpdate!(t.ubVfull, t.dubVfull, t.dubV_σ, t.uex, t.duex, t.duexσ, evs.EV, evs.dEV, evs.dEVσ, p.wp, t.Πψtmp, _ψspace(p),    σ, p.β)
 learningUpdate!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, σ::Real, dograd::Bool=true)  = learningUpdate!(evs, t, p, σ, Val{dograd})
-
 
 
 

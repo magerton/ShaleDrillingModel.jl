@@ -8,7 +8,7 @@ export dcdp_primitives,
     check_EVgrad!,
     _zspace,
     _ψspace,
-    _ψclamp,
+    _ψ1clamp,
     _nθt,
     _ngeo,
     _θt,
@@ -68,11 +68,9 @@ _zspace(prim::dcdp_primitives) = prim.zspace
 
 # just in case we have things lying around...
 _ψspace(prim::dcdp_primitives) = prim.ψspace
-_ψspace(prim::dcdp_primitives, a, b) = _ψspace(prim)
-_ψspace(prim::dcdp_primitives, a)    = _ψspace(prim)
-_ψclamp(x::Real, prim::dcdp_primitives, a, b) = clamp(x, extrema(_ψspace(prim, a, b))...)
-_ψclamp(x::Real, prim::dcdp_primitives, a) = clamp(x, extrema(_ψspace(prim, a))...)
-_ψclamp(x::Real, prim::dcdp_primitives) = clamp(x, extrema(_ψspace(prim))...)
+@inline _ψ1clamp(u::Real,v::Real,ρ::Real, prim::dcdp_primitives) = clamp(_ψ1(u,v,ρ), extrema(_ψspace(prim))...)
+
+
 
 sprime_idx(prim::dcdp_primitives, i::Integer) = sprime_idx(prim.wp, i)
 wp_info(prim::dcdp_primitives, i::Integer) = wp_info(prim.wp, i)

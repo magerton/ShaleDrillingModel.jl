@@ -1,4 +1,4 @@
-export check_dΠψ
+export check_dΠψ, _dψ1dθρ, _ρ
 
 
 # FIXME: Δ is a function of σ because step(ψspace) = 2*numsd*(1+σ^2)/(numpts-1).
@@ -21,6 +21,8 @@ _dρdσ = _dρdθρ # alias
 @inline _ψ1(u::Real,v::Real,ρ::Real) = ρ*u + sqrt(1-ρ^2)*v
 @inline _ψ2(u::Real,v::Real,ρ::Real) = u
 @inline _dψ1dρ(u::Real,v::Real,ρ::Real) = u - ρ/sqrt(1-ρ^2)*v
+
+@inline _dψ1dθρ(u::Real, v::Real, ρ::Real, θρ::Real) = _dψ1dρ(u,v,ρ)*_dρdθρ(θρ::Real)
 
 @inline _z(x2::Real, x1::Real, Δ::Real, ρ::Real) = (x2 - ρ^2*x1 + Δ)/sqrt(1-ρ)
 
