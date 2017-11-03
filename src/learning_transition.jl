@@ -24,10 +24,10 @@ _dρdσ = _dρdθρ # alias
 
 @inline _dψ1dθρ(u::Real, v::Real, ρ::Real, θρ::Real) = _dψ1dρ(u,v,ρ)*_dρdθρ(θρ::Real)
 
-@inline _z(x2::Real, x1::Real, Δ::Real, ρ::Real) = (x2 - ρ^2*x1 + Δ)/sqrt(1-ρ)
+@inline _z(x2::Real, x1::Real, Δ::Real, ρ::Real) = (x2 - ρ*x1 + Δ)/sqrt(1-ρ^2)
 
 # derivatives
-@inline _dzdρ(x2::Real, x1::Real, ρ::Real, z::Real) = -2*ρ*x1/sqrt(1-ρ) + 0.5*z/(1-ρ)
+@inline _dzdρ(x2::Real, x1::Real, ρ::Real, z::Real) = -x1/sqrt(1-ρ^2) + ρ*z/(1-ρ^2)
 @inline _dπdρ(x2::Real, x1::Real, Δ::Real, ρ::Real) = (z = _z(x2,x1,Δ,ρ);  normpdf(z) * _dzdρ(x2,x1,ρ,z))
 
 # finite difference versions
@@ -79,12 +79,11 @@ _βΠψ!(P::AbstractMatrix, y1::StepRangeLen, θp::Real, β::Real) = _βΠψ!(P,
 function check_dΠψ(θρ::Real, ψspace::StepRangeLen)
 
     Δ = 0.5 * step(ψspace)
-    ρ = _ρ(θρ)
 
     for yj in ψspace
         for y in ψspace
-            fdσ = Calculus.derivative((sig) -> normcdf(_z(yj, y  , Δ, _ρ(sig))), θρ)
-            dσ  = _dρdθρ(θρ) * _dπdρ(yj, y, Δ, ρ)
+            fdσ = Calculus.derivative((sig) -> normcdf(_z(yj, y, Δ, _ρ(sig))), θρ)
+            dσ  = _dρdθρ(θρ) * _dπdρ(yj, y, Δ, _ρ(θρ))
             abs(fdσ - dσ ) < 1e-7 || throw(error("bad σ grad at σ = $σ, ψ2 = $yj, ψ1 = $y"))
         end
     end
