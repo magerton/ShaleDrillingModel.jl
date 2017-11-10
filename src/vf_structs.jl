@@ -26,6 +26,7 @@ end
 
 function dcdp_primitives(FF::Symbol, β::T, wp::well_problem, zspace::TT, Πz::AM, ψspace::AV) where {T,TT,AM,AV}
     FF ∈ (:lin, :exp)           && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 1, 7)
+    FF ∈ (:exproy,)             && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 1, 8)
     FF ∈ (:breaklin, :breakexp) && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 1, 13)
     throw(error("$FF is unknown"))
 end
