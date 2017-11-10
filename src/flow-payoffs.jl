@@ -18,29 +18,39 @@ dfψ(::Type{Val{FF}}, θ::AbstractVector{T}, σ::T,   z... , ψ::T,             
 
 # --------------------------- common revenue functions & derivatives  --------------------------------------
 
-@inline function rev_exp(θ0::T, θ1::T, θ2::T, θ3::T, θ4::T, σ::T, logp::Real, ψ::Real, Dgt0::Bool, roy::Real, geoid::Real) where {T<:Real}
+function Eexpψ(θ4::T, σ::T, ψ::T, Dgt0::Bool) where {T<:Real}
     if Dgt0
-        r = (one(T)-θ0*roy) * exp(θ1 + θ2*logp + θ3*geoid + θ4*ψ)
+        out = θ4*ψ
     else
         ρ = _ρ(σ)
-        r = (one(T)-θ0*roy) * exp(θ1 + θ2*logp + θ3*geoid + θ4*ψ*ρ + 0.5*(one(T)-ρ^2) )
+        out = θ4*(ψ*ρ + θ4*0.5*(one(T)-ρ^2))
     end
+    return out::T
+end
+
+function Eψ(θ4::T, σ::T, ψ::T, Dgt0::Bool) where {T<:Real}
+    if Dgt0
+        out = θ4*ψ
+    else
+        out = θ4*ψ*_ρ(σ)
+    end
+    return out::T
+end
+
+@inline function rev_exp(θ0::T, θ1::T, θ2::T, θ3::T, θ4::T, σ::T, logp::Real, ψ::Real, Dgt0::Bool, roy::Real, geoid::Real) where {T<:Real}
+    r = (one(T)-θ0*roy) * exp(θ1 + θ2*logp + θ3*geoid + Eexpψ(θ4, σ, ψ, Dgt0))
     return r::T
 end
 
 @inline function rev_lin(θ0::T, θ1::T, θ2::T, θ3::T, θ4::T, σ::T, logp::Real, ψ::Real, Dgt0::Bool, roy::Real, geoid::Real) where {T<:Real}
-    if Dgt0
-        r = (one(T)-θ0*roy) * exp(θ2*logp) * (θ1 + θ3*geoid + θ4*ψ)
-    else
-        r = (one(T)-θ0*roy) * exp(θ2*logp) * (θ1 + θ3*geoid + θ4*ψ*_ρ(σ))
-    end
+    r = (one(T)-θ0*roy) * exp(θ2*logp) * (θ1 + θ3*geoid + Eψ(θ4,σ,ψ,Dgt0))
     return r::T
 end
 
 @inline drevdσ_lin(θ0::T, θ1::T, θ2::T, θ3::T, θ4::T, σ::T, logp::Real, ψ::Real, roy::Real, geoid::Real) where {T} = (one(T)-θ0*roy) * exp(θ2*logp) * θ4 * ψ * _dρdθρ(σ)
 @inline drevdψ_lin(θ0::T, θ1::T, θ2::T, θ3::T, θ4::T, σ::T, logp::Real, ψ::Real, roy::Real, geoid::Real) where {T} = (one(T)-θ0*roy) * exp(θ2*logp) * θ4 * _ρ(σ)
 
-@inline drevdσ_exp(θ0::T, θ1::T, θ2::T, θ3::T, θ4::T, σ::T, logp::Real, ψ::Real, roy::Real, geoid::Real) where {T} = rev_exp(θ0,θ1,θ2,θ3,θ4,σ,logp,ψ,false,roy,geoid) * (ψ*θ4 - _ρ(σ)) * _dρdσ(σ)
+@inline drevdσ_exp(θ0::T, θ1::T, θ2::T, θ3::T, θ4::T, σ::T, logp::Real, ψ::Real, roy::Real, geoid::Real) where {T} = rev_exp(θ0,θ1,θ2,θ3,θ4,σ,logp,ψ,false,roy,geoid) * (ψ*θ4 - θ4^2*_ρ(σ)) * _dρdσ(σ)
 @inline drevdψ_exp(θ0::T, θ1::T, θ2::T, θ3::T, θ4::T, σ::T, logp::Real, ψ::Real, roy::Real, geoid::Real) where {T} = rev_exp(θ0,θ1,θ2,θ3,θ4,σ,logp,ψ,false,roy,geoid) * θ4 * _ρ(σ)
 
 # in case we restrict the coef on royalty to be 1
@@ -71,7 +81,7 @@ end
     k == 1  && return  convert(T,d) * rev_exp(θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,Dgt0,roy,geoid)
     k == 2  && return  convert(T,d) * rev_exp(θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,Dgt0,roy,geoid) * logp
     k == 3  && return  convert(T,d) * rev_exp(θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,Dgt0,roy,geoid) * convert(T,geoid)
-    k == 4  && return  convert(T,d) * rev_exp(θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,Dgt0,roy,geoid) * ( Dgt0 ? ψ : ψ*_ρ(σ) )
+    k == 4  && return  convert(T,d) * rev_exp(θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,Dgt0,roy,geoid) * ( Dgt0 ? ψ : ψ*_ρ(σ) + θ[k]*(1-_ρ2(σ)))
 
     k == 5  && return  d  >  1 ? zero(T) : one(T)
     k == 6  && return  d  == 1 ? zero(T) : convert(T,d)
@@ -96,21 +106,16 @@ end
     return u::T
 end
 
+
+
 @inline function flowdθ(::Type{Val{:exproy}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
     d == 0  && return zero(T)
-    if k == 1
-        if Dgt0
-            eterm = exp(θ[2] + θ[3]*logp + θ[4]*geoid + θ[5]*ψ)
-        else
-            ρ = _ρ(σ)
-            eterm = exp(θ[2] + θ[3]*logp + θ[4]*geoid + θ[5]*ψ*ρ + 0.5*(one(T)-ρ^2) )
-        end
-        return - convert(T,d) * eterm * roy
-    end
+
+    k == 1  && return - convert(T,d) * exp(θ[2] + θ[3]*logp + θ[4]*geoid + Eexpψ(θ[5], σ, ψ, Dgt0) ) * roy
     k == 2  && return   convert(T,d) * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,roy,geoid)
     k == 3  && return   convert(T,d) * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,roy,geoid) * logp
     k == 4  && return   convert(T,d) * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,roy,geoid) * convert(T,geoid)
-    k == 5  && return   convert(T,d) * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,roy,geoid) * ( Dgt0 ? ψ : ψ*_ρ(σ) )
+    k == 5  && return   convert(T,d) * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,roy,geoid) * ( Dgt0 ? ψ : ψ*_ρ(σ) + θ[k]*(1-_ρ2(σ)))
 
     k == 6  && return  d  >  1 ? zero(T) : one(T)
     k == 7  && return  d  == 1 ? zero(T) : convert(T,d)
@@ -172,7 +177,7 @@ function flowdθ(::Type{Val{:breakexp}}, θ::AbstractVector{T}, σ::T,     logp:
     k == 1  && return   Dgt0           ? zero(T) : convert(T,d) * rev_exp(θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,Dgt0,roy,geoid)
     k == 2  && return   Dgt0           ? zero(T) : convert(T,d) * rev_exp(θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,Dgt0,roy,geoid) * logp
     k == 3  && return   Dgt0           ? zero(T) : convert(T,d) * rev_exp(θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,Dgt0,roy,geoid) * convert(T,geoid)
-    k == 4  && return   Dgt0           ? zero(T) : convert(T,d) * rev_exp(θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,Dgt0,roy,geoid) * ψ * _ρ(σ)
+    k == 4  && return   Dgt0           ? zero(T) : convert(T,d) * rev_exp(θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,Dgt0,roy,geoid) * (ψ*_ρ(σ) + θ[k]*(1-_ρ2(σ)))
     k == 5  && return   Dgt0 || d > 1  ? zero(T) : one(T)
     k == 6  && return   Dgt0 || d == 1 ? zero(T) : convert(T,d)
 
