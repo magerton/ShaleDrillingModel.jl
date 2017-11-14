@@ -11,10 +11,11 @@ dfψ(::Type{Val{FF}}, θ::AbstractVector{T}, σ::T,   z... , ψ::T,             
 """
 
 # functions in case we have regime-info
-@inline flow(  FF::Type, θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer, d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T} = flow(  FF, θ, σ, logp, ψ,    d, d1, Dgt0, roy, geoid)
-@inline flowdθ(FF::Type, θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T, k::Integer, d::Integer, d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T} = flowdθ(FF, θ, σ, logp, ψ, k, d, d1, Dgt0, roy, geoid)
-@inline flowdσ(FF::Type, θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer,                          roy::T, geoid::Real) where {T} = flowdσ(FF, θ, σ, logp, ψ,    d,           roy, geoid)
-@inline flowdψ(FF::Type, θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer,                          roy::T, geoid::Real) where {T} = flowdψ(FF, θ, σ, logp, ψ,    d,           roy, geoid)
+@inline flow(  FF::Type,  θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer, d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T} = flow(   FF, θ, σ, logp, ψ,    d, d1, Dgt0, roy, geoid)
+@inline flowrev(FF::Type, θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer, d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T} = flowrev(FF, θ, σ, logp, ψ,    d, d1, Dgt0, roy, geoid)
+@inline flowdθ(FF::Type,  θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T, k::Integer, d::Integer, d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T} = flowdθ( FF, θ, σ, logp, ψ, k, d, d1, Dgt0, roy, geoid)
+@inline flowdσ(FF::Type,  θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer,                          roy::T, geoid::Real) where {T} = flowdσ( FF, θ, σ, logp, ψ,    d,           roy, geoid)
+@inline flowdψ(FF::Type,  θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer,                          roy::T, geoid::Real) where {T} = flowdψ( FF, θ, σ, logp, ψ,    d,           roy, geoid)
 
 # --------------------------- common revenue functions & derivatives  --------------------------------------
 
@@ -65,6 +66,14 @@ end
 # -----------------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------- exponential --------------------------------------------------------------------
 # -----------------------------------------------------------------------------------------------------------------------------
+
+
+@inline function flowrev(::Type{Val{:exp}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer,             d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
+    d == 0 && return zero(T)
+    u = roy / (one(T)-roy) * rev_exp(θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,Dgt0,roy,geoid)
+    return u::T
+end
+
 
 
 @inline function flow(::Type{Val{:exp}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer,             d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}

@@ -40,8 +40,8 @@ include("BSplineExtensions.jl")
 
 include("vf_interpolation.jl")
 
-
 include("action_probabilities.jl")
+include("prob_drill_and_landowner_rev.jl")
 
 
 # end module
