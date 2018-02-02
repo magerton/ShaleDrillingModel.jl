@@ -18,7 +18,7 @@ nplus1_impl(N::Integer) = :(Val{$(N+1)})
 
   # information
   ρ = _ρ(σ)
-  ψ = Dgt0 ? uv[1] : _ψ1clamp(uv..., ρ, prim)
+  ψ = Dgt0 ? _ψ2(uv...,ρ) : _ψ1clamp(uv..., ρ, prim)
 
   # containers
   drng = action_iter(prim.wp, s_idx)
