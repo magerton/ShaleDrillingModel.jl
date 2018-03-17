@@ -25,7 +25,7 @@ royalty_types = 1:length(royalty_rates)
 
 # problem sizes
 Πz = Πp
-nψ, nz, ngeo =  51, size(Πz,1), 1
+nψ, nz =  51, size(Πz,1)
 wp = well_problem(3,4,10)
 zspace, ψspace = (pspace,1:2,), linspace(-4.0, 4.0, nψ)
 prim = dcdp_primitives(:exp, β, wp, zspace, Πp, ψspace)

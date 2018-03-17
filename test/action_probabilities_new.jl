@@ -20,7 +20,7 @@ let pids = [1,],
     CR = CartesianRange(length.(idxs))
 
     let uv = (1.,1.), z = (1.2,), dp1 = 1, s = 1, itypidx = (1, 1,)
-        θtvw = _θt(θfull, prim.nθt, prim.ngeo, itypidx[2])
+        θtvw = _θt(θfull, prim.nθt)
         σ0 = _σv(θfull)
         logP!(Vector{Float64}(idx_sz[1]), tmp, θtvw, σ0, prim, isev, uv, z, dp1, s, itypidx, true)
     end
@@ -35,7 +35,7 @@ let pids = [1,],
         zi, ui, vi, di, si, ri, gi = CI.I
         z, u, v, d, s, r, g = getindex.(rngs, CI.I)
 
-        θtvw = _θt(θfull, prim, gi)
+        θtvw = _θt(θfull, prim)
         σ0 = _σv(θfull)
 
         if d ∈ ShaleDrillingModel._actionspace(prim.wp, s) # && !(s ∈ ShaleDrillingModel.ind_lrn(prim.wp.endpts))
@@ -62,7 +62,7 @@ let pids = [1,],
         for CI in CR
             zi, ui, vi, di, si, ri, gi = CI.I
             z, u, v, d, s, r, g = getindex.(rngs, CI.I)
-            θtvw1 = _θt(θ1, prim, gi)
+            θtvw1 = _θt(θ1, prim)
             if d ∈ ShaleDrillingModel._actionspace(prim.wp, s) # && !(s ∈ ShaleDrillingModel.ind_lrn(prim.wp.endpts))
                 fdgrad[k,CI] -= logP!(Vector{T}(0), tmp, θtvw1, σ1, prim, isev, (u,v), (z,), d, s, (ri,gi), dograd)
             end
@@ -74,7 +74,7 @@ let pids = [1,],
         for CI in CR
             zi, ui, vi, di, si, ri, gi = CI.I
             z, u, v, d, s, r, g = getindex.(rngs, CI.I)
-            θtvw2 = _θt(θ2, prim, gi)
+            θtvw2 = _θt(θ2, prim)
             if d ∈ ShaleDrillingModel._actionspace(prim.wp, s) # && !(s ∈ ShaleDrillingModel.ind_lrn(prim.wp.endpts))
                 fdgrad[k,CI] += logP!(Vector{T}(0), tmp, θtvw2, σ2, prim, isev, (u,v), (z,), d, s, (ri,gi), dograd)
                 fdgrad[k,CI] /= hh

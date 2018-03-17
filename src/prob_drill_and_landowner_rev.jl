@@ -151,7 +151,7 @@ function prDrill_infill!(evs::dcdp_Emax, tmpv::dcdp_tmpvars, prim::dcdp_primitiv
 end
 
 function prDrill_infill!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives{FF}, EU::AbstractArray3, P::AbstractArray4, tmpc::dcdp_tmpcntrfact, θ::AbstractVector, itype::Tuple) where {FF}
-    θt, σ = _θt(θ, p, itype[2]), _σv(θ)
+    θt, σ = _θt(θ, p), _σv(θ)
     pdct = makepdct(p, Val{:u})
     fillflows!(t, p, θt, σ, itype...)
     fillflowrevs!(FF, flowrev, tmpc.rin, tmpc.rex, θt, σ, pdct, itype...)

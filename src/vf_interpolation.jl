@@ -67,11 +67,11 @@ for typ in (:parallel, :serial)
     fun = Symbol("$(typ)_prefilterByView!")
     @eval begin
         function ($fun)(sev::SharedEV{T,N,N2}, isev::ItpSharedEV, dograd::Bool=true) where {T,N,N2}
-            Ntyps = length(sev.itypes)
-            ($fun)(sev.EV, isev.EV.itp,        length.(sev.itypes)...)
+            Ntyps = (length(sev.itypes[end]), )
+            ($fun)(sev.EV, isev.EV.itp,         Ntyps...)
             if dograd
-                ($fun)(sev.dEV, isev.dEV.itp,   length.(sev.itypes)...)
-                ($fun)(sev.dEVσ, isev.dEVσ.itp, length.(sev.itypes)...)
+                ($fun)(sev.dEV, isev.dEV.itp,   Ntyps...)
+                ($fun)(sev.dEVσ, isev.dEVσ.itp, Ntyps...)
             end
         end
     end
