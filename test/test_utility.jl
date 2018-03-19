@@ -1,4 +1,4 @@
-let duex = similar(tmpv.duexσ), fduex = similar(tmpv.uex), itype=(0.2,8), p=prim
+let duex = similar(tmpv.duexσ), fduex = similar(tmpv.uex), itype=(0.2,2.0), p=prim
     h = peturb(σv)
     σ1 = σv - h
     σ2 = σv + h
