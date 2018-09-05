@@ -5,6 +5,7 @@ AxisAlgorithms
 Calculus
 StatsBase
 Interpolations
+Ratios
 
 MarkovTransitionMatrices  # to make transition matrices
 

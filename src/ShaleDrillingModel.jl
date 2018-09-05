@@ -1,3 +1,5 @@
+__precompile__()
+
 module ShaleDrillingModel
 
 using StatsFuns
@@ -11,7 +13,6 @@ using SharedArrays
 using SparseArrays
 using Distributed
 using LinearAlgebra
-
 
 const AbstractArray3{T} = AbstractArray{T,3}
 const AbstractArray4{T} = AbstractArray{T,4}

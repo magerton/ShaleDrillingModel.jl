@@ -22,7 +22,7 @@ nplus1_impl(N::Integer) = :(Val{$(N+1)})
 
   # containers
   drng = action_iter(prim.wp, s_idx)
-  ubV = view(tmp, drng+1)
+  ubV = view(tmp, drng.+1)
 
   @inbounds for d in drng
     ubV[d+1] = flow(FF, θt, σ, z..., ψ, d, s.d1, Dgt0, roy, geo) + prim.β * isev.EV[z..., ψ, _sprime(prim.wp, s_idx, d), itypidx...]

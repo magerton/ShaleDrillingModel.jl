@@ -1,14 +1,16 @@
 let pids = [1,],
-    rngs = (zspace..., vspace, vspace, 0:dmax(wp), 1:length(wp), [0.2], 1:1),
-    idxs = (1:2:31,    1:5:51, 1:5:51, 0:dmax(wp), 1:length(wp),  1:1 , 1:1),
+    rngs = (pspace, vspace, vspace, 0:dmax(wp), 1:length(wp), [0.2], 1:1),
+    idxs = (1:2:31, 1:5:51, 1:5:51, 0:dmax(wp), 1:length(wp),  1:1 , 1:1),
     idx_sz = length.((θfull, idxs...)),
+    prim = dcdp_primitives(:exproy, β, wp, (pspace,), Πp1, ψspace),
+    tmpv = dcdp_tmpvars(prim),
     sev = SharedEV(pids, prim, rngs[end-1:end]...),
     isev = ItpSharedEV(sev, prim, σv),
     T = eltype(θfull),
-    tmp = Vector{T}(dmax(wp)+1),
+    tmp = Vector{T}(undef, dmax(wp)+1),
     θ1 = similar(θfull),
     θ2 = similar(θfull),
-    θttmp = Vector{Float64}(prim.nθt),
+    θttmp = Vector{Float64}(undef, prim.nθt),
     grad   = zeros(T, idx_sz),
     fdgrad = zeros(T, idx_sz)
 
@@ -22,10 +24,14 @@ let pids = [1,],
     let uv = (1.,1.), z = (1.2,), dp1 = 1, s = 1, itypidx = (1, 1,)
         θtvw = _θt(θfull, prim.nθt)
         σ0 = _σv(θfull)
-        logP!(Vector{Float64}(idx_sz[1]), tmp, θtvw, σ0, prim, isev, uv, z, dp1, s, itypidx, true)
+        logP!(Vector{Float64}(undef, idx_sz[1]), tmp, θtvw, σ0, prim, isev, uv, z, dp1, s, itypidx, true)
     end
     # -----------------------
 
+
+    @show size(prim.Πz)
+    @show zspace
+    @show rngs
 
     dograd = true
     serial_solve_vf_all!(sev, tmpv, prim, θfull, Val{dograd}; maxit0=12, maxit1=20, vftol=1e-10)
@@ -33,7 +39,7 @@ let pids = [1,],
     grad .= 0.0
     for CI in CR
         zi, ui, vi, di, si, ri, gi = CI.I
-        z, u, v, d, s, r, g = getindex.(rngs, CI.I)
+        z , u , v , d , s , r , g  = getindex.(rngs, CI.I)
 
         θtvw = _θt(θfull, prim)
         σ0 = _σv(θfull)
@@ -58,7 +64,7 @@ let pids = [1,],
 
 
         serial_solve_vf_all!(sev, tmpv, prim, θ1, Val{dograd}; maxit0=12, maxit1=20, vftol=1e-10)
-        print("logp: θ[$k]-h")
+        print("logp: θ[$k]-h\t")
         for CI in CR
             zi, ui, vi, di, si, ri, gi = CI.I
             z, u, v, d, s, r, g = getindex.(rngs, CI.I)
@@ -70,7 +76,7 @@ let pids = [1,],
 
         println("solving again for logp: θ[$k]+h....")
         serial_solve_vf_all!(sev, tmpv, prim, θ2, Val{dograd}; maxit0=12, maxit1=20, vftol=1e-10)
-        print("updating fdgrad\n")
+        println("updating fdgrad")
         for CI in CR
             zi, ui, vi, di, si, ri, gi = CI.I
             z, u, v, d, s, r, g = getindex.(rngs, CI.I)
@@ -91,7 +97,7 @@ let pids = [1,],
 
 
     maxv, idx =  findmax(abs.(fdgrad .- grad))
-    println("worst value is $maxv at $(ind2sub(fdgrad, idx)) for dlogP")
+    println("worst value is $maxv at $(CartesianIndices(fdgrad)[idx]) for dlogP")
     @test fdgrad ≈ grad
     @test maxv < 1.5e-7
 end

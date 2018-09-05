@@ -1,15 +1,18 @@
-# using ShaleDrillingModel
+using ShaleDrillingModel
 using Test
 using StatsFuns
 using JLD2
 using Interpolations
+using Statistics
+using Distributed
 
 include("makeStateSpace.jl")
 
-jldpath = joinpath(Pkg.dir("ShaleDrillingData"), "data/price-transitions.jld")
-@load jldpath pspace Πp
+# jldpath = Base.joinpath(Pkg.dir("ShaleDrillingData"), "data/price-transitions.jld")
+jldpath = "D:/libraries/julia/dev/ShaleDrillingData/data/price-transitions.jld"
+@load jldpath pspace Πp Πp1
 
-Πp1 = Πp
+# Πp1 = Πp
 
 # some primitives
 β = (1.02 / 1.125) ^ (1.0/12.0)  # real discount rate
@@ -31,7 +34,7 @@ prim = dcdp_primitives(:exproy, β, wp, zspace, Πp, ψspace)
 tmpv = dcdp_tmpvars(prim)
 evs = dcdp_Emax(prim)
 
-# check sizes of models
+## check sizes of models
 ShaleDrillingModel.check_size(prim, evs)
 
 println("testing flow payoffs")
@@ -49,37 +52,23 @@ include("test_transition.jl")
 
 println("filling per-period payoffs")
 
-# ERROR HERE
+@views fillflows!(flow(prim), flow, tmpv.uin[:,:,:,   1], tmpv.uin[:,:,:,   2], tmpv.uex, θt, σv, makepdct(prim, θt, Val{:u},  σv), 0.25, 1)
+fillflows_grad!(tmpv, prim, θt, σv, 0.2, 1)
 
-@views fillflows!(flow(prim), flow, tmpv.uin[:,:,:,   1], tmpv.uin[:,:,:,   2],
-    tmpv.uex, θt, σv, makepdct(prim, θt, Val{:u},  σv), 0.25, 1)
-# fillflows_grad!(tmpv, prim, θt, σv, 0.2, 1)
-#
-# include("logsumexp3.jl")
-#
-# include("vf_solve_terminal_and_infill.jl")
-# include("vf_solve_exploratory.jl")
-#
-# zero!(tmpv)
-# solve_vf_all!(evs, tmpv, prim, θt, σv, (0.2, 1), Val{true})
-#
-# include("vf_interpolation.jl")
-#
-# include("test_dpsi.jl")
-# include("parallel_solution.jl")
-#
-# include("action_probabilities_new.jl")
+include("logsumexp3.jl")
 
+include("vf_solve_terminal_and_infill.jl")
+include("vf_solve_exploratory.jl")
 
+zero!(tmpv)
+solve_vf_all!(evs, tmpv, prim, θt, σv, (0.2, 1), Val{true})
 
+include("vf_interpolation.jl")
 
+include("test_dpsi.jl")
+include("parallel_solution.jl")
 
+include("action_probabilities_new.jl")
 
-
-
-
-
-
-
-
-#
+include("BSplineTestFuns_runtests.jl")
+include("makeStateSpace.jl")

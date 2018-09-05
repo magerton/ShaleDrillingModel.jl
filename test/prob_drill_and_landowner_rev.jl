@@ -77,7 +77,7 @@ plot(ψspace, prdrill[17,:,:])
 
 # let prim = dcdp_primitives(:exp, β, wp, zspace, Πz, ψspace),
 #     tmpv = dcdp_tmpvars(prim),
-#     sev = SharedEV([1,], prim, [1./8.], 1:1),
+#     sev = SharedEV([1,], prim, [1.0/8.0], 1:1),
 #     zdims = length.(prim.zspace),
 #     nψ = _nψ(prim),
 #     nd = _nd(prim),

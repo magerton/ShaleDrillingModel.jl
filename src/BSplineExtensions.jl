@@ -56,7 +56,7 @@ function gradient_d_impl(d::Integer, itp::Type{BSplineInterpolation{T,N,TCoefs,I
     quote
         $meta
         @nexprs $N d->(x_d = xs[d])
-        inds_itp = indices(itp)
+        inds_itp = axes(itp)
 
         # Calculate the indices of all coefficients that will be used
         # and define fx = x - xi in each dimension
@@ -96,8 +96,8 @@ end
 
 # because of https://github.com/JuliaMath/Interpolations.jl/pull/182
 
-fixedgradient(sitp::ScaledInterpolation{T,N,ITPT,IT,GT}, xs::Real...) where {T,N,ITPT,IT<:DimSpec{InterpolationType},GT<:DimSpec{GridType}} = fixedgradient!(Array{T}(count_interp_dims(IT,N)), sitp, xs...)
-fixedgradient(sitp::ScaledInterpolation{T,N,ITPT,IT,GT}, xs...      ) where {T,N,ITPT,IT<:DimSpec{InterpolationType},GT<:DimSpec{GridType}} = fixedgradient!(Array{T}(count_interp_dims(IT,N)), sitp, xs...)
+fixedgradient(sitp::ScaledInterpolation{T,N,ITPT,IT,GT}, xs::Real...) where {T,N,ITPT,IT<:DimSpec{InterpolationType},GT<:DimSpec{GridType}} = fixedgradient!(Array{T}(undef,count_interp_dims(IT,N)), sitp, xs...)
+fixedgradient(sitp::ScaledInterpolation{T,N,ITPT,IT,GT}, xs...      ) where {T,N,ITPT,IT<:DimSpec{InterpolationType},GT<:DimSpec{GridType}} = fixedgradient!(Array{T}(undef,count_interp_dims(IT,N)), sitp, xs...)
 
 @generated function fixedgradient!(g, sitp::ScaledInterpolation{T,N,ITPT,IT}, xs::Number...) where {T,N,ITPT,IT}
     ndims(g) == 1 || throw(DimensionMismatch("g must be a vector (but had $(ndims(g)) dimensions)"))

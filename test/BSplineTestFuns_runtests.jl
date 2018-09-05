@@ -2,6 +2,8 @@
 using Interpolations
 using Interpolations: BSplineInterpolation, tweight, scale
 using Test
+using Random
+using SharedArrays
 
 x = SharedArray{Float64}(100, 100, 10, 10)
 endsz = (map(i -> size(x,i), 3:4)...,)
@@ -72,21 +74,21 @@ gradient_d_impl(3, typeof(itp_2210))
 function test_grad_d(itp::BSplineInterpolation, x::Number...)
     g = Interpolations.gradient(itp, x...)
     for d = 1:length(g)
-        @test g[d] == gradient_d(d, itp, x...)
+        @test g[d] == gradient_d(Val{d}, itp, x...)
     end
 end
 
 xs = 1.2, 2.2, 3.2, Int(4)
-@code_warntype gradient_d(Val{1}, itp_2210, xs...)
+# @code_warntype gradient_d(Val{1}, itp_2210, xs...)
 gradient!(Vector{Float64}(undef, 3), itp_2210, xs...)
 
+Interpolations.gradient(itp_2210, xs...)
 test_grad_d(itp_2210, xs...)
 test_grad_d(itp_1111, xs...)
 test_grad_d(itp_2211, xs...)
 
-
-@test_throws DomainError    gradient_d(5, itp_1111, 1:4...)
-@test_throws ErrorException gradient_d(4, itp_2210, 1:4...)
+@test_throws DomainError    gradient_d(Val{5}, itp_1111, 1:4...)
+@test_throws ErrorException gradient_d(Val{4}, itp_2210, 1:4...)
 
 
 # ------------------------ scale & gradient ---------------------
@@ -122,8 +124,8 @@ sitpb = scale(itpb, 1:10, rng)
 # @test Interpolations.gradient(itpb, 3, 2.0)/step(rng) == Interpolations.gradient(sitpb, 3, 3.0)
 
 # @test Interpolations.gradient(sitpb, 3, 3.0) == Interpolations.gradient(sitpa, 3.0, 3)
-@test fixedgradient(sitpa, 3.0, 3) == fixedgradient(sitpb, 3, 3.0)
-@test gradient_d(1, sitpa, 3.0, 3) ==  fixedgradient(sitpa, 3.0, 3)[1]
+@test ShaleDrillingModel.fixedgradient(sitpa, 3.0, 3) == ShaleDrillingModel.fixedgradient(sitpb, 3, 3.0)
+@test gradient_d(Val{1}, sitpa, 3.0, 3) ==  ShaleDrillingModel.fixedgradient(sitpa, 3.0, 3)[1]
 
 println("done!")
 

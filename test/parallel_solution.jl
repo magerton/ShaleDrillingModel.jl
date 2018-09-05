@@ -1,7 +1,7 @@
 println("testing parallel solution")
 
 rmprocs(workers())
-pids = addprocs()
+pids = addprocs(2)
 @everywhere @show pwd()
 @everywhere using ShaleDrillingModel
 

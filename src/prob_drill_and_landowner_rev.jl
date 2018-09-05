@@ -97,7 +97,7 @@ function prDrill_infill!(
             for j in 1:nψ
                 @views update_IminusTVp!(IminusTEVp, Πz, β, ubV[:,j,1])
                 fact = lufact(IminusTEVp)
-                A_ldiv_B!(fact, EU0[:,j])
+                ldiv!(fact, EU0[:,j])
             end
         end
     end

@@ -25,16 +25,24 @@ function SharedEV(pids::AbstractVector{<:Integer}, prim::dcdp_primitives{FF,T}, 
     nSexp1 = _nSexp(prim)
 
     # initialize SharedArrays and start them at 0 (super-important for infinite horizon problems)
-    EV   = SharedArray{T}( (zdims..., nψ,     nS,     typedims...), init = S -> S[Base.localindexes(S)] = zero(T), pids=[1,pids...])
-    dEV  = SharedArray{T}( (zdims..., nψ, nθ, nS,     typedims...), init = S -> S[Base.localindexes(S)] = zero(T), pids=[1,pids...])
-    dEVσ = SharedArray{T}( (zdims..., nψ,     nSexp1, typedims...), init = S -> S[Base.localindexes(S)] = zero(T), pids=[1,pids...])
-    dEVψ = SharedArray{T}( (zdims..., nψ,     nSexp1, typedims...), init = S -> S[Base.localindexes(S)] = zero(T), pids=[1,pids...])
+    EV   = SharedArray{T}( (zdims..., nψ,     nS,     typedims...), pids=[1,pids...])
+    dEV  = SharedArray{T}( (zdims..., nψ, nθ, nS,     typedims...), pids=[1,pids...])
+    dEVσ = SharedArray{T}( (zdims..., nψ,     nSexp1, typedims...), pids=[1,pids...])
+    dEVψ = SharedArray{T}( (zdims..., nψ,     nSexp1, typedims...), pids=[1,pids...])
+
+    zero!(EV)
+    zero!(dEV)
+    zero!(dEVσ)
+    zero!(dEVψ)
 
     return SharedEV{T,N,N+1,typeof(itypes)}(EV,dEV,dEVσ,dEVψ,itypes)
 end
 
 SharedEV(prim::dcdp_primitives, itypes::AbstractVector...) = SharedEV(workers(), prim, itypes...)
 
+function zero!(x::AbstractArray{T}) where {T<:Number}
+    fill!(x, zero(T))
+end
 
 function zero!(sev::SharedEV{T}) where {T}
     fill!(sev.EV, zero(T))

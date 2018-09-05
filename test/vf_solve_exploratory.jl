@@ -55,13 +55,13 @@ let EV1 = similar(evs.EV),
 
     # infill
     @views maxv, idx = findmax(abs.(fdEV[:,:,:,_nSexp(wp)+1:end].-evs.dEV[:,:,:,_nSexp(wp)+1:end]))
-    sub = ind2sub(fdEV, idx)
+    sub = CartesianIndices(fdEV)[idx]
     @show "worst value is $maxv at $sub for infill"
 
 
     # exploration
     @views maxv, idx = findmax(abs.(fdEV[:,:,:,1:_nSexp(wp)].-evs.dEV[:,:,:,1:_nSexp(wp)]))
-    sub = ind2sub(fdEV, idx)
+    sub = CartesianIndices(fdEV)[idx]
     @show "worst value is $maxv at $sub for exploratory"
 
     @test 0.0 < maxv < 0.1
@@ -134,7 +134,7 @@ let T = Float64,
     fdEVσvw = @view(fdEVσ[:,:,1:nsexp1])
     @test size(fdEVσvw) == size(evs.dEVσ)
     @views maxv, idx = findmax(abs.(fdEVσvw.-evs.dEVσ))
-    sub = ind2sub(fdEVσvw, idx)
+    sub = CartesianIndices(fdEVσvw)[idx]
     @show "worst value is $maxv at $sub for dσ"
     @show extrema(fdEVσvw)
     @show extrema(evs.dEVσ)
