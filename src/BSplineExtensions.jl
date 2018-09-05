@@ -17,7 +17,7 @@ prefilterByView!(         x::AA, Btype::Type{<:BSplineInterpolation{TWeight,N,AA
 function prefilterByView!(x::AA, Btype::Type{<:BSplineInterpolation{TWeight,N,AA,IT,GT,0}}, CI::CartesianIndex) where {TWeight,N,AA<:AbstractArray{<:Real,N},IT<:DimSpec{BSpline},GT}
     Nsmall = N - length(CI)
     all(map(i -> iextract(IT,i) <: NoPrefiltering, Nsmall+1:N))  || throw(error("One of indexes $(Nsmall+1:N) require prefiltering. Interpolation spec was $IT"))
-    ITsmall = (map(i -> iextract(IT, i), 1:Nsmall)...)
+    ITsmall = (map(i -> iextract(IT, i), 1:Nsmall)...,)
     @views xvw = x[ntuple((x)-> Colon(), Nsmall)...,CI]
     prefilter!(TWeight, xvw, Tuple{ITsmall...}, GT)
 end
@@ -25,7 +25,7 @@ end
 serial_prefilterByView!(         x::AA, B::BST, dims::Integer...) where {T,N,AA<:AbstractArray{T,N}, BST<:BSplineInterpolation{<:Real,N,AA,<:NoPrefiltering,  <:GridType,0} } = nothing
 function serial_prefilterByView!(x::AA, B::BST, dims::Integer...) where {T,N,AA<:AbstractArray{T,N}, BST<:BSplineInterpolation{<:Real,N,AA,<:DimSpec{BSpline},<:GridType,0} }
     x === B.coefs || throw(error("x is not the coefs of B!"))
-    CR = CartesianRange(dims)
+    CR = CartesianIndices(dims)
     for CI in CR
         prefilterByView!(x, BST, CI)
     end
@@ -34,7 +34,7 @@ end
 parallel_prefilterByView!(         x::SharedArray{T,N}, B::BST, dims::Integer...) where {T,N, BST<:BSplineInterpolation{<:Real,N,SharedArray{T,N},<:NoPrefiltering,  <:GridType,0} } = nothing
 function parallel_prefilterByView!(x::SharedArray{T,N}, B::BST, dims::Integer...) where {T,N, BST<:BSplineInterpolation{<:Real,N,SharedArray{T,N},<:DimSpec{BSpline},<:GridType,0} }
     x === B.coefs || throw(error("x is not the coefs of B!"))
-    CR = CartesianRange(dims)
+    CR = CartesianIndices(dims)
     s = @sync @parallel for CI in collect(CR)
         prefilterByView!(x, BST, CI)
     end
@@ -48,7 +48,7 @@ function gradient_d_impl(d::Integer, itp::Type{BSplineInterpolation{T,N,TCoefs,I
     # For each component of the gradient, alternately calculate
     # coefficients and set component
     # n = count_interp_dims(IT, N)
-    exs = Array{Expr, 1}(2)
+    exs = Array{Expr, 1}(undef, 2)
     count_interp_dims(iextract(IT, d), 1) > 0 || throw(error("dimension $d not interpolated"))
     exs[1] = gradient_coefficients(IT, N, d)
     exs[2] = :(@inbounds g = $(index_gen(IT, N)))

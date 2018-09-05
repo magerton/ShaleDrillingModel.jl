@@ -91,7 +91,7 @@ function solve_vf_all!(sev::SharedEV, tmpv::dcdp_tmpvars, prim::dcdp_primitives,
 end
 
 function serial_solve_vf_all!(sev::SharedEV, tmpv::dcdp_tmpvars, prim::dcdp_primitives, θ::AbstractVector, dograd::Type; kwargs...)
-    CR = CartesianRange( length.(sev.itypes) )
+    CR = CartesianIndices( length.(sev.itypes) )
     for Idx in collect(CR)
         solve_vf_all!(sev, tmpv, prim, θ, dograd, Idx.I...; kwargs...)
     end
@@ -106,7 +106,7 @@ end
 
 
 function parallel_solve_vf_all!(sev::SharedEV, θ::AbstractVector, dograd::Type; kwargs...)
-    CR = CartesianRange( length.(sev.itypes) )
+    CR = CartesianIndices( length.(sev.itypes) )
     s = @sync @parallel for Idx in collect(CR)
         solve_vf_all!(θ, dograd, Idx.I...; kwargs...)
     end

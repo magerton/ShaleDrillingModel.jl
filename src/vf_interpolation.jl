@@ -45,7 +45,7 @@ function ItpSharedEV(sev::SharedEV{T,N,N2,TT}, p::dcdp_primitives, σ::Real=1.0;
     itp_dEVσ  = BSplineInterpolation(tweight(sev.dEVσ), sev.dEVσ, it_dEVσ, OnCell(), Val{0}())
 
     # information for how to scale the interpolation object
-    scalegrid(x::Range{S}) where {S<:AbstractFloat} = x
+    scalegrid(x::AbstractRange{S}) where {S<:AbstractFloat} = x
     scalegrid(x::Integer) = Base.OneTo(x)
     scalegrid(x::AbstractVector) = Base.OneTo(length(x))
 
@@ -93,11 +93,11 @@ end
 
 # TODO: MAKE SURE to check if data is within the indices
 
-unsafegetityp(grid::Range, idx::Real) = idx
+unsafegetityp(grid::AbstractRange, idx::Real) = idx
 unsafegetityp(grid::Vector, idx::Integer) = grid[idx]
 
 getitype(grid::Vector, idx::Integer) = unsafegetityp(grid, idx)
-function getitype(grid::Range, idx::Real)
+function getitype(grid::AbstractRange, idx::Real)
     minimum(grid) <= idx <= maximum(grid) || throw(DomainError())
     unsafegetityp(grid, idx)
 end

@@ -160,7 +160,7 @@ end
 
 
 function serial_counterfact_all!(sev::SharedEV, tmpv::dcdp_tmpvars, prim::dcdp_primitives, sEU::AbstractArray, sP::AbstractArray, tmpc::dcdp_tmpcntrfact, θ::AbstractVector)
-    for Idx in CartesianRange( length.(sev.itypes) )
+    for Idx in CartesianIndices( length.(sev.itypes) )
         evs, typs = dcdp_Emax(sev, Idx.I...)
         EU,P = vwEUP(sEU, sP, Idx.I...)
         itype = getindex.(sev.itypes, Idx.I)

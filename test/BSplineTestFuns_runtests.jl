@@ -1,10 +1,10 @@
 # using BSplineExtensions
 using Interpolations
 using Interpolations: BSplineInterpolation, tweight, scale
-using Base.Test
+using Test
 
 x = SharedArray{Float64}(100, 100, 10, 10)
-endsz = (map(i -> size(x,i), 3:4)...)
+endsz = (map(i -> size(x,i), 3:4)...,)
 rand!(x)
 
 x2210 = copy(x)
@@ -78,7 +78,7 @@ end
 
 xs = 1.2, 2.2, 3.2, Int(4)
 @code_warntype gradient_d(Val{1}, itp_2210, xs...)
-gradient!(Vector{Float64}(3), itp_2210, xs...)
+gradient!(Vector{Float64}(undef, 3), itp_2210, xs...)
 
 test_grad_d(itp_2210, xs...)
 test_grad_d(itp_1111, xs...)
@@ -92,14 +92,14 @@ test_grad_d(itp_2211, xs...)
 # ------------------------ scale & gradient ---------------------
 
 
-rng1 = linspace(-30,30,100)
-rng2 = linspace(20,50,100)
-rng3 = linspace(30,39,10)
+rng1 = range(-30, stop=30, length=100)
+rng2 = range(20, stop=50, length=100)
+rng3 = range(30, stop=39, length=10)
 rng4 = 1:10
 
 sitp_2210 = scale(itp_2210, rng1, rng2, rng3, rng4)
 
-srand(1234)
+Random.seed!(1234)
 z0 = rand(10,10)
 za = copy(z0)
 zb = copy(z0')
@@ -109,7 +109,7 @@ itpa = interpolate(za, (BSpline(Linear()), NoInterp()), OnGrid())
 itpb = interpolate(zb, (NoInterp(), BSpline(Linear())), OnGrid())
 @test all(itpa.coefs .== itpb.coefs')
 
-rng = linspace(1.0, 19.0, 10)
+rng = range(1.0, stop=19.0, length=10)
 sitpa = scale(itpa, rng, 1:10)
 sitpb = scale(itpb, 1:10, rng)
 @test sitpa[2.0, 3] == sitpb[3,2.0]

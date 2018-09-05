@@ -1,5 +1,5 @@
 using ShaleDrillingModel
-using Base.Test
+using Test
 using StatsFuns
 using JLD
 using Interpolations
@@ -25,7 +25,7 @@ geology_types = 1.3430409262656042:0.1925954901417719:5.194950729101042
 # problem sizes
 nψ, dmx, nz, nv =  51, 3, size(Πp,1), 51
 wp = well_problem(dmx,4,10)
-zspace, ψspace, dspace, d1space, vspace = (pspace,1:2), linspace(-3.75, 3.75, nψ), 0:dmx, 0:1, linspace(-3.0, 3.0, nv)
+zspace, ψspace, dspace, d1space, vspace = (pspace,1:2), range(-3.75, stop=3.75, length=nψ), 0:dmx, 0:1, range(-3.0, stop=3.0, length=nv)
 
 prim = dcdp_primitives(:exproy, β, wp, zspace, Πp, ψspace)
 tmpv = dcdp_tmpvars(prim)

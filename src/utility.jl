@@ -30,8 +30,8 @@ flowfdψ(FF::Type, θ::AbstractVector{T},  σ::T, st::Tuple, d1::Integer, Dgt0::
 
 # ------------------------------------ wrapper for all flows   -----------------
 
-makepdct(zspace::Tuple, ψspace::Range, wp::well_problem, nθt::Integer, ::Type{Val{:u}})  = Base.product(zspace..., ψspace,         0:dmax(wp))
-makepdct(zspace::Tuple, ψspace::Range, wp::well_problem, nθt::Integer, ::Type{Val{:du}}) = Base.product(zspace..., ψspace, 1:nθt,  0:dmax(wp))
+makepdct(zspace::Tuple, ψspace::AbstractRange, wp::well_problem, nθt::Integer, ::Type{Val{:u}})  = Base.product(zspace..., ψspace,         0:dmax(wp))
+makepdct(zspace::Tuple, ψspace::AbstractRange, wp::well_problem, nθt::Integer, ::Type{Val{:du}}) = Base.product(zspace..., ψspace, 1:nθt,  0:dmax(wp))
 
 makepdct(zspace::Tuple, ψspace::StepRangeLen, wp::well_problem, θt::AbstractVector, typ::Type             ) = makepdct(zspace,      ψspace,      wp, length(θt), typ)
 makepdct(p::dcdp_primitives,                                                        typ::Type, σ::Real=1.0) = makepdct(_zspace(p), _ψspace(p), p.wp, _nθt(p),    typ)
@@ -40,7 +40,7 @@ makepdct(p::dcdp_primitives,                                    θt::AbstractVec
 
 # ------------------------ check flow grad --------------
 
-function check_flowgrad(FF::Type, θ::AbstractVector{T}, σ::T, zspace::Tuple, ψspace::Range, wp::well_problem, itype::Real...) where {T}
+function check_flowgrad(FF::Type, θ::AbstractVector{T}, σ::T, zspace::Tuple, ψspace::AbstractRange, wp::well_problem, itype::Real...) where {T}
     K = length(θ)
     dx = Vector{T}(K)
     dxfd = similar(dx)

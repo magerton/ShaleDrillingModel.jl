@@ -27,7 +27,7 @@ royalty_types = 1:length(royalty_rates)
 Πz = Πp
 nψ, nz =  51, size(Πz,1)
 wp = well_problem(3,4,10)
-zspace, ψspace = (pspace,1:2,), linspace(-4.0, 4.0, nψ)
+zspace, ψspace = (pspace,1:2,), range(-4.0, stop=4.0, length=nψ)
 prim = dcdp_primitives(:exp, β, wp, zspace, Πp, ψspace)
 tmpv = dcdp_tmpvars(prim)
 evs = dcdp_Emax(prim)

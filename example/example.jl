@@ -1,5 +1,5 @@
 using ShaleDrillingModel
-using Base.Test
+using Test
 using StatsFuns
 using JLD
 
@@ -18,7 +18,7 @@ geology_types = 1:10
 nψ, nv =  5, 5
 
 # grids for prices & unobserved heterogeneity
-zspace, ψspace, vspace = (pspace,), linspace(-5.5, 5.5, nψ),  linspace(-3.0, 3.0, nv)
+zspace, ψspace, vspace = (pspace,), range(-5.5, stop=5.5, length=nψ),  range(-3.0, stop=3.0, length=nv)
 
 # Structure of time / number of wells
 # drill 0 to 2 wells/period

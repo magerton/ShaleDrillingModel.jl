@@ -38,7 +38,7 @@ let dEV = Array{Float64}(size(shev.dEV)),
     end
 
 
-    for CI in CartesianRange(length.(shev.itypes))
+    for CI in CartesianIndices(length.(shev.itypes))
         @test dEV[:,:,:,:,CI] ≈ fdEV[:,:,:,:,CI]
     end
 
