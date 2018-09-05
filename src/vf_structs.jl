@@ -166,7 +166,7 @@ function dcdp_tmpvars(prim::dcdp_primitives)
     tmp      = zeros(T,nz,nψ)
 
     # transition matrices
-    Πψtmp = Matrix{T}(nψ,nψ)
+    Πψtmp = Matrix{T}(undef,nψ,nψ)
     IminusTEVp = ensure_diagonal(prim.Πz)
 
     # return dcdp_tmpvars(uin,uex,duin,duex,duexσ,duexψ,ubVfull,dubVfull,dubV_σ,dubV_ψ,q,lse,tmp,Πψtmp,IminusTEVp)

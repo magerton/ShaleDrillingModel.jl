@@ -13,7 +13,7 @@ let duex = similar(tmpv.duexσ), fduex = similar(tmpv.uex), itype=(0.2,2.0), p=p
     fillflows!(flow(p), flowdσ, duex, θt, σv, makepdct(p, θt, Val{:u}, σv), itype...)
 
     @views maxv, idx = findmax(abs.(duex .- fduex))
-    sub = ind2sub(duex, idx)
+    sub = CartesianIndices(duex)[idx]
     @show "worst value is $maxv at $sub for duσ_add"
     @test duex ≈ fduex
 end

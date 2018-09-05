@@ -35,7 +35,7 @@ parallel_prefilterByView!(         x::SharedArray{T,N}, B::BST, dims::Integer...
 function parallel_prefilterByView!(x::SharedArray{T,N}, B::BST, dims::Integer...) where {T,N, BST<:BSplineInterpolation{<:Real,N,SharedArray{T,N},<:DimSpec{BSpline},<:GridType,0} }
     x === B.coefs || throw(error("x is not the coefs of B!"))
     CR = CartesianIndices(dims)
-    s = @sync @parallel for CI in collect(CR)
+    s = @sync @distributed for CI in collect(CR)
         prefilterByView!(x, BST, CI)
     end
     fetch(s)
@@ -148,7 +148,7 @@ end
 # end
 #
 # function parallel_prefilterView!(sit::ItpSharedEV)
-#     @parallel for CI in collect( CartesianRange(length.(sit.itypes)) )
+#     @distributed for CI in collect( CartesianRange(length.(sit.itypes)) )
 #         prefilterView!(sit, CI)
 #     end
 # end

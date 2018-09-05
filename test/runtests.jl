@@ -1,7 +1,7 @@
-using ShaleDrillingModel
+# using ShaleDrillingModel
 using Test
 using StatsFuns
-using JLD
+using JLD2
 using Interpolations
 
 include("makeStateSpace.jl")
@@ -12,8 +12,8 @@ jldpath = joinpath(Pkg.dir("ShaleDrillingData"), "data/price-transitions.jld")
 Πp1 = Πp
 
 # some primitives
-β = (1.02 / 1.125) ^ (1./12.)  # real discount rate
-royalty_rates = [0.125, 1./6., 0.1875, 0.20, 0.225, 0.25]
+β = (1.02 / 1.125) ^ (1.0/12.0)  # real discount rate
+royalty_rates = [0.125, 1.0/6.0, 0.1875, 0.20, 0.225, 0.25]
 royalty_types = 1:length(royalty_rates)
 geology_types = 1.3430409262656042:0.1925954901417719:5.194950729101042
 
@@ -47,8 +47,12 @@ include("test_utility.jl")
 include("test_transition.jl")
 
 
-# println("filling per-period payoffs")
-# @views fillflows!(flow(prim), flow, tmpv.uin[:,:,:,   1], tmpv.uin[:,:,:,   2],  tmpv.uex, θt, σv, makepdct(prim, θt, Val{:u},  σv), 0.25, 1)
+println("filling per-period payoffs")
+
+# ERROR HERE
+
+@views fillflows!(flow(prim), flow, tmpv.uin[:,:,:,   1], tmpv.uin[:,:,:,   2],
+    tmpv.uex, θt, σv, makepdct(prim, θt, Val{:u},  σv), 0.25, 1)
 # fillflows_grad!(tmpv, prim, θt, σv, 0.2, 1)
 #
 # include("logsumexp3.jl")

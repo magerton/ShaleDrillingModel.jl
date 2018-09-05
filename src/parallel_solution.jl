@@ -107,7 +107,7 @@ end
 
 function parallel_solve_vf_all!(sev::SharedEV, θ::AbstractVector, dograd::Type; kwargs...)
     CR = CartesianIndices( length.(sev.itypes) )
-    s = @sync @parallel for Idx in collect(CR)
+    s = @sync @distributed for Idx in collect(CR)
         solve_vf_all!(θ, dograd, Idx.I...; kwargs...)
     end
     return fetch.(s)

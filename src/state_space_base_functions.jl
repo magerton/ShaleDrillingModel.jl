@@ -10,7 +10,7 @@ ind_exp(ep::NTuple{4,Int}) = ep[2]   : -1 : ep[1]+1
 ind_lrn(ep::NTuple{4,Int}) = ep[3]   : -1 : ep[2]+1
 ind_inf(ep::NTuple{4,Int}) = ep[4]-1 : -1 : ep[3]+1
 
-inf_fm_lrn(dmx::Int, ep::NTuple{4,Int})::StepRange{Int} = ep[3]+1 + 2*(0:dmx-1)
+inf_fm_lrn(dmx::Int, ep::NTuple{4,Int})::StepRange{Int} = (ep[3]+1) .+ 2*(0:dmx-1)
 
 exploratory_terminal(ep::NTuple{4,Int}) = ep[2]+1
 exploratory_learning(ep::NTuple{4,Int}) = ep[2]+2 : ep[3]

@@ -42,7 +42,7 @@ makepdct(p::dcdp_primitives,                                    θt::AbstractVec
 
 function check_flowgrad(FF::Type, θ::AbstractVector{T}, σ::T, zspace::Tuple, ψspace::AbstractRange, wp::well_problem, itype::Real...) where {T}
     K = length(θ)
-    dx = Vector{T}(K)
+    dx = Vector{T}(undef, K)
     dxfd = similar(dx)
 
     isok = true
@@ -84,7 +84,7 @@ check_flowgrad(θ::AbstractVector,          p::dcdp_primitives{FF}, itype::Real.
 
 # ------------------------ fill flows --------------
 
-function fillflows!(FF::Type, f::Function, X::AbstractArray, θ::AbstractVector, σ::T, pdct::Base.Iterators.AbstractProdIterator, itype::Real...) where {T}
+function fillflows!(FF::Type, f::Function, X::AbstractArray, θ::AbstractVector, σ::T, pdct::Base.Iterators.ProductIterator, itype::Real...) where {T}
     length(pdct) == length(X) || throw(DimensionMismatch())
     @inbounds for (i, st) in enumerate(pdct)
         X[i] = f(FF, θ, σ, st..., itype...)
@@ -92,7 +92,7 @@ function fillflows!(FF::Type, f::Function, X::AbstractArray, θ::AbstractVector,
 end
 
 
-function fillflowrevs!(FF::Type, f::Function, Xin::AbstractArray, Xex::AbstractArray, θ::AbstractVector, σ::T, pdct::Base.Iterators.AbstractProdIterator, itype::Real...) where {T}
+function fillflowrevs!(FF::Type, f::Function, Xin::AbstractArray, Xex::AbstractArray, θ::AbstractVector, σ::T, pdct::Base.Iterators.ProductIterator, itype::Real...) where {T}
     length(pdct) == length(Xin) == length(Xex) || throw(DimensionMismatch())
     @inbounds for (i, st) in enumerate(pdct)
         Xin[i] = f(FF, θ, σ, st..., 0, true, itype...)
@@ -104,7 +104,7 @@ end
 
 
 
-function fillflows!(FF::Type, f::Function, Xin0::AbstractArray, Xin1::AbstractArray, Xexp::AbstractArray, θ::AbstractVector, σ::T, pdct::Base.Iterators.AbstractProdIterator, itype::Real...) where {T}
+function fillflows!(FF::Type, f::Function, Xin0::AbstractArray, Xin1::AbstractArray, Xexp::AbstractArray, θ::AbstractVector, σ::T, pdct::Base.Iterators.ProductIterator, itype::Real...) where {T}
     length(pdct) == length(Xin0) == length(Xin1) == length(Xexp) || throw(DimensionMismatch())
     @inbounds for (i, st) in enumerate(pdct)
         Xin0[i] = f(FF, θ, σ, st..., 0, true , itype...)
@@ -118,8 +118,8 @@ function fillflows!(FF::Type, f::Function, Xin0::AbstractArray, Xin1::AbstractAr
 end
 
 # fill the flow-payoff (levels)
-fillflows!(FF::Type, uin::AbstractArray4, uex::AbstractArray3, θ::AbstractVector, σ::Real, pdct::Base.Iterators.AbstractProdIterator, itype::Real...)            = @views fillflows!(FF, flow, uin[:,:,:,1], uin[:,:,:,2],   uex, θ, σ, pdct, itype...)
-fillflows!(t::dcdp_tmpvars, p::dcdp_primitives{FF},            θ::AbstractVector, σ::Real, pdct::Base.Iterators.AbstractProdIterator, itype::Real...) where {FF} =        fillflows!(FF, t.uin,                            t.uex, θ, σ, pdct, itype...)
+fillflows!(FF::Type, uin::AbstractArray4, uex::AbstractArray3, θ::AbstractVector, σ::Real, pdct::Base.Iterators.ProductIterator, itype::Real...)            = @views fillflows!(FF, flow, uin[:,:,:,1], uin[:,:,:,2],   uex, θ, σ, pdct, itype...)
+fillflows!(t::dcdp_tmpvars, p::dcdp_primitives{FF},            θ::AbstractVector, σ::Real, pdct::Base.Iterators.ProductIterator, itype::Real...) where {FF} =        fillflows!(FF, t.uin,                            t.uex, θ, σ, pdct, itype...)
 fillflows!(t::dcdp_tmpvars, p::dcdp_primitives{FF},            θ::AbstractVector, σ::Real,                                            itype::Real...) where {FF} =        fillflows!(t, p, θ, σ,        makepdct(p, θ, Val{:u}, σ),           itype...)
 
 function fillflows_grad!(t::dcdp_tmpvars, p::dcdp_primitives{FF}, θ::AbstractVector, σ::Real, itype::Real...) where {FF}
