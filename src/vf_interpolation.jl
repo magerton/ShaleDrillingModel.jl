@@ -93,12 +93,13 @@ end
 
 # TODO: MAKE SURE to check if data is within the indices
 
-unsafegetityp(grid::AbstractRange, idx::Real) = idx
+unsafegetityp(grid::AbstractArray, idx::Real) = idx
 unsafegetityp(grid::Vector, idx::Integer) = grid[idx]
 
 getitype(grid::Vector, idx::Integer) = unsafegetityp(grid, idx)
-function getitype(grid::AbstractRange, idx::Real)
-    minimum(grid) <= idx <= maximum(grid) || throw(DomainError())
+
+function getitype(grid::AbstractArray, idx::Real)
+    minimum(grid) <= idx <= maximum(grid) || throw(DomainError(idx))
     unsafegetityp(grid, idx)
 end
 
