@@ -1,15 +1,17 @@
 using ShaleDrillingModel
+
+using Distributed
 using Test
 using StatsFuns
 using JLD2
 using Interpolations
 using Statistics
-using Distributed
+using SparseArrays
 
 include("makeStateSpace.jl")
 
 # jldpath = Base.joinpath(Pkg.dir("ShaleDrillingData"), "data/price-transitions.jld")
-jldpath = "D:/libraries/julia/dev/ShaleDrillingData/data/price-transitions.jld"
+jldpath = joinpath(ENV["JULIA_PKG_DEVDIR"], "ShaleDrillingData/data/price-transitions.jld")
 @load jldpath pspace Πp Πp1
 
 # Πp1 = Πp
