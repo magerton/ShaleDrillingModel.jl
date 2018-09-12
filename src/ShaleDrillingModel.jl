@@ -2,6 +2,7 @@ __precompile__()
 
 module ShaleDrillingModel
 
+using Distributed
 using StatsFuns
 using StatsBase
 using AxisAlgorithms
@@ -11,7 +12,6 @@ using Interpolations
 
 using SharedArrays
 using SparseArrays
-using Distributed
 using LinearAlgebra
 
 const AbstractArray3{T} = AbstractArray{T,3}

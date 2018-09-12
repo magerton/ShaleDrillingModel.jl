@@ -118,7 +118,7 @@ function parallel_solve_vf_all!(sev::SharedEV, θ::AbstractVector, dograd::Type;
     s = @sync @distributed for Idx in collect(CR)
         solve_vf_all!(θ, dograd, Idx.I...; kwargs...)
     end
-    return fetch.(s)
+    return fetch(s)
 end
 
 parallel_solve_vf_all!(sev::SharedEV, θ::AbstractVector, dograd::Bool; kwargs...) = parallel_solve_vf_all!(sev, θ, Val{dograd}; kwargs...)
