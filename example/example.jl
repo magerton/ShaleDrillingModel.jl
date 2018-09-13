@@ -1,3 +1,8 @@
+# detect if using SLURM
+const IN_SLURM = "SLURM_JOBID" in keys(ENV)
+
+IN_SLURM && using ClusterManagers
+
 using ShaleDrillingModel
 using Test
 using StatsFuns
@@ -57,7 +62,7 @@ check_EVjac(evs, tmpv, prim, θt, σv, 0.2)
 # ----------- how we do this in parallel ------------
 
 # set up workers
-pids = addprocs()
+pids = IN_SLURM ? addprocs_slurm(parse(Int, ENV["SLURM_NTASKS"])) : addprocs()
 
 # tell workers about the pkg
 @everywhere @show pwd()

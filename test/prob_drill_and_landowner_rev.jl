@@ -92,7 +92,8 @@ plot(ψspace, prdrill[17,:,:])
 
 
 # rmprocs(workers())
-# pids = addprocs()
+# pids = IN_SLURM ? addprocs_slurm(parse(Int, ENV["SLURM_NTASKS"])) : addprocs()
+
 # @everywhere @show pwd()
 # @everywhere using ShaleDrillingModel
 #
