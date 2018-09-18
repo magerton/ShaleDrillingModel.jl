@@ -1,6 +1,6 @@
 using Interpolations: Flag, Quadratic, InPlace
 
-export ItpSharedEV
+export ItpSharedEV, set_up_dcdp_workers
 
 struct ItpSharedEV{T,A1<:Interpolations.AbstractInterpolation{T},A2<:Interpolations.AbstractInterpolation{T},A3<:Interpolations.AbstractInterpolation{T},TT<:Tuple}
   EV::A1

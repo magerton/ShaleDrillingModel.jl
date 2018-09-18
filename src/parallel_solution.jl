@@ -1,4 +1,4 @@
-export parallel_solve_vf_all!, SharedEV, serial_solve_vf_all!, set_up_dcdp_workers
+export parallel_solve_vf_all!, SharedEV, serial_solve_vf_all!
 
 
 struct SharedEV{T,N,N2,TT<:Tuple}

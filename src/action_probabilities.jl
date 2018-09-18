@@ -10,7 +10,7 @@ nplus1_impl(N::Integer) = :(Val{$(N+1)})
   end
 
   # unpack information about current state
-  roy, geo = getitype.(isev.itypes, itypidx)
+  geo, roy = getitype.(isev.itypes, itypidx)
 
   # states we can iterate over
   s = state(prim.wp, s_idx)
