@@ -64,46 +64,6 @@ end
 
 
 # -----------------------------------------------------------------------------------------------------------------------------
-# --------------------------------------------------- exponential --------------------------------------------------------------------
-# -----------------------------------------------------------------------------------------------------------------------------
-
-
-@inline function flowrev(::Type{Val{:exp}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer,             d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
-    d == 0 && return zero(T)
-    u = roy / (one(T)-roy) * rev_exp(θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,Dgt0,roy,geoid)
-    return u::T
-end
-
-
-
-@inline function flow(::Type{Val{:exp}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer,             d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
-    d == 0 && return zero(T)
-    u = rev_exp(θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,Dgt0,roy,geoid) + (d==1 ?  θ[5] : θ[6] + θ[7]*d)
-    d>1      && (u *= d)
-    d1 == 1  && (u += θ[8])
-    return u::T
-end
-
-@inline function flowdθ(::Type{Val{:exp}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
-    d == 0  && return zero(T)
-
-    k == 1  && return  convert(T,d) * rev_exp(θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,Dgt0,roy,geoid)
-    k == 2  && return  convert(T,d) * rev_exp(θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,Dgt0,roy,geoid) * logp
-    k == 3  && return  convert(T,d) * rev_exp(θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,Dgt0,roy,geoid) * geoid
-    k == 4  && return  convert(T,d) * rev_exp(θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,Dgt0,roy,geoid) * ( Dgt0 ? ψ : ψ*_ρ(σ) + θ[k]*(1.0-_ρ2(σ)))
-
-    k == 5  && return  d  >  1 ? zero(T) : one(T)
-    k == 6  && return  d  == 1 ? zero(T) : convert(T,d)
-    k == 7  && return  d  == 1 ? zero(T) : convert(T,d^2)
-    k == 8  && return  d1 == 1 ? one(T)  : zero(T)
-    throw(error("$k out of bounds"))
-end
-
-@inline flowdσ(::Type{Val{:exp}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : d * drevdσ_exp(θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,roy,geoid)
-@inline flowdψ(::Type{Val{:exp}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : d * drevdψ_exp(θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,roy,geoid)
-
-
-# -----------------------------------------------------------------------------------------------------------------------------
 # --------------------------------------------------- exponential roy --------------------------------------------------------------------
 # -----------------------------------------------------------------------------------------------------------------------------
 
@@ -137,6 +97,71 @@ end
 @inline flowdσ(::Type{Val{:exproy}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * drevdσ_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,roy,geoid)
 @inline flowdψ(::Type{Val{:exproy}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * drevdψ_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,roy,geoid)
 
+
+# -----------------------------------------------------------------------------------------------------------------------------
+# --------------------------------------------------- CONSTRAINED exponential roy --------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------------
+
+
+@inline function flow(::Type{Val{:exp1roy}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer,             d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
+    d == 0 && return zero(T)
+    u = rev_exp(1.0,θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,Dgt0,roy,geoid) + (d==1 ?  θ[5] : θ[6] + θ[7]*d)
+    d>1      && (u *= d)
+    d1 == 1  && (u += θ[8])
+    return u::T
+end
+
+
+
+@inline function flowdθ(::Type{Val{:exp1roy}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, roy::Real, geoid::Real) where {T}
+    d == 0  && return zero(T)
+
+    k == 1  && return   convert(T,d) * rev_exp(1.0,θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,Dgt0,roy,geoid)
+    k == 2  && return   convert(T,d) * rev_exp(1.0,θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,Dgt0,roy,geoid) * logp
+    k == 3  && return   convert(T,d) * rev_exp(1.0,θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,Dgt0,roy,geoid) * convert(T,geoid)
+    k == 4  && return   convert(T,d) * rev_exp(1.0,θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,Dgt0,roy,geoid) * ( Dgt0 ? ψ : ψ*_ρ(σ) + θ[k]*(1-_ρ2(σ)))
+
+    k == 5  && return  d  >  1 ? zero(T) : one(T)
+    k == 6  && return  d  == 1 ? zero(T) : convert(T,d)
+    k == 7  && return  d  == 1 ? zero(T) : convert(T,d^2)
+    k == 8  && return  d1 == 1 ? one(T)  : zero(T)
+    throw(error("$k out of bounds"))
+end
+
+@inline flowdσ(::Type{Val{:exp1roy}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * drevdσ_exp(1.0,θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,roy,geoid)
+@inline flowdψ(::Type{Val{:exp1roy}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * drevdψ_exp(1.0,θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,roy,geoid)
+
+# -----------------------------------------------------------------------------------------------------------------------------
+# --------------------------------------------------- DOUBLE CONSTRAINED exponential roy --------------------------------------------------------------------
+# -----------------------------------------------------------------------------------------------------------------------------
+
+
+@inline function flow(::Type{Val{:exp1roy1p}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer,             d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
+    d == 0 && return zero(T)
+    u = rev_exp(1.0,θ[1],1.0,θ[2],θ[3],σ,logp,ψ,Dgt0,roy,geoid) + (d==1 ?  θ[4] : θ[5] + θ[6]*d)
+    d>1      && (u *= d)
+    d1 == 1  && (u += θ[7])
+    return u::T
+end
+
+
+
+@inline function flowdθ(::Type{Val{:exp1roy1p}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, roy::Real, geoid::Real) where {T}
+    d == 0  && return zero(T)
+
+    k == 1  && return   convert(T,d) * rev_exp(1.0,θ[1],1.0,θ[2],θ[3],σ,logp,ψ,Dgt0,roy,geoid)
+    k == 2  && return   convert(T,d) * rev_exp(1.0,θ[1],1.0,θ[2],θ[3],σ,logp,ψ,Dgt0,roy,geoid) * convert(T,geoid)
+    k == 3  && return   convert(T,d) * rev_exp(1.0,θ[1],1.0,θ[2],θ[3],σ,logp,ψ,Dgt0,roy,geoid) * ( Dgt0 ? ψ : ψ*_ρ(σ) + θ[k]*(1-_ρ2(σ)))
+
+    k == 4  && return  d  >  1 ? zero(T) : one(T)
+    k == 5  && return  d  == 1 ? zero(T) : convert(T,d)
+    k == 6  && return  d  == 1 ? zero(T) : convert(T,d^2)
+    k == 7  && return  d1 == 1 ? one(T)  : zero(T)
+    throw(error("$k out of bounds"))
+end
+
+@inline flowdσ(::Type{Val{:exp1roy1p}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * drevdσ_exp(1.0,θ[1],1.0,θ[2],θ[3],σ,logp,ψ,roy,geoid)
+@inline flowdψ(::Type{Val{:exp1roy1p}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, roy::T, geoid::Real) where {T} = d == 0 ? zero(T) : convert(T,d) * drevdψ_exp(1.0,θ[1],1.0,θ[2],θ[3],σ,logp,ψ,roy,geoid)
 
 # # -----------------------------------------------------------------------------------------------------------------------------
 # # --------------------------------------------------- linear ------------------------------------------------------------------

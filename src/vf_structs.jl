@@ -23,8 +23,9 @@ struct dcdp_primitives{FF,T<:Real,AM<:AbstractMatrix{T},TT<:Tuple,AV<:AbstractVe
 end
 
 function dcdp_primitives(FF::Symbol, β::T, wp::well_problem, zspace::TT, Πz::AM, ψspace::AV) where {T,TT,AM,AV}
-    FF ∈ (:exp,)    && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 8)
-    FF ∈ (:exproy,) && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 9)
+    FF ∈ (:exp1roy1p,)    && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 7)
+    FF ∈ (:exp,:exp1roy,) && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 8)
+    FF ∈ (:exproy,)       && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 9)
     # FF ∈ (:breaklin, :breakexp) && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 13)
     throw(error("$FF is unknown"))
 end
