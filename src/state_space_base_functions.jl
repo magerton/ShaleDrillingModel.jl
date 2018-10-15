@@ -4,6 +4,13 @@ end_exp(dmx::Integer, Dmx::Integer, τmx::Integer)::Int = τmx+1
 end_lrn(dmx::Integer, Dmx::Integer, τmx::Integer)::Int = τmx+dmx+2
 end_inf(dmx::Integer, Dmx::Integer, τmx::Integer)::Int = τmx+dmx+2*Dmx+1
 
+end_exp(dmx::Integer, Dmx::Integer, τmx::Integer, emx::Integer)::Int = τmx+1
+end_ext(dmx::Integer, Dmx::Integer, τmx::Integer, emx::Integer)::Int = τmx+1
+end_lrn(dmx::Integer, Dmx::Integer, τmx::Integer, emx::Integer)::Int = τmx+dmx+2
+end_inf(dmx::Integer, Dmx::Integer, τmx::Integer, emx::Integer)::Int = τmx+dmx+2*Dmx+1
+
+
+
 end_pts(d::Integer, D::Integer, t::Integer)::NTuple{4,Int} = (0, end_exp(d,D,t), end_lrn(d,D,t), end_inf(d,D,t))
 
 ind_exp(ep::NTuple{4,Int}) = ep[2]   : -1 : ep[1]+1
