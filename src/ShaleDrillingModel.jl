@@ -22,12 +22,12 @@ include("helpers.jl")
 include("learning_transition.jl")
 include("makeStateSpace.jl")
 
-# # package code goes here
-# include("flow-payoffs.jl")
-#
-# include("vf_structs.jl")
-# include("utility.jl")
-#
+# package code goes here
+include("flow-payoffs.jl")
+
+include("vf_structs.jl")
+include("utility.jl")
+
 # include("logsumexp3.jl")
 #
 # include("makeIminusTVp.jl")

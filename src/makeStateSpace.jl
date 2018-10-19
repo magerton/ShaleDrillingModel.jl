@@ -67,13 +67,13 @@ _num_actions(SS::Vector{state}, dmx::Integer, Dmx::Integer, endpts::NTuple{6,Int
 function well_problem(dmax::Integer, Dmax::Integer, τ0max::Integer, τ1max::Integer, ext::Integer)
     SS = state_space(dmax, Dmax, τ0max, τ1max, ext)
     ep = end_pts(dmax, Dmax, τ0max, τ1max, ext)
-    Sprime = zeros(Int, dmx+1, ep[5])
+    Sprime = zeros(Int, dmax+1, ep[5])
     for j in 1:ep[5]
-        for (di,d) in enumerate(_actionspace(j, dmx, Dmx, ep))
+        for (di,d) in enumerate(_actionspace(j, dmax, Dmax, ep))
             Sprime[di,j] = _sprime(j,d,ep)
         end
     end
-    return well_problem(dmx, Dmx, τ0mx, τ1mx, ext, ep , SS, Sprime)
+    return well_problem(dmax, Dmax, τ0max, τ1max, ext, ep , SS, Sprime)
 end
 
 

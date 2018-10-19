@@ -1,6 +1,4 @@
-using Test
-
-@testset begin
+@testset "make State Space" begin
 
     dmx, Dmx, τ0mx, τ1mx, emx = (3, 4, 5, 3, 2)
     ep = ShaleDrillingModel.end_pts(    dmx, Dmx, τ0mx, τ1mx, emx)
@@ -26,16 +24,12 @@ using Test
         collect(ShaleDrillingModel._sprime(i,d,ep) for d in ShaleDrillingModel._actionspace(i,dDte...))
         ) for i in 1:nS]
 
-
     wp = well_problem(dmx, Dmx, τ0mx, τ1mx, emx)
 
     idxs = [ShaleDrillingModel.explore_state_inds(wp)..., ShaleDrillingModel.infill_state_inds(wp)..., ShaleDrillingModel.terminal_state_ind(wp)..., ShaleDrillingModel.learn_state_inds(wp)...]
 
     @test idxs ⊆ 1:length(wp)
     @test 1:length(wp) ⊆ idxs
-
-
-    max_ext(ep)
 
     for i in [ShaleDrillingModel.explore_state_inds(wp)..., ShaleDrillingModel.infill_state_inds(wp)..., ShaleDrillingModel.terminal_state_ind(wp)...,]
         st = SS[i]

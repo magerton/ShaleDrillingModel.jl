@@ -17,6 +17,21 @@ export flow, flowdθ, flowdσ, flowdψ
 @inline flowdσ(FF::Type,  θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer,                          roy::T, geoid::Real) where {T} = flowdσ( FF, θ, σ, logp, ψ,    d,           roy, geoid)
 @inline flowdψ(FF::Type,  θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer,                          roy::T, geoid::Real) where {T} = flowdψ( FF, θ, σ, logp, ψ,    d,           roy, geoid)
 
+
+function flow_extend(FF::Type, θext::AbstractVector{T}, ψ::T, roy::T, geoid::Real, d::Integer) where {T<:Real}
+    d > 0 && return zero(T)
+    return (θext[1] + θext[2]*ψ)::T
+end
+
+
+function dflow_extend(FF::Type, θext::AbstractVector{T}, ψ::T, k::Integer, roy::T, geoid::Real, d::Integer) where {T<:Real}
+    d > 0  && return zero(T)
+    k == 1 && return one(T)
+    k == 2 && return ψ::T
+    throw(error("$k out of bounds"))
+end
+
+
 # --------------------------- common revenue functions & derivatives  --------------------------------------
 
 function Eexpψ(θ4::T, σ::T, ψ::T, Dgt0::Bool) where {T<:Real}
