@@ -42,15 +42,15 @@
     end
 
     for s in ShaleDrillingModel.ind_inf(wp)
-        @test _horizon(s,wp.endpts) ∈ (:Infinite, :Finite)
+        @test ShaleDrillingModel._horizon(s,wp.endpts) ∈ (:Infinite, :Finite)
     end
 
     for s in ShaleDrillingModel.ind_exp(wp.endpts)
-        @test _horizon(s,wp.endpts) == :Finite
+        @test ShaleDrillingModel._horizon(s,wp.endpts) == :Finite
     end
 
     for s in ShaleDrillingModel.ind_lrn(wp.endpts)
-        @test _horizon(s,wp.endpts) ∈ (:Terminal, :Learning)
+        @test ShaleDrillingModel._horizon(s,wp.endpts) ∈ (:Terminal, :Learning)
     end
 
 end

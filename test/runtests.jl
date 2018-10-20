@@ -4,7 +4,7 @@ const IN_SLURM = "SLURM_JOBID" in keys(ENV)
 using Distributed
 IN_SLURM && using ClusterManagers
 
-# using ShaleDrillingModel
+using ShaleDrillingModel
 using Test
 using StatsFuns
 using JLD2
