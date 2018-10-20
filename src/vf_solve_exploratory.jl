@@ -27,12 +27,10 @@ function solve_vf_explore!(
         nθ = size(dEV,3)
         (nz,nψ,nθ,nS)     == size(dEV)      || throw(DimensionMismatch())
         (nz,nψ,nSexp)     == size(dEVσ)    || throw(DimensionMismatch())
-        # (nz,nψ,nSexp)     == size(dEV_ψ)    || throw(DimensionMismatch())
         (nz,nψ,nθ,dmaxp1) == size(duex)     || throw(DimensionMismatch())
         (nz,nψ,dmaxp1)    == size(q)        || throw(DimensionMismatch())
         (nz,nψ,nθ,nd)     == size(dubVfull) || throw(DimensionMismatch())
         (nz,nψ,dmaxp1)    == size(dubV_σ)   || throw(DimensionMismatch())
-        # (nz,nψ,dmaxp1)    == size(dubV_ψ)   || throw(DimensionMismatch())
 
         dubV = @view(dubVfull[:,:,:,1:dmaxp1])
     end
@@ -43,13 +41,21 @@ function solve_vf_explore!(
 
     for i in explore_state_inds(wp)
         ip = action0(wp,i)
-        @views ubV[:,:,1] .= β .* EV[:,:,ip]
+
+        if i == wp.endpts[6]
+            @views ubV[:,:,1] .= uex[:,:,1] .+ β .* EV[:,:,ip]
+        else
+            @views ubV[:,:,1] .= β .* EV[:,:,ip]
+        end
 
         if dograd
-            # TODO: assumes that u(0) = 0
-            @views dubV[:,:,:,1] .= β .* dEV[:,:,:,ip]
-            @views dubV_σ[:,:,1] .= β .* dEVσ[:,:,ip]
-            # @views dubV_ψ[:,:,1] .= β .* dEV_ψ[:,:,ip]
+            if i == wp.endpts[6]
+                @views dubV[:,:,:,1] .= duex[:,:,:,1] .+ β .* dEV[:,:,:,ip]
+                @views dubV_σ[:,:,1] .= duexσ[ :,:,1] .+ β .* dEVσ[ :,:,ip]
+            else
+                @views dubV[:,:,:,1] .= β .* dEV[:,:,:,ip]
+                @views dubV_σ[:,:,1] .= β .*  dEVσ[:,:,ip]
+            end
 
             # this does EV0 & ∇EV0
             @views vfit!(EV[:,:,i], dEV[:,:,:,i], ubV, dubV, q, lse, tmp, Πz)
@@ -58,9 +64,6 @@ function solve_vf_explore!(
             sumprod!(tmp, dubV_σ, q)
             @views A_mul_B_md!(dEVσ[:,:,i], Πz, tmp, 1)
 
-            # # ∂EV/∂ψ = I ⊗ Πz * ∑( Pr(d) * ∂ubV/∂ψ[zspace, ψspace, d]  )
-            # sumprod!(tmp, dubV_ψ, q)
-            # @views A_mul_B_md!(dEV_ψ[:,:,i], Πz, tmp, 1)
         else
             @views vfit!(EV[:,:,i], ubV, lse, tmp, Πz)
         end

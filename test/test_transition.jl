@@ -1,5 +1,8 @@
 
-let dpi = similar(tmpv.Πψtmp), fdpi = similar(tmpv.Πψtmp)
+@testset "Frechet derivative of ψ transition matrix" begin
+
+    dpi = similar(tmpv.Πψtmp)
+    fdpi = similar(tmpv.Πψtmp)
     h = peturb(σv)
     σ1 = σv - h
     σ2 = σv + h

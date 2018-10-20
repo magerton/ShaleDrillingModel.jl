@@ -48,12 +48,12 @@ function check_flowgrad(FF::Type, θ::AbstractVector{T}, σ::T, zspace::Tuple, �
     isok = true
 
     for st in makepdct(zspace, ψspace, wp, θ, Val{:u})
-        for d1D in [(0,true), (1,true), (0,false)]
-            u(θ) = flow(FF, θ, σ, st..., d1D..., itype...)
-            duθ!(dx,    FF, θ, σ, st,    d1D..., itype...)
+        for d1Dgt0 in [(0,true), (1,true), (0,false)]
+            u(θ) = flow(FF, θ, σ, st..., d1Dgt0..., itype...)
+            duθ!(dx,    FF, θ, σ, st,    d1Dgt0..., itype...)
             Calculus.finite_difference!(u, θ, dxfd, :central)
             if !(dxfd ≈ dx)
-                warn("FF = $FF. Bad θ diff at $st, $d1D. du=$dx and fd = $dxfd")
+                @warn "FF = $FF. Bad θ diff at $st, $d1Dgt0. du=$dx and fd = $dxfd"
                 return false
             end
         end
@@ -64,17 +64,17 @@ function check_flowgrad(FF::Type, θ::AbstractVector{T}, σ::T, zspace::Tuple, �
         dσ = flowdσ(FF, θ, σ, st..., itype...)
         fdσ = Calculus.derivative((σh::Real) ->  flow(FF, θ, σh, st..., d1, Dgt0, itype...), σ, :central)
         if !(dσ ≈ fdσ) && !isapprox(dσ,fdσ, atol= 1e-8)
-            warn("Bad σ diff at $st. duσ = $dσ and fd = $fdσ")
+            @warn "Bad σ diff at $st. duσ = $dσ and fd = $fdσ"
             return false
         end
 
-        # check ψ
-        dψ = flowdψ(FF, θ, σ, st..., itype...)
-        fdψ = Calculus.derivative((h::Real) -> flowfdψ(FF, θ, σ, st, d1, Dgt0, h, itype...), 0.0, :central)
-        if !(dψ ≈ fdψ) && !isapprox(dψ, fdψ, atol=1e-7)
-            warn("Bad ψ diff at $st. duψ = $dψ and fdψ = $fdψ")
-            return false
-        end
+        # # check ψ
+        # dψ = flowdψ(FF, θ, σ, st..., itype...)
+        # fdψ = Calculus.derivative((h::Real) -> flowfdψ(FF, θ, σ, st, d1, Dgt0, h, itype...), 0.0, :central)
+        # if !(dψ ≈ fdψ) && !isapprox(dψ, fdψ, atol=1e-7)
+        #     @warn "Bad ψ diff at $st. duψ = $dψ and fdψ = $fdψ"
+        #     return false
+        # end
     end
     return isok
 end

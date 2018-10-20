@@ -1,8 +1,12 @@
 @testset "make State Space" begin
 
     dmx, Dmx, τ0mx, τ1mx, emx = (3, 4, 5, 3, 2)
+
     ep = ShaleDrillingModel.end_pts(    dmx, Dmx, τ0mx, τ1mx, emx)
     SS = ShaleDrillingModel.state_space(dmx, Dmx, τ0mx, τ1mx, emx)
+
+    ShaleDrillingModel.end_pts(    dmx, Dmx, τ0mx)
+    ShaleDrillingModel.state_space(dmx, Dmx, τ0mx)
 
     SS[ 1:ep[2] ]                                # Exploratory 1
     SS[ 1:ep[3] ]                                # Exploratory 0
@@ -35,6 +39,18 @@
         st = SS[i]
         i_of_st = state_idx(st.τ1, st.τ0, st.D, st.d1,     dmx, Dmx, τ0mx, τ1mx, emx)
         @test i_of_st == i
+    end
+
+    for s in ShaleDrillingModel.ind_inf(wp)
+        @test _horizon(s,wp.endpts) ∈ (:Infinite, :Finite)
+    end
+
+    for s in ShaleDrillingModel.ind_exp(wp.endpts)
+        @test _horizon(s,wp.endpts) == :Finite
+    end
+
+    for s in ShaleDrillingModel.ind_lrn(wp.endpts)
+        @test _horizon(s,wp.endpts) ∈ (:Terminal, :Learning)
     end
 
 end

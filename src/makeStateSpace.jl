@@ -47,6 +47,8 @@ end
 
 # ------------- methods for well_problem ----------
 
+state_space(dmax::Integer, Dmax::Integer, τ0max::Integer) = state_space(dmax,Dmax,τ0max,-1,0)
+
 function state_space(dmax::Integer, Dmax::Integer, τ0max::Integer, τ1max::Integer, ext::Integer)::Vector{state}
     dmax < Dmax || throw(DomainError())
     # Primary term with extension
@@ -76,13 +78,15 @@ function well_problem(dmax::Integer, Dmax::Integer, τ0max::Integer, τ1max::Int
     return well_problem(dmax, Dmax, τ0max, τ1max, ext, ep , SS, Sprime)
 end
 
-
+well_problem(dmax::Integer, Dmax::Integer, τ0max::Integer) = well_problem(dmax,Dmax,τ0max,-1,0)
 
 # basic info about the problem
 Base.length(p::well_problem) = p.endpts[5]
 dmax(       p::well_problem) = p.dmax
 Dmax(       p::well_problem) = p.Dmax
-τmax(       p::well_problem) = p.τmax
+τmax(p::well_problem) = τ0max(p)
+τ0max(       p::well_problem) = p.τ0max
+τ1max(       p::well_problem) = p.τ1max
 endpts(     p::well_problem) = p.endpts
 
 # retrieve info
@@ -125,20 +129,3 @@ infill_state_inds( p::well_problem) = ind_inf(p.endpts)
 explore_state_inds(p::well_problem) = ind_exp(p.endpts)
 learn_state_inds(  p::well_problem) = ind_lrn(p.endpts)
 exploratory_learning(p::well_problem) = exploratory_learning(p.endpts)
-
-
-# -------- transition --------
-
-"The state-transition rule"
-function OLDsprime(s::state, d::Int, Dmax::Int, dmax::Int)
-    0 <= d <= dmax <= Dmax ||  println("bad $d, $s combo with $dmax, $Dmax")
-    if d == 0                                                      # NO DRILLING
-        s.τ >= 0 &&                  return state(s.τ-1, s.D, 0)   # before expiration
-        s.τ <  0 && s.D == Dmax  &&  return state(-1, Dmax, 1)     # In TERMINAL state w/ no drilling
-        return state(-1, s.D, 0)                                   # AFTER expiration with no drilling
-    elseif d > 0                                                   # ANY drilling
-        return state(-1, (s.D + d), 1)
-    else                                                           # Un-handled situations
-        error("Problem with state " * string(s))
-    end
-end

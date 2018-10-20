@@ -20,16 +20,16 @@
 @inline end_pts(d,D,t0,t1,e)::NTuple{6,Int} = (0, end_ex1(d,D,t0,t1,e), end_ex0(d,D,t0,t1,e), end_lrn(d,D,t0,t1,e), end_inf(d,D,t0,t1,e), strt_ex(d,D,t0,t1,e),)
 @inline end_pts(d,D,t0) = end_pts(d,D,t0,-1,0)
 
-ind_ex1(ep::NTuple{6,Int}) = ep[2] : -1 : ep[1]+1
-ind_ex0(ep::NTuple{6,Int}) = ep[3] : -1 : ep[2]+1
-ind_exp(ep::NTuple{6,Int}) = ep[3] : -1 : ep[1]+1
-ind_lrn(ep::NTuple{6,Int}) = ep[4] : -1 : ep[3]+1
-ind_inf(ep::NTuple{6,Int}) = ep[5] : -1 : ep[4]+1
+ind_ex1(ep::NTuple{6,Int}) = ep[2]   : -1 : ep[1]+1
+ind_ex0(ep::NTuple{6,Int}) = ep[3]   : -1 : ep[2]+1
+ind_exp(ep::NTuple{6,Int}) = ep[3]   : -1 : ep[1]+1
+ind_lrn(ep::NTuple{6,Int}) = ep[4]   : -1 : ep[3]+1
+ind_inf(ep::NTuple{6,Int}) = ep[5]-1 : -1 : ep[4]+1
 
 inf_fm_lrn(dmx::Int, ep::NTuple{6,Int})::StepRange{Int} = (ep[4]+1) .+ 2*(0:dmx-1)
 
-exploratory_terminal(ep::NTuple{4,Int}) = ep[3]+1
-exploratory_learning(ep::NTuple{4,Int}) = ep[3]+2 : ep[4]
+exploratory_terminal(ep::NTuple{6,Int}) = ep[3]+1
+exploratory_learning(ep::NTuple{6,Int}) = ep[3]+2 : ep[4]
 
 # What is this for???
 dmx_exp(dmx::Integer, Dmx::Integer, τmx::Integer) = dmx

@@ -1,20 +1,18 @@
 # ---------------- logsumexp ------------------
 
-println("testing logsumexp3")
-
-
+@testset "testing logsumexp3" begin
 
 # test logsumexp
-let i = 17,
-    dmaxp1 = ShaleDrillingModel._nd(prim),
-    tst = zeros(size(tmpv.lse)),
-    lsetest = zeros(size(tmpv.lse)),
-    qvw = @view(tmpv.q[:,:,1:dmaxp1]),
-    EV0  = @view(evs.EV[:,:,i]),
-    dEV0 = @view(evs.dEV[:,:,:,i]),
-    ubV  = @view(tmpv.ubVfull[:,:,1:dmaxp1]),
-    dubV = @view(tmpv.dubVfull[:,:,:,1:dmaxp1]),
-    lse = tmpv.lse,
+    i = 17
+    dmaxp1 = ShaleDrillingModel._nd(prim)
+    tst = zeros(size(tmpv.lse))
+    lsetest = zeros(size(tmpv.lse))
+    qvw = @view(tmpv.q[:,:,1:dmaxp1])
+    EV0  = @view(evs.EV[:,:,i])
+    dEV0 = @view(evs.dEV[:,:,:,i])
+    ubV  = @view(tmpv.ubVfull[:,:,1:dmaxp1])
+    dubV = @view(tmpv.dubVfull[:,:,:,1:dmaxp1])
+    lse = tmpv.lse
     tmp = tmpv.tmp
 
     lse .= 0.0
@@ -25,7 +23,7 @@ let i = 17,
     ubV .= @view(tmpv.uin[:,:,1:dmaxp1,2])
     dubV .= @view(tmpv.duin[:,:,:,1:dmaxp1,2])
 
-    logsumexp3!(lse,tmp,ubV)
+    ShaleDrillingModel.logsumexp3!(lse,tmp,ubV)
     for CI in CartesianIndices(size(lsetest))
         lsetest[CI] = logsumexp(@view(ubV[CI,:]))
     end

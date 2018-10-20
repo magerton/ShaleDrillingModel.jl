@@ -1,14 +1,15 @@
 zero!(tmpv)
 
-let EV1 = similar(evs.EV),
-    EV2 = similar(evs.EV),
-    T = Float64,
-    t = tmpv,
-    p = prim,
-    σ = σv,
-    itype = (0.2,1),
-    θ1 = similar(θt),
-    θ2 = similar(θt),
+@testset "Exploratory EV gradient" begin
+    EV1 = similar(evs.EV)
+    EV2 = similar(evs.EV)
+    T = Float64
+    t = tmpv
+    p = prim
+    σ = σv
+    itype = (0.2,1)
+    θ1 = similar(θt)
+    θ2 = similar(θt)
     fdEV = similar(evs.dEV)
 
     zero!(evs.EV)
@@ -76,17 +77,17 @@ end
 
 
 
-
-let T = Float64,
-    EV1 = zeros(T, size(evs.EV)),
-    EV2 = zeros(T, size(evs.EV)),
-    t = tmpv,
-    p = prim,
-    σ = σv,
-    itype = (0.2,1),
-    θ1 = similar(θt),
-    θ2 = similar(θt),
-    fdEVσ = zeros(T, size(evs.EV)),
+@testset "dEV/dσ" begin
+    T = Float64
+    EV1 = zeros(T, size(evs.EV))
+    EV2 = zeros(T, size(evs.EV))
+    t = tmpv
+    p = prim
+    σ = σv
+    itype = (0.2,1)
+    θ1 = similar(θt)
+    θ2 = similar(θt)
+    fdEVσ = zeros(T, size(evs.EV))
     fdubv = zeros(T,size(tmpv.ubVfull))
 
     println("testing dEV/dσ")

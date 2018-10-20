@@ -23,9 +23,9 @@ struct dcdp_primitives{FF,T<:Real,AM<:AbstractMatrix{T},TT<:Tuple,AV<:AbstractVe
 end
 
 function dcdp_primitives(FF::Symbol, β::T, wp::well_problem, zspace::TT, Πz::AM, ψspace::AV) where {T,TT,AM,AV}
-    FF ∈ (:exp1roy1p,)    && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 7)
-    FF ∈ (:exp,:exp1roy,) && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 8)
-    FF ∈ (:exproy,)       && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 9)
+    FF ∈ (:exp1roy1p,)    && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 9)
+    FF ∈ (:exp,:exp1roy,) && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 10)
+    FF ∈ (:exproy,)       && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 11)
     # FF ∈ (:breaklin, :breakexp) && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 13)
     throw(error("$FF is unknown"))
 end
@@ -108,12 +108,10 @@ struct dcdp_tmpvars{T<:Float64,AM<:AbstractMatrix{Float64}}
     duin::Array{T,5}
     duex::Array{T,4}
     duexσ::Array{T,3}
-    # duexψ::Array{T,3}
 
     ubVfull::Array{T,3}
     dubVfull::Array{T,4}
     dubV_σ::Array{T,3}
-    # dubV_ψ::Array{T,3}
 
     q::Array{T,3}
     lse::Matrix{T}
@@ -133,7 +131,6 @@ function check_size(prim::dcdp_primitives, t::dcdp_tmpvars)
     (nz,nψ,nd)    == size(t.q)        || throw(DimensionMismatch())
     (nz,nψ,nθ,nd) == size(t.dubVfull) || throw(DimensionMismatch())
     (nz,nψ,nd)    == size(t.dubV_σ)   || throw(DimensionMismatch())
-    # (nz,nψ,nd)    == size(t.dubV_ψ)   || throw(DimensionMismatch())
 end
 
 
@@ -153,13 +150,11 @@ function dcdp_tmpvars(prim::dcdp_primitives)
     duin  = zeros(T,nz,nψ,nθt,nd,2)
     duex  = zeros(T,nz,nψ,nθt,ndex)
     duexσ = zeros(T,nz,nψ,ndex)
-    # duexψ = zeros(T,nz,nψ,ndex)
 
     # choice-specific value functions
     ubVfull  = zeros(T,nz,nψ,nd)
     dubVfull = zeros(T,nz,nψ,nθt,nd)
     dubV_σ   = zeros(T,nz,nψ,ndex)
-    # dubV_ψ   = zeros(T,nz,nψ,ndex)
 
     # other tempvars
     q        = zeros(T,nz,nψ,nd)
@@ -170,7 +165,6 @@ function dcdp_tmpvars(prim::dcdp_primitives)
     Πψtmp = Matrix{T}(undef,nψ,nψ)
     IminusTEVp = ensure_diagonal(prim.Πz)
 
-    # return dcdp_tmpvars(uin,uex,duin,duex,duexσ,duexψ,ubVfull,dubVfull,dubV_σ,dubV_ψ,q,lse,tmp,Πψtmp,IminusTEVp)
     return dcdp_tmpvars(uin,uex,duin,duex,duexσ,ubVfull,dubVfull,dubV_σ,q,lse,tmp,Πψtmp,IminusTEVp)
 end
 
@@ -181,11 +175,9 @@ function zero!(t::dcdp_tmpvars)
     zero!(t.duin )
     zero!(t.duex )
     zero!(t.duexσ)
-    # zero!(t.duexψ)
     zero!(t.ubVfull )
     zero!(t.dubVfull)
     zero!(t.dubV_σ  )
-    # zero!(t.dubV_ψ  )
     zero!(t.q       )
     zero!(t.lse     )
     zero!(t.tmp     )
@@ -196,7 +188,6 @@ function zero!(evs::dcdp_Emax)
     zero!(evs.EV)
     zero!(evs.dEV)
     zero!(evs.dEVσ)
-    # zero!(evs.dEV_ψ)
 end
 
 

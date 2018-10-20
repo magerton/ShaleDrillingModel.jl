@@ -1,7 +1,8 @@
-let prim = dcdp_primitives(:exproy, β, wp, zspace, Πp, ψspace),
-    tmpv = dcdp_tmpvars(prim),
-    sev = SharedEV([1,], prim, [1.0/8.0], 1:1),
-    EVcopy = similar(sev.EV),
+@testset "VF Inteprolation" begin
+    local prim = dcdp_primitives(:exproy, β, wp, zspace, Πp, ψspace)
+    local tmpv = dcdp_tmpvars(prim)
+    sev = SharedEV([1,], prim, [1.0/8.0], 1:1)
+    EVcopy = similar(sev.EV)
     EVcopy2 = similar(sev.EV)
 
     serial_solve_vf_all!(sev, tmpv, prim, θfull, Val{false})
