@@ -10,10 +10,12 @@ export flow, flowdθ, flowdσ, flowdψ
 
 
 # functions in case we have volatility regime
-@inline flow(  FF::Type,  θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer, d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T} = flow(   FF, θ, σ, logp, ψ,    d, d1, Dgt0, roy, geoid)
-@inline flowrev(FF::Type, θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer, d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T} = flowrev(FF, θ, σ, logp, ψ,    d, d1, Dgt0, roy, geoid)
-@inline flowdθ(FF::Type,  θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T, k::Integer, d::Integer, d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T} = flowdθ( FF, θ, σ, logp, ψ, k, d, d1, Dgt0, roy, geoid)
-@inline flowdσ(FF::Type,  θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer,                          roy::T, geoid::Real) where {T} = flowdσ( FF, θ, σ, logp, ψ,    d,           roy, geoid)
+@inline flow(  FF::Type,  θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer, d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T} = flow(   FF, θ, σ, logp, ψ,    d, d1, Dgt0,                  roy, geoid)
+@inline flowrev(FF::Type, θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer, d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T} = flowrev(FF, θ, σ, logp, ψ,    d, d1, Dgt0,                  roy, geoid)
+@inline flowdθ(FF::Type,  θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T, k::Integer, d::Integer, d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T} = flowdθ( FF, θ, σ, logp, ψ, k, d, d1, Dgt0,                  roy, geoid)
+@inline flowdσ(FF::Type,  θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer,                          roy::T, geoid::Real) where {T} = flowdσ( FF, θ, σ, logp, ψ,    d,                            roy, geoid)
+@inline flowdψ(FF::Type,  θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer, st::Union{state,Bool},   roy::T, geoid::Real) where {T} = flowdψ( FF, θ, σ, logp, ψ,    d, st,                        roy, geoid)
+@inline flowdψ(FF::Type,  θ::AbstractVector{T}, σ::T, logp::T,                  ψ::T,             d::Integer, st::state,               roy::T, geoid::Real) where {T} = flowdψ( FF, θ, σ, logp, ψ,    d, _sign_lease_extension(st), roy, geoid)
 
 # --------------------------- common revenue functions & derivatives  --------------------------------------
 
@@ -53,7 +55,7 @@ end
 
 
 
-@inline function flowdθ(::Type{Val{:exproy}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, roy::Real, geoid::Real) where {T}
+@inline function flowdθ(::Type{Val{:exproy}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, roy::T, geoid::Real) where {T}
     d == 0 && (Dgt0 || k <= 9)  && return zero(T)
 
     # revenue
@@ -84,7 +86,19 @@ end
     end
 end
 
-#
+@inline function flowdψ(::Type{Val{:exproy}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, sign_extension::Bool, roy::T, geoid::Real) where {T}
+    if d == 0
+        if sign_extension # FIXME - how to do this??
+            return θ[11]
+        else
+            return zero(T)
+        end
+    else
+        return convert(T,d) * drevdψ_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,roy,geoid)
+    end
+end
+
+
 # # -----------------------------------------------------------------------------------------------------------------------------
 # # --------------------------------------------------- CONSTRAINED exponential roy --------------------------------------------------------------------
 # # -----------------------------------------------------------------------------------------------------------------------------

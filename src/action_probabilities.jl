@@ -40,13 +40,14 @@ nplus1_impl(N::Integer) = :(Val{$(N+1)})
     wt = d==d_obs ? one(T) - ubV[d+1] : -ubV[d+1]
     sp_idx = _sprime(prim.wp, s_idx, d)
 
-    for k in eachindex(θt) # NOTE: assumes 1-based linear indexing!!
+    @inbounds for k in eachindex(θt) # NOTE: assumes 1-based linear indexing!!
       grad[k] += wt * (flowdθ(FF, θt, σ, z..., ψ, k, d, s.d1, Dgt0, roy, geo) + prim.β * isev.dEV[z..., ψ, k, sp_idx, itypidx...] )
     end
 
     if !Dgt0
-      dpsi = flowdψ(FF, θt, σ, z..., ψ, d, roy, geo) + prim.β * gradient_d(nplus1(Val{NZ}), isev.EV, z..., ψ, sp_idx, itypidx...)::T
-      dsig = flowdσ(FF, θt, σ, z..., ψ, d, roy, geo) + prim.β * isev.dEVσ[z..., ψ, sp_idx, itypidx...]
+      signing = _sign_lease_extension(s_idx, prim.wp)
+      dpsi = flowdψ(FF, θt, σ, z..., ψ, d, signing, roy, geo) + prim.β * gradient_d(nplus1(Val{NZ}), isev.EV, z..., ψ, sp_idx, itypidx...)::T
+      dsig = flowdσ(FF, θt, σ, z..., ψ, d,          roy, geo) + prim.β * isev.dEVσ[z..., ψ, sp_idx, itypidx...]
       grad[end] += wt * (dpsi*_dψ1dθρ(uv..., ρ, σ) + dsig)
     end
   end

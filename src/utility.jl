@@ -68,13 +68,15 @@ function check_flowgrad(FF::Type, θ::AbstractVector{T}, σ::T, zspace::Tuple, �
             return false
         end
 
-        # # check ψ
-        # dψ = flowdψ(FF, θ, σ, st..., itype...)
-        # fdψ = Calculus.derivative((h::Real) -> flowfdψ(FF, θ, σ, st, d1, Dgt0, h, itype...), 0.0, :central)
-        # if !(dψ ≈ fdψ) && !isapprox(dψ, fdψ, atol=1e-7)
-        #     @warn "Bad ψ diff at $st. duψ = $dψ and fdψ = $fdψ"
-        #     return false
-        # end
+        # check ψ
+        for signext in (true,)
+            dψ = flowdψ(FF, θ, σ, st..., signext, itype...)
+            fdψ = Calculus.derivative((h::Real) -> flowfdψ(FF, θ, σ, st, d1, Dgt0, h, itype...), 0.0, :central)
+            if !(dψ ≈ fdψ) && !isapprox(dψ, fdψ, atol=1e-7)
+                @warn "Bad ψ diff at $st. duψ = $dψ and fdψ = $fdψ"
+                return false
+            end
+        end
     end
     return isok
 end

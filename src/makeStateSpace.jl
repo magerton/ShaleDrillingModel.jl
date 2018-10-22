@@ -99,6 +99,11 @@ _nS(    p::well_problem) = length(p)
 _nSexp( p::well_problem) = p.endpts[4]
 _nSint( p::well_problem) = length(ind_lrn(p.endpts))
 
+# extending lease
+@inline _sign_lease_extension(s::state) = s.τ1 == 0 && s.τ1 > 0
+@inline _sign_lease_extension(s::Integer, ep::NTuple{6,<:Integer}) = s == ep[2]
+@inline _sign_lease_extension(s::Integer, wp::well_problem) = _sign_lease_extension(s,wp.endpts)
+
 # actions
 action_iter(  p::well_problem, i::Integer) = _actionspace(p, i)
 _num_actions( p::well_problem, i::Integer) = _num_actions( i, dmax(p), Dmax(p), p.endpts)
