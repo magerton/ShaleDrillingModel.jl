@@ -12,12 +12,11 @@ using Interpolations
 using Statistics
 using SparseArrays
 
-include("makeStateSpace.jl")
-
 # jldpath = Base.joinpath(Pkg.dir("ShaleDrillingData"), "data/price-transitions.jld")
 jldpath = joinpath(ENV["JULIA_PKG_DEVDIR"], "ShaleDrillingData/data/price-transitions.jld")
 @load jldpath pspace Πp Πp1
 
+Πp2 = Πp1
 # Πp1 = Πp
 
 # some primitives
@@ -27,13 +26,14 @@ royalty_types = 1:length(royalty_rates)
 geology_types = 1.3430409262656042:0.1925954901417719:5.194950729101042
 
 # initial parameters
-θt = [1.0, -0x1.2d34868c62f72p+0, 1.0, 0x1.2b663d526e945p-6,  0x1.e541149a44256p-1,-0x1.a46b48dd5571bp+1,-0x1.55350321e88e3p+0, 0.0, 0x1.1ec8d5020b7eep+1]
+θt = [1.0, -0x1.2d34868c62f72p+0, 1.0, 0x1.2b663d526e945p-6,  0x1.e541149a44256p-1,-0x1.a46b48dd5571bp+1,-0x1.55350321e88e3p+0, 0.0, 0x1.1ec8d5020b7eep+1, -1.0, -1.0, ]
 σv = 0.566889
 θfull = vcat(θt, σv)
 
 # problem sizes
 nψ, dmx, nz, nv =  51, 3, size(Πp,1), 51
-wp = well_problem(dmx,4,10)
+wp = well_problem(dmx,4,5,3,2)
+
 zspace, ψspace, dspace, d1space, vspace = (pspace,1:2), range(-3.75, stop=3.75, length=nψ), 0:dmx, 0:1, range(-3.0, stop=3.0, length=nv)
 
 prim = dcdp_primitives(:exproy, β, wp, zspace, Πp, ψspace)
@@ -43,23 +43,25 @@ evs = dcdp_Emax(prim)
 ## check sizes of models
 ShaleDrillingModel.check_size(prim, evs)
 
-println("testing flow payoffs")
+include("makeStateSpace.jl")
 include("flow-payoffs.jl")
 
-
-println("testing flow gradients")
-@test check_flowgrad(θt, σv, prim, 0.2, 1.0)
-println("testing transition derivatives")
-@test check_dΠψ(σv, ψspace)
+@testset  "testing flow gradients" begin
+    let geoid = 2, roy = 0.2
+        @test check_flowgrad(θt, σv, prim, geoid, roy)
+    end
+    @test check_dΠψ(σv, ψspace)
+end
 
 include("test_utility.jl")
 include("test_transition.jl")
 
-
 println("filling per-period payoffs")
 
-@views fillflows!(flow(prim), flow, tmpv.uin[:,:,:,   1], tmpv.uin[:,:,:,   2], tmpv.uex, θt, σv, makepdct(prim, θt, Val{:u},  σv), 0.25, 1)
-fillflows_grad!(tmpv, prim, θt, σv, 0.2, 1)
+let roy = 0.25, geoid = 2, itype = (geoid, roy,)
+    @views fillflows!(flow(prim), flow, tmpv.uin[:,:,:,   1], tmpv.uin[:,:,:,   2], tmpv.uex, θt, σv, makepdct(prim, θt, Val{:u},  σv), itype...)
+    fillflows_grad!(tmpv, prim, θt, σv, itype...)
+end
 
 include("logsumexp3.jl")
 
@@ -67,7 +69,9 @@ include("vf_solve_terminal_and_infill.jl")
 include("vf_solve_exploratory.jl")
 
 zero!(tmpv)
-solve_vf_all!(evs, tmpv, prim, θt, σv, (0.2, 1), Val{true})
+let geoid = 2, roy = 0.25, itype = (geoid, roy,)
+    solve_vf_all!(evs, tmpv, prim, θt, σv, itype, Val{true})
+end
 
 include("vf_interpolation.jl")
 
@@ -77,4 +81,3 @@ include("parallel_solution.jl")
 include("action_probabilities_new.jl")
 
 include("BSplineTestFuns_runtests.jl")
-include("makeStateSpace.jl")

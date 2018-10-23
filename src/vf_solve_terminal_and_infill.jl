@@ -92,7 +92,7 @@ function solve_vf_infill!(
                 gradinf!(dEV0, ubV, dubV, lse, tmp, IminusTEVp, Πz, β)   # note: destroys ubV & dubV
             end
         else
-            throw(error("horizon must be :Finite or :Infinite"))
+            throw(error("i = $i, horzn = $horzn but must be :Finite or :Infinite"))
         end
     end
 end

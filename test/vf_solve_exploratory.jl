@@ -1,14 +1,17 @@
 zero!(tmpv)
 
-let EV1 = similar(evs.EV),
-    EV2 = similar(evs.EV),
-    T = Float64,
-    t = tmpv,
-    p = prim,
-    σ = σv,
-    itype = (0.2,1),
-    θ1 = similar(θt),
-    θ2 = similar(θt),
+@testset "Exploratory EV gradient" begin
+    EV1 = similar(evs.EV)
+    EV2 = similar(evs.EV)
+    T = Float64
+    t = tmpv
+    p = prim
+    σ = σv
+    roy = 0.2
+    geoid = 2
+    itype = (geoid, roy,)
+    θ1 = similar(θt)
+    θ2 = similar(θt)
     fdEV = similar(evs.dEV)
 
     zero!(evs.EV)
@@ -76,75 +79,78 @@ end
 
 
 
+@testset "dEV/dσ" begin
+    let T = Float64,
+        EV1 = zeros(T, size(evs.EV)),
+        EV2 = zeros(T, size(evs.EV)),
+        t = tmpv,
+        p = prim,
+        nsexp1 = _nSexp(wp),
+        σ = σv,
+        roy = 0.2,
+        geoid = 2,
+        itype = (geoid, roy,),
+        θ1 = similar(θt),
+        θ2 = similar(θt),
+        fdEVσ = zeros(T, size(evs.EV)),
+        fdubv = zeros(T,size(tmpv.ubVfull))
 
-let T = Float64,
-    EV1 = zeros(T, size(evs.EV)),
-    EV2 = zeros(T, size(evs.EV)),
-    t = tmpv,
-    p = prim,
-    σ = σv,
-    itype = (0.2,1),
-    θ1 = similar(θt),
-    θ2 = similar(θt),
-    fdEVσ = zeros(T, size(evs.EV)),
-    fdubv = zeros(T,size(tmpv.ubVfull))
+        println("testing dEV/dσ")
 
-    println("testing dEV/dσ")
+        zero!(evs)
 
-    zero!(evs)
+        # now do σ
+        h = peturb(σv)
+        σ1 = σv - h
+        σ2 = σv + h
+        hh = σ2 - σ1
 
-    # now do σ
-    h = peturb(σv)
-    σ1 = σv - h
-    σ2 = σv + h
-    hh = σ2 - σ1
+        zero!(tmpv)
+        fillflows_grad!(tmpv, prim, θt, σ1, itype...)
+        solve_vf_terminal!(evs, prim)
+        solve_vf_infill!(evs, tmpv, prim, false)
+        learningUpdate!(evs, tmpv, prim, σ1)
+        fdubv .= -tmpv.ubVfull
+        solve_vf_explore!(evs, tmpv, prim, false)
+        fdEVσ .= -evs.EV
 
-    zero!(tmpv)
-    fillflows_grad!(tmpv, prim, θt, σ1, itype...)
-    solve_vf_terminal!(evs, prim)
-    solve_vf_infill!(evs, tmpv, prim, false)
-    learningUpdate!(evs, tmpv, prim, σ1)
-    fdubv .= -tmpv.ubVfull
-    solve_vf_explore!(evs, tmpv, prim, false)
-    fdEVσ .= -evs.EV
+        zero!(tmpv)
+        fillflows_grad!(tmpv, prim, θt, σ2, itype...)
+        solve_vf_terminal!(evs, prim)
+        solve_vf_infill!(evs, tmpv, prim, false)
+        learningUpdate!(evs, tmpv, prim, σ2)
+        fdubv .+= tmpv.ubVfull
+        fdubv ./= hh
+        solve_vf_explore!(evs, tmpv, prim, false)
+        fdEVσ .+= evs.EV
+        fdEVσ ./= hh
 
-    zero!(tmpv)
-    fillflows_grad!(tmpv, prim, θt, σ2, itype...)
-    solve_vf_terminal!(evs, prim)
-    solve_vf_infill!(evs, tmpv, prim, false)
-    learningUpdate!(evs, tmpv, prim, σ2)
-    fdubv .+= tmpv.ubVfull
-    fdubv ./= hh
-    solve_vf_explore!(evs, tmpv, prim, false)
-    fdEVσ .+= evs.EV
-    fdEVσ ./= hh
+        # ----------------- analytic -----------------
 
-    # ----------------- analytic -----------------
+        zero!(tmpv)
+        fillflows_grad!(tmpv, prim, θt, σv, itype...)
+        solve_vf_terminal!(evs, prim)
+        solve_vf_infill!(evs, tmpv, prim, true)
+        learningUpdate!(evs, tmpv, prim, σv, Val{true})
+        @test fdubv ≈ tmpv.dubV_σ
+        solve_vf_explore!(evs, tmpv, prim, true)
 
-    zero!(tmpv)
-    fillflows_grad!(tmpv, prim, θt, σv, itype...)
-    solve_vf_terminal!(evs, prim)
-    solve_vf_infill!(evs, tmpv, prim, true)
-    learningUpdate!(evs, tmpv, prim, σv, Val{true})
-    @test fdubv ≈ tmpv.dubV_σ
-    solve_vf_explore!(evs, tmpv, prim, true)
+        # now test dσ
+        fdEVσvw = @view(fdEVσ[:,:,1:nsexp1])
+        @test size(fdEVσvw) == size(evs.dEVσ)
+        @views maxv, idx = findmax(abs.(fdEVσvw.-evs.dEVσ))
+        sub = CartesianIndices(fdEVσvw)[idx]
+        @show "worst value is $maxv at $sub for dσ"
+        @show extrema(fdEVσvw)
+        @show extrema(evs.dEVσ)
 
-    # now test dσ
-    nsexp1 = _nSexp(wp)
-    fdEVσvw = @view(fdEVσ[:,:,1:nsexp1])
-    @test size(fdEVσvw) == size(evs.dEVσ)
-    @views maxv, idx = findmax(abs.(fdEVσvw.-evs.dEVσ))
-    sub = CartesianIndices(fdEVσvw)[idx]
-    @show "worst value is $maxv at $sub for dσ"
-    @show extrema(fdEVσvw)
-    @show extrema(evs.dEVσ)
+        maximum(abs.((evs.dEVσ .- fdEVσvw)[:,:,2:end-1]))
 
-    maximum(abs.((evs.dEVσ .- fdEVσvw)[:,:,2:end-1]))
+        @test all(isfinite.(evs.dEVσ))
+        @test all(isfinite.(fdEVσvw))
+        @test 0.0 < maxv < 0.1
 
-    @test all(isfinite.(evs.dEVσ))
-    @test all(isfinite.(fdEVσvw))
-    @test 0.0 < maxv < 0.1
-
-    @test fdEVσvw ≈ evs.dEVσ
-    println("dEV/dσ looks ok! :)")
+        @test fdEVσvw ≈ evs.dEVσ
+        println("dEV/dσ looks ok! :)")
+    end
 end

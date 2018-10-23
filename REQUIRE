@@ -4,7 +4,7 @@ StatsFuns
 AxisAlgorithms
 Calculus
 StatsBase
-Interpolations
+Interpolations 0.8.0 0.9-
 Ratios
 
 MarkovTransitionMatrices  # to make transition matrices

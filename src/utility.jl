@@ -26,7 +26,7 @@ function tweakstate(st::Tuple,  h::Real)
 end
 
 # fduσ(f::Function, θ::AbstractVector{T}, σ::T, st::Tuple, d1::Integer, Dgt0::Bool, roy::Real, h::T) where {T} = u(θ, σ+h, st..., d1, Dgt0, roy)
-flowfdψ(FF::Type, θ::AbstractVector{T},  σ::T, st::Tuple, d1::Integer, Dgt0::Bool, h::T, itype::Real...) where {T} = flow(FF, θ, σ, tweakstate(st, h)..., d1, Dgt0, itype...)
+flowfdψ(FF::Type, θ::AbstractVector{T},  σ::T, st::Tuple, d1::Integer, Dgt0::Bool, sgnext::Bool, h::T, itype::Real...) where {T} = flow(FF, θ, σ, tweakstate(st, h)..., d1, Dgt0, sgnext, itype...)
 
 # ------------------------------------ wrapper for all flows   -----------------
 
@@ -48,12 +48,12 @@ function check_flowgrad(FF::Type, θ::AbstractVector{T}, σ::T, zspace::Tuple, �
     isok = true
 
     for st in makepdct(zspace, ψspace, wp, θ, Val{:u})
-        for d1D in [(0,true), (1,true), (0,false)]
-            u(θ) = flow(FF, θ, σ, st..., d1D..., itype...)
-            duθ!(dx,    FF, θ, σ, st,    d1D..., itype...)
+        for d1Dgt0 in [(0,true,false,), (1,true,false,), (0,false,false,), (0,false,true,)]
+            u(θ) = flow(FF, θ, σ, st..., d1Dgt0..., itype...)
+            duθ!(dx,    FF, θ, σ, st,    d1Dgt0..., itype...)
             Calculus.finite_difference!(u, θ, dxfd, :central)
             if !(dxfd ≈ dx)
-                warn("FF = $FF. Bad θ diff at $st, $d1D. du=$dx and fd = $dxfd")
+                @warn "FF = $FF. Bad θ diff at $st, $d1Dgt0. du=$dx and fd = $dxfd"
                 return false
             end
         end
@@ -61,19 +61,22 @@ function check_flowgrad(FF::Type, θ::AbstractVector{T}, σ::T, zspace::Tuple, �
         # check σ
         d1 = 0
         Dgt0 = false
+        sgnext = true
         dσ = flowdσ(FF, θ, σ, st..., itype...)
-        fdσ = Calculus.derivative((σh::Real) ->  flow(FF, θ, σh, st..., d1, Dgt0, itype...), σ, :central)
+        fdσ = Calculus.derivative((σh::Real) ->  flow(FF, θ, σh, st..., d1, Dgt0, sgnext, itype...), σ, :central)
         if !(dσ ≈ fdσ) && !isapprox(dσ,fdσ, atol= 1e-8)
-            warn("Bad σ diff at $st. duσ = $dσ and fd = $fdσ")
+            @warn "Bad σ diff at $st. duσ = $dσ and fd = $fdσ"
             return false
         end
 
         # check ψ
-        dψ = flowdψ(FF, θ, σ, st..., itype...)
-        fdψ = Calculus.derivative((h::Real) -> flowfdψ(FF, θ, σ, st, d1, Dgt0, h, itype...), 0.0, :central)
-        if !(dψ ≈ fdψ) && !isapprox(dψ, fdψ, atol=1e-7)
-            warn("Bad ψ diff at $st. duψ = $dψ and fdψ = $fdψ")
-            return false
+        for sgnext in (true,false,)
+            dψ = flowdψ(FF, θ, σ, st..., sgnext, itype...)
+            fdψ = Calculus.derivative((h::Real) -> flowfdψ(FF, θ, σ, st, d1, Dgt0, sgnext, h, itype...), 0.0, :central)
+            if !(dψ ≈ fdψ) && !isapprox(dψ, fdψ, atol=1e-7)
+                @warn "Bad ψ diff at $st. duψ = $dψ and fdψ = $fdψ"
+                return false
+            end
         end
     end
     return isok
@@ -95,10 +98,10 @@ end
 function fillflowrevs!(FF::Type, f::Function, Xin::AbstractArray, Xex::AbstractArray, θ::AbstractVector, σ::T, pdct::Base.Iterators.ProductIterator, itype::Real...) where {T}
     length(pdct) == length(Xin) == length(Xex) || throw(DimensionMismatch())
     @inbounds for (i, st) in enumerate(pdct)
-        Xin[i] = f(FF, θ, σ, st..., 0, true, itype...)
+        Xin[i] = f(FF, θ, σ, st..., 0, true, true, itype...)
     end
     @inbounds for (i, st) in enumerate(pdct)
-        Xex[i] = f(FF, θ, σ, st..., 1, false, itype...)
+        Xex[i] = f(FF, θ, σ, st..., 1, false, true, itype...)
     end
 end
 
@@ -107,20 +110,20 @@ end
 function fillflows!(FF::Type, f::Function, Xin0::AbstractArray, Xin1::AbstractArray, Xexp::AbstractArray, θ::AbstractVector, σ::T, pdct::Base.Iterators.ProductIterator, itype::Real...) where {T}
     length(pdct) == length(Xin0) == length(Xin1) == length(Xexp) || throw(DimensionMismatch())
     @inbounds for (i, st) in enumerate(pdct)
-        Xin0[i] = f(FF, θ, σ, st..., 0, true , itype...)
+        Xin0[i] = f(FF, θ, σ, st..., 0, true , false, itype...)
     end
     @inbounds for (i, st) in enumerate(pdct)
-        Xin1[i] = f(FF, θ, σ, st..., 1, true , itype...)
+        Xin1[i] = f(FF, θ, σ, st..., 1, true , false, itype...)
     end
     @inbounds for (i, st) in enumerate(pdct)
-        Xexp[i] = f(FF, θ, σ, st..., 0, false, itype...)
+        Xexp[i] = f(FF, θ, σ, st..., 0, false, true, itype...)
     end
 end
 
 # fill the flow-payoff (levels)
 fillflows!(FF::Type, uin::AbstractArray4, uex::AbstractArray3, θ::AbstractVector, σ::Real, pdct::Base.Iterators.ProductIterator, itype::Real...)            = @views fillflows!(FF, flow, uin[:,:,:,1], uin[:,:,:,2],   uex, θ, σ, pdct, itype...)
 fillflows!(t::dcdp_tmpvars, p::dcdp_primitives{FF},            θ::AbstractVector, σ::Real, pdct::Base.Iterators.ProductIterator, itype::Real...) where {FF} =        fillflows!(FF, t.uin,                            t.uex, θ, σ, pdct, itype...)
-fillflows!(t::dcdp_tmpvars, p::dcdp_primitives{FF},            θ::AbstractVector, σ::Real,                                            itype::Real...) where {FF} =        fillflows!(t, p, θ, σ,        makepdct(p, θ, Val{:u}, σ),           itype...)
+fillflows!(t::dcdp_tmpvars, p::dcdp_primitives{FF},            θ::AbstractVector, σ::Real,                                       itype::Real...) where {FF} =        fillflows!(t, p, θ, σ,        makepdct(p, θ, Val{:u}, σ),           itype...)
 
 function fillflows_grad!(t::dcdp_tmpvars, p::dcdp_primitives{FF}, θ::AbstractVector, σ::Real, itype::Real...) where {FF}
     @views fillflows!(FF, flow,   t.uin[:,:,:,   1], t.uin[:,:,:,   2],  t.uex, θ, σ, makepdct(p, θ, Val{:u},  σ), itype...)

@@ -1,8 +1,8 @@
-
-let EV = evs.EV,
-    dEV = evs.dEV,
-    dEVσ = evs.dEVσ,
-    t = tmpv,
+@testset "Make sure that EV is filled" begin
+    EV = evs.EV
+    dEV = evs.dEV
+    dEVσ = evs.dEVσ
+    t = tmpv
     p = prim
 
     # full VFI
@@ -14,7 +14,15 @@ end
 
 # ---------------- Regime 1 VFI and PFI - test gradient ------------------
 
-let θ1 = similar(θt), θ2 = similar(θt), fdEV = similar(evs.dEV), itype = (0.2,1), tmp=tmpv
+@testset "Gradient of EV for infill" begin
+    θ1 = similar(θt)
+    θ2 = similar(θt)
+    fdEV = similar(evs.dEV)
+    roy = 0.25
+    geoid = 2
+    itype = (geoid, roy,)
+    tmp = tmpv
+
     for k = 1:length(θt)
         h = peturb(θt[k])
         θ1 .= θt
