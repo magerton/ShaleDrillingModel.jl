@@ -118,7 +118,6 @@ function _first_action(s::Integer, dmx::Integer, Dmx::Integer, endpts::NTuple{6,
     throw(DomainError())
 end
 
-
 function _max_action(s::Integer, dmx::Integer, Dmx::Integer, endpts::NTuple{6,Int})::Int
     s <= endpts[1] && throw(DomainError(s, "s <= endpts[1] = $(endpts[1])"))
     s <= endpts[3] && return dmx

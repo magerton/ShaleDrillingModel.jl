@@ -18,7 +18,9 @@ end
     θ1 = similar(θt)
     θ2 = similar(θt)
     fdEV = similar(evs.dEV)
-    itype = (0.2,1)
+    roy = 0.25
+    geoid = 2
+    itype = (geoid, roy,)
     tmp = tmpv
 
     for k = 1:length(θt)

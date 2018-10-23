@@ -101,7 +101,7 @@ _nSint( p::well_problem) = length(ind_lrn(p.endpts))
 
 # extending lease
 @inline _sign_lease_extension(s::state) = s.τ1 == 0 && s.τ1 > 0
-@inline _sign_lease_extension(s::Integer, ep::NTuple{6,<:Integer}) = s == ep[2]
+@inline _sign_lease_extension(s::Integer, ep::NTuple{6,<:Integer}) = s == ep[2] && ep[2] > 0
 @inline _sign_lease_extension(s::Integer, wp::well_problem) = _sign_lease_extension(s,wp.endpts)
 
 # actions

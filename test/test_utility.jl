@@ -2,14 +2,16 @@
 
    duex = similar(tmpv.duexσ)
    fduex = similar(tmpv.uex)
-   itype=(0.2,2.0)
-   p=prim
+   roy = 0.2
+   geoid = 2
+   itype=(geoid, roy,)
+   p = prim
    h = peturb(σv)
    σ1 = σv - h
    σ2 = σv + h
    hh = σ2 - σ1
 
-   pdct = Base.product(zspace..., ψspace, 0:dmax(wp), 0:0, false )
+   pdct = Base.product(zspace..., ψspace, 0:dmax(wp), 0:0, false, true)
 
    fillflows!(flow(p), flow,  duex, θt, σ1, pdct, itype...)
    fillflows!(flow(p), flow, fduex, θt, σ2, pdct, itype...)

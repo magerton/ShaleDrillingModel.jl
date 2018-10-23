@@ -9,7 +9,11 @@
         tmpv = dcdp_tmpvars(prim),
         evs = dcdp_Emax(prim),
         σv = 0.5,
-        itype = (0.2, 8),
+        royalty_rates = [0.25,],
+        geology_types = 2:2,
+        roy = royalty_rates[1],
+        geoid = geology_types[1],
+        itype = (geoid, roy,),
         T = eltype(eltype(evs.EV)),
         h = peturb(σv),
         σ1 = σv - h,
@@ -17,7 +21,7 @@
         hh = σ2 - σ1
 
         nSexp = _nSexp(wp)
-        sev = SharedEV([1,], prim, [1.0/8.], 1:1)
+        sev = SharedEV([1,], prim, geology_types, royalty_rates)
         evs, typs = dcdp_Emax(sev, 1, 1)
         sitev = ItpSharedEV(sev, prim, σv)
 
@@ -30,8 +34,6 @@
 
         solve_vf_all!(evs, tmpv, prim, θt, σv, itype, Val{true})
         serial_prefilterByView!(sev,sitev)
-
-        @show pdct
 
         for (i,xi) in enumerate(pdct)
             z, u, v, s = xi
