@@ -1,12 +1,10 @@
 # using BSplineExtensions
 using Interpolations
 using Interpolations: BSplineInterpolation, tweight, scale
-using Test
-using Random
-using SharedArrays
+using Base.Test
 
 x = SharedArray{Float64}(100, 100, 10, 10)
-endsz = (map(i -> size(x,i), 3:4)...,)
+endsz = (map(i -> size(x,i), 3:4)...)
 rand!(x)
 
 x2210 = copy(x)
@@ -74,34 +72,34 @@ gradient_d_impl(3, typeof(itp_2210))
 function test_grad_d(itp::BSplineInterpolation, x::Number...)
     g = Interpolations.gradient(itp, x...)
     for d = 1:length(g)
-        @test g[d] == gradient_d(Val{d}, itp, x...)
+        @test g[d] == gradient_d(d, itp, x...)
     end
 end
 
 xs = 1.2, 2.2, 3.2, Int(4)
-# @code_warntype gradient_d(Val{1}, itp_2210, xs...)
-gradient!(Vector{Float64}(undef, 3), itp_2210, xs...)
+@code_warntype gradient_d(Val{1}, itp_2210, xs...)
+gradient!(Vector{Float64}(3), itp_2210, xs...)
 
-Interpolations.gradient(itp_2210, xs...)
 test_grad_d(itp_2210, xs...)
 test_grad_d(itp_1111, xs...)
 test_grad_d(itp_2211, xs...)
 
-@test_throws DomainError    gradient_d(Val{5}, itp_1111, 1:4...)
-@test_throws ErrorException gradient_d(Val{4}, itp_2210, 1:4...)
+
+@test_throws DomainError    gradient_d(5, itp_1111, 1:4...)
+@test_throws ErrorException gradient_d(4, itp_2210, 1:4...)
 
 
 # ------------------------ scale & gradient ---------------------
 
 
-rng1 = range(-30, stop=30, length=100)
-rng2 = range(20, stop=50, length=100)
-rng3 = range(30, stop=39, length=10)
+rng1 = linspace(-30,30,100)
+rng2 = linspace(20,50,100)
+rng3 = linspace(30,39,10)
 rng4 = 1:10
 
 sitp_2210 = scale(itp_2210, rng1, rng2, rng3, rng4)
 
-Random.seed!(1234)
+srand(1234)
 z0 = rand(10,10)
 za = copy(z0)
 zb = copy(z0')
@@ -111,7 +109,7 @@ itpa = interpolate(za, (BSpline(Linear()), NoInterp()), OnGrid())
 itpb = interpolate(zb, (NoInterp(), BSpline(Linear())), OnGrid())
 @test all(itpa.coefs .== itpb.coefs')
 
-rng = range(1.0, stop=19.0, length=10)
+rng = linspace(1.0, 19.0, 10)
 sitpa = scale(itpa, rng, 1:10)
 sitpb = scale(itpb, 1:10, rng)
 @test sitpa[2.0, 3] == sitpb[3,2.0]
@@ -124,8 +122,8 @@ sitpb = scale(itpb, 1:10, rng)
 # @test Interpolations.gradient(itpb, 3, 2.0)/step(rng) == Interpolations.gradient(sitpb, 3, 3.0)
 
 # @test Interpolations.gradient(sitpb, 3, 3.0) == Interpolations.gradient(sitpa, 3.0, 3)
-@test ShaleDrillingModel.fixedgradient(sitpa, 3.0, 3) == ShaleDrillingModel.fixedgradient(sitpb, 3, 3.0)
-@test gradient_d(Val{1}, sitpa, 3.0, 3) ==  ShaleDrillingModel.fixedgradient(sitpa, 3.0, 3)[1]
+@test fixedgradient(sitpa, 3.0, 3) == fixedgradient(sitpb, 3, 3.0)
+@test gradient_d(1, sitpa, 3.0, 3) ==  fixedgradient(sitpa, 3.0, 3)[1]
 
 println("done!")
 

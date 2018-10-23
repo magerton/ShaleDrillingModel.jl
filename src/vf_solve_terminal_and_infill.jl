@@ -81,7 +81,7 @@ function solve_vf_infill!(
             converged, iter, bnds = try
                 solve_inf_pfit!(EV0, ubV, lse, tmp, IminusTEVp, Πz, β; maxit=maxit1, vftol=vftol)
             catch
-                @warn("pfit threw error. trying vfit.")
+                warn("pfit threw error. trying vfit.")
                 solve_inf_vfit!(EV0, ubV, lse, tmp, Πz, β; maxit=5000, vftol=vftol)
             end
 
@@ -101,8 +101,8 @@ end
 
 
 function solve_vf_infill!(EV::AbstractArray3{T}, uin::AbstractArray4, ubVfull::AbstractArray3, lse::AbstractMatrix, tmp::AbstractMatrix, IminusTEVp::AbstractMatrix, wp::well_problem, Πz::AbstractMatrix, β::Real; kwargs...) where {T}
-    zeros4 = Array{T}(undef, 0,0,0,0)
-    zeros5 = Array{T}(undef, 0,0,0,0,0)
+    zeros4 = Array{T}(0,0,0,0)
+    zeros5 = Array{T}(0,0,0,0,0)
     solve_vf_infill!(EV, zeros4, uin, zeros5, ubVfull, zeros4, lse, tmp, IminusTEVp, wp, Πz, β; kwargs...)
 end
 

@@ -10,7 +10,7 @@ ind_exp(ep::NTuple{4,Int}) = ep[2]   : -1 : ep[1]+1
 ind_lrn(ep::NTuple{4,Int}) = ep[3]   : -1 : ep[2]+1
 ind_inf(ep::NTuple{4,Int}) = ep[4]-1 : -1 : ep[3]+1
 
-inf_fm_lrn(dmx::Int, ep::NTuple{4,Int})::StepRange{Int} = (ep[3]+1) .+ 2*(0:dmx-1)
+inf_fm_lrn(dmx::Int, ep::NTuple{4,Int})::StepRange{Int} = ep[3]+1 + 2*(0:dmx-1)
 
 exploratory_terminal(ep::NTuple{4,Int}) = ep[2]+1
 exploratory_learning(ep::NTuple{4,Int}) = ep[2]+2 : ep[3]
@@ -32,7 +32,7 @@ end
 # --------------------- given a state index, return information --------------------
 
 function _regime(s::Integer, endpts::NTuple{4,Int})::Symbol
-  s <= endpts[1] && throw(DomainError(s, "s <= endpts[1] = $(endpts[1])"))
+  s <= endpts[1] && throw(DomainError())
   s <= endpts[2] && return :explore
   s <= endpts[3] && return :learn
   s <= endpts[4] && return :infill
@@ -40,7 +40,7 @@ function _regime(s::Integer, endpts::NTuple{4,Int})::Symbol
 end
 
 function _D(s::Integer,endpts::NTuple{4,Int})::Int
-    s <= endpts[1] && throw(DomainError(s, "s <= endpts[1] = $(endpts[1])"))
+    s <= endpts[1] && throw(DomainError())
     s <= endpts[2] && return 0
     s <= endpts[3] && return s - endpts[2] - 1
     s <= endpts[4] && return (s - endpts[3] + isodd(s-endpts[3]) ) / 2
@@ -48,20 +48,20 @@ function _D(s::Integer,endpts::NTuple{4,Int})::Int
 end
 
 function _d1(s::Integer, endpts::NTuple{4,Int})::Int
-    s <= endpts[1] && throw(DomainError(s, "s <= endpts[1] = $(endpts[1])"))
+    s <= endpts[1] && throw(DomainError())
     s <= endpts[2] && return 0
     s <= endpts[3] && return s > endpts[2]+1
     s <= endpts[4] && return isodd(s-endpts[3])
 end
 
 function _τ(s::Integer, endpts::NTuple{4,Int})::Int
-    s <= endpts[1] && throw(DomainError(s, "s <= endpts[1] = $(endpts[1])"))
+    s <= endpts[1] && throw(DomainError())
     s <= endpts[2] && return endpts[2]-s
     return -1
 end
 
 function _horizon(s::Integer, endpts::NTuple{4,Int})::Symbol
-    s <= endpts[1] && throw(DomainError(s, "s <= endpts[1] = $(endpts[1])"))
+    s <= endpts[1]    && throw(DomainError())
     s <= endpts[2]    && return :Finite
     s == endpts[2]+1  && return :Terminal
     s <= endpts[3]    && return :Learning
@@ -71,17 +71,17 @@ function _horizon(s::Integer, endpts::NTuple{4,Int})::Symbol
 end
 
 function _actionspace(s::Integer, dmx::Integer, Dmx::Integer, endpts::NTuple{4,Int})::UnitRange{Int}
-    s <= endpts[1] && throw(DomainError(s, "s <= endpts[1] = $(endpts[1])"))
+    s <= endpts[1] && throw(DomainError())
     s <= endpts[2] && return 0:dmx
     s <= endpts[3] && return 0:0
     s <= endpts[4] && return 0:min((Dmx-_D(s,endpts)),dmx)
     throw(DomainError())
 end
 
-@inline _dp1space(s::Integer, dmx::Integer, Dmx::Integer, endpts::NTuple{4,Int}) = _actionspace(s,dmx,Dmx,endpts) .+ 1
+@inline _dp1space(s::Integer, dmx::Integer, Dmx::Integer, endpts::NTuple{4,Int}) = _actionspace(s,dmx,Dmx,endpts) + 1
 
 function _first_action(s::Integer, dmx::Integer, Dmx::Integer, endpts::NTuple{4,Int})::Int
-    s <= endpts[1] && throw(DomainError(s, "s <= endpts[1] = $(endpts[1])"))
+    s <= endpts[1] && throw(DomainError())
     s <= endpts[2] && return 0
     s <= endpts[3] && return 0
     s <= endpts[4] && return 0
@@ -90,7 +90,7 @@ end
 
 
 function _max_action(s::Integer, dmx::Integer, Dmx::Integer, endpts::NTuple{4,Int})::Int
-    s <= endpts[1] && throw(DomainError(s, "s <= endpts[1] = $(endpts[1])"))
+    s <= endpts[1] && throw(DomainError())
     s <= endpts[2] && return dmx
     s <= endpts[3] && return 0
     s <= endpts[4] && return min((Dmx-_D(s,endpts)),dmx)
@@ -98,7 +98,7 @@ function _max_action(s::Integer, dmx::Integer, Dmx::Integer, endpts::NTuple{4,In
 end
 
 function _num_actions(s::Integer, dmx::Integer, Dmx::Integer, endpts::NTuple{4,Int})::Int
-    s <= endpts[1] && throw(DomainError(s, "s <= endpts[1] = $(endpts[1])"))
+    s <= endpts[1] && throw(DomainError())
     s <= endpts[2] && return dmx+1
     s <= endpts[3] && return 1
     s <= endpts[4] && return min((Dmx-_D(s,endpts)),dmx)+1
@@ -107,7 +107,7 @@ end
 
 @inline function _sprime(s::Integer, d::Integer, endpts::NTuple{4,Int})::Int
     if s <= endpts[1]
-        s <= endpts[1] && throw(DomainError(s, "s <= endpts[1] = $(endpts[1])"))
+        throw(DomainError())
     elseif s <= endpts[2]
         d == 0 && return s+1
         d >  0 && return endpts[2] + d + 1

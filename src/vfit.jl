@@ -55,8 +55,8 @@ function pfit!(EV0::AbstractMatrix, ubV::AbstractArray3, ΔEV::AbstractMatrix, t
         ΔEVj = @view(ΔEV[:,j])
 
         update_IminusTVp!(IminusTEVp, Πz, β, q0j)
-        fact = lu(IminusTEVp)
-        ldiv!(fact, ΔEVj)                          # Vtmp = [I - T'(V)] \ [V - T(V)]
+        fact = lufact(IminusTEVp)
+        A_ldiv_B!(fact, ΔEVj)                          # Vtmp = [I - T'(V)] \ [V - T(V)]
     end
     EV0 .-= ΔEV                               # update V
     return extrema(ΔEV) .* -β ./ (1.0 .- β)   # get norm
@@ -98,11 +98,11 @@ function gradinf!(dEV0::AbstractArray3{T}, ubV::AbstractArray3, dubV::AbstractAr
 
     for j in 1:size(dubV,2)
         @views update_IminusTVp!(IminusTEVp, Πz, β, ubV[:,j,1])
-        fact = lu(IminusTEVp)
+        fact = lufact(IminusTEVp)
         @views ΠsumdubVj .= ΠsumdubV[:,j,:]
 
         # Note: cannot do this with @view(dEV0[:,j,:])
-        @views ldiv!(dev0jtmp, fact, ΠsumdubVj) # ΠsumdubV[:,j,:])
+        @views A_ldiv_B!(dev0jtmp, fact, ΠsumdubVj) # ΠsumdubV[:,j,:])
         dEV0[:,j,:] .= dev0jtmp
     end
 end

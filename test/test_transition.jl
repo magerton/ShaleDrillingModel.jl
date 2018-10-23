@@ -12,7 +12,7 @@ let dpi = similar(tmpv.Πψtmp), fdpi = similar(tmpv.Πψtmp)
     ShaleDrillingModel._βΠψdθρ!(dpi, ψspace, σv, β)
 
     @views maxv, idx = findmax(abs.(dpi .- fdpi))
-    sub = CartesianIndices(fdpi)[idx]
+    sub = ind2sub(fdpi, idx)
     @show "worst value is $maxv at $sub for β dΠ/dσ"
 
     @test 0.0 < maxv < 1e-5

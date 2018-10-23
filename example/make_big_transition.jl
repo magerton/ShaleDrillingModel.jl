@@ -23,8 +23,8 @@ function makeSparseTransition(nP::Integer=31, nC::Integer=37, extendSD::Real = 1
   extrema_c = [0.2437302, 1.529529]
 
   # state-spaces
-  pspace = range(extrema_p[1]-log(extendSD), stop=extrema_p[2] + log(extendSD), length=nP)
-  cspace = range(extrema_c[1]-log(extendSD), stop=extrema_c[2] + log(extendSD), length=nC)
+  pspace = linspace(extrema_p[1]-log(extendSD), extrema_p[2] + log(extendSD), nP)
+  cspace = linspace(extrema_c[1]-log(extendSD), extrema_c[2] + log(extendSD), nC)
   zspace = (pspace, cspace, 1:K,)
 
   # make deviations
