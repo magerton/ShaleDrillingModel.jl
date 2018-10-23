@@ -1,16 +1,14 @@
 let pids = [1,],
-    rngs = (pspace, vspace, vspace, 0:dmax(wp), 1:length(wp), [0.2], 1:1),
-    idxs = (1:2:31, 1:5:51, 1:5:51, 0:dmax(wp), 1:length(wp),  1:1 , 1:1),
+    rngs = (zspace..., vspace, vspace, 0:dmax(wp), 1:length(wp), [0.2], 1:1),
+    idxs = (1:2:31,    1:5:51, 1:5:51, 0:dmax(wp), 1:length(wp),  1:1 , 1:1),
     idx_sz = length.((θfull, idxs...)),
-    prim = dcdp_primitives(:exproy, β, wp, (pspace,), Πp1, ψspace),
-    tmpv = dcdp_tmpvars(prim),
     sev = SharedEV(pids, prim, rngs[end-1:end]...),
     isev = ItpSharedEV(sev, prim, σv),
     T = eltype(θfull),
-    tmp = Vector{T}(undef, dmax(wp)+1),
+    tmp = Vector{T}(dmax(wp)+1),
     θ1 = similar(θfull),
     θ2 = similar(θfull),
-    θttmp = Vector{Float64}(undef, prim.nθt),
+    θttmp = Vector{Float64}(prim.nθt),
     grad   = zeros(T, idx_sz),
     fdgrad = zeros(T, idx_sz)
 
@@ -19,19 +17,15 @@ let pids = [1,],
     dograd = true
 
     zero!(sev)
-    CR = CartesianIndices(length.(idxs))
+    CR = CartesianRange(length.(idxs))
 
     let uv = (1.,1.), z = (1.2,), dp1 = 1, s = 1, itypidx = (1, 1,)
-        θtvw = _θt(θfull, prim.nθt)
+        θtvw = _θt(θfull, prim.nθt, prim.ngeo, itypidx[2])
         σ0 = _σv(θfull)
-        logP!(Vector{Float64}(undef, idx_sz[1]), tmp, θtvw, σ0, prim, isev, uv, z, dp1, s, itypidx, true)
+        logP!(Vector{Float64}(idx_sz[1]), tmp, θtvw, σ0, prim, isev, uv, z, dp1, s, itypidx, true)
     end
     # -----------------------
 
-
-    @show size(prim.Πz)
-    @show zspace
-    @show rngs
 
     dograd = true
     serial_solve_vf_all!(sev, tmpv, prim, θfull, Val{dograd}; maxit0=12, maxit1=20, vftol=1e-10)
@@ -39,9 +33,9 @@ let pids = [1,],
     grad .= 0.0
     for CI in CR
         zi, ui, vi, di, si, ri, gi = CI.I
-        z , u , v , d , s , r , g  = getindex.(rngs, CI.I)
+        z, u, v, d, s, r, g = getindex.(rngs, CI.I)
 
-        θtvw = _θt(θfull, prim)
+        θtvw = _θt(θfull, prim, gi)
         σ0 = _σv(θfull)
 
         if d ∈ ShaleDrillingModel._actionspace(prim.wp, s) # && !(s ∈ ShaleDrillingModel.ind_lrn(prim.wp.endpts))
@@ -64,25 +58,25 @@ let pids = [1,],
 
 
         serial_solve_vf_all!(sev, tmpv, prim, θ1, Val{dograd}; maxit0=12, maxit1=20, vftol=1e-10)
-        print("logp: θ[$k]-h\t")
+        print("logp: θ[$k]-h")
         for CI in CR
             zi, ui, vi, di, si, ri, gi = CI.I
             z, u, v, d, s, r, g = getindex.(rngs, CI.I)
-            θtvw1 = _θt(θ1, prim)
+            θtvw1 = _θt(θ1, prim, gi)
             if d ∈ ShaleDrillingModel._actionspace(prim.wp, s) # && !(s ∈ ShaleDrillingModel.ind_lrn(prim.wp.endpts))
-                fdgrad[k,CI] -= logP!(Vector{T}(), tmp, θtvw1, σ1, prim, isev, (u,v), (z,), d, s, (ri,gi), dograd)
+                fdgrad[k,CI] -= logP!(Vector{T}(0), tmp, θtvw1, σ1, prim, isev, (u,v), (z,), d, s, (ri,gi), dograd)
             end
         end
 
         println("solving again for logp: θ[$k]+h....")
         serial_solve_vf_all!(sev, tmpv, prim, θ2, Val{dograd}; maxit0=12, maxit1=20, vftol=1e-10)
-        println("updating fdgrad")
+        print("updating fdgrad\n")
         for CI in CR
             zi, ui, vi, di, si, ri, gi = CI.I
             z, u, v, d, s, r, g = getindex.(rngs, CI.I)
-            θtvw2 = _θt(θ2, prim)
+            θtvw2 = _θt(θ2, prim, gi)
             if d ∈ ShaleDrillingModel._actionspace(prim.wp, s) # && !(s ∈ ShaleDrillingModel.ind_lrn(prim.wp.endpts))
-                fdgrad[k,CI] += logP!(Vector{T}(), tmp, θtvw2, σ2, prim, isev, (u,v), (z,), d, s, (ri,gi), dograd)
+                fdgrad[k,CI] += logP!(Vector{T}(0), tmp, θtvw2, σ2, prim, isev, (u,v), (z,), d, s, (ri,gi), dograd)
                 fdgrad[k,CI] /= hh
             end
         end
@@ -97,7 +91,7 @@ let pids = [1,],
 
 
     maxv, idx =  findmax(abs.(fdgrad .- grad))
-    println("worst value is $maxv at $(CartesianIndices(fdgrad)[idx]) for dlogP")
+    println("worst value is $maxv at $(ind2sub(fdgrad, idx)) for dlogP")
     @test fdgrad ≈ grad
     @test maxv < 1.5e-7
 end

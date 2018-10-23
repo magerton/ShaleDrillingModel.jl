@@ -16,14 +16,14 @@ include("state_space_base_functions.jl")
 # -------- new structs --------
 
 "Deterministic state  (`τ`, `D`, `d1`)"
-struct state
+immutable state
     τ::Int  # "Time remaining in primary term"
     D::Int  # "Wells drilled to date"
     d1::Int # "Drilling last period == 1, no drilling last period == 0"
 end
 
 "Structure of well problem"
-struct well_problem
+immutable well_problem
   dmax::Int
   Dmax::Int
   τmax::Int

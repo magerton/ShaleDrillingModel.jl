@@ -1,8 +1,7 @@
 println("testing parallel solution")
 
 rmprocs(workers())
-pids = IN_SLURM ? addprocs_slurm(parse(Int, ENV["SLURM_NTASKS"])) : addprocs()
-
+pids = addprocs()
 @everywhere @show pwd()
 @everywhere using ShaleDrillingModel
 
@@ -53,7 +52,7 @@ rmprocs(workers())
 
 
 # rmprocs(workers())
-# pids = IN_SLURM ? addprocs_slurm(parse(Int, ENV["SLURM_NTASKS"])) : addprocs()
+# pids = addprocs()
 # @everywhere @show pwd()
 # @everywhere using ShaleDrillingModel
 # @eval @everywhere begin

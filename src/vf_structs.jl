@@ -10,6 +10,7 @@ export dcdp_primitives,
     _ψspace,
     _ψ1clamp,
     _nθt,
+    _ngeo,
     _θt,
     _σv
 
@@ -19,14 +20,14 @@ struct dcdp_primitives{FF,T<:Real,AM<:AbstractMatrix{T},TT<:Tuple,AV<:AbstractVe
     zspace::TT        # z-space (tuple)
     Πz::AM            # transition for z
     ψspace::AV        # ψspace = u + σv*v
+    ngeo::Int         # num geology types
     nθt::Int          # Num parameters in flow payoffs MINUS 1 for σv
 end
 
 function dcdp_primitives(FF::Symbol, β::T, wp::well_problem, zspace::TT, Πz::AM, ψspace::AV) where {T,TT,AM,AV}
-    FF ∈ (:exp1roy1p,)    && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 7)
-    FF ∈ (:exp,:exp1roy,) && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 8)
-    FF ∈ (:exproy,)       && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 9)
-    # FF ∈ (:breaklin, :breakexp) && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 13)
+    FF ∈ (:lin, :exp)           && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 1, 7)
+    FF ∈ (:exproy,)             && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 1, 8)
+    FF ∈ (:breaklin, :breakexp) && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 1, 13)
     throw(error("$FF is unknown"))
 end
 
@@ -35,13 +36,18 @@ flow(prim::dcdp_primitives{FF}) where {FF} = FF
 # help us go from big parameter vector for all types to the relevant one
 _σv(θ::AbstractVector) = θ[end]
 
-# allows for adding 1 unit for σv
-_θt(x::AbstractVector, nθt::Integer,          p1::Integer=0) = view(x, 1:nθt+p1)
-_θt(x::AbstractVector, prim::dcdp_primitives, p1::Integer=0) = _θt(x, _nθt(prim), p1)
+# This is b/c the type of SubArray differs depending on whether ngeo == geoid (linear indexing or not)
+_θt(x::AbstractVector, nθt::Integer, ngeo::Integer, geoid::Integer, ::Type{Val{false}}, p1::Integer=0) = view(x, [geoid, ngeo+(1:nθt-1+p1)...])
+_θt(x::AbstractVector, nθt::Integer, ngeo::Integer, geoid::Integer, ::Type{Val{true}} , p1::Integer=0) = view(x, ngeo+(0:nθt-1+p1))
+
+_θt(x::AbstractVector, nθt::Integer, ngeo::Integer, geoid::Integer,         p1::Integer=0) = _θt(x,  nθt,        ngeo,       geoid, Val{ngeo        ∈ (1,geoid)}, p1)
+_θt(x::AbstractVector, prim::dcdp_primitives, geoid::Integer,               p1::Integer=0) = _θt(x, _nθt(prim), _ngeo(prim), geoid, Val{_ngeo(prim) ∈ (1,geoid)}, p1)
+_θt(x::AbstractVector, prim::dcdp_primitives, geoid::Integer, geogeo::Type, p1::Integer=0) = _θt(x, _nθt(prim), _ngeo(prim), geoid, geogeo,                       p1)
 
 
 # functions to retrieve elements from dcdp_primitives
 _nθt(   prim::dcdp_primitives) = prim.nθt
+_ngeo(  prim::dcdp_primitives) = prim.ngeo
 _nz(    prim::dcdp_primitives) = size(prim.Πz,1)
 _nψ(    prim::dcdp_primitives) = length(prim.ψspace) # prim.nψ
 _nS(    prim::dcdp_primitives) = _nS(prim.wp)
@@ -167,7 +173,7 @@ function dcdp_tmpvars(prim::dcdp_primitives)
     tmp      = zeros(T,nz,nψ)
 
     # transition matrices
-    Πψtmp = Matrix{T}(undef,nψ,nψ)
+    Πψtmp = Matrix{T}(nψ,nψ)
     IminusTEVp = ensure_diagonal(prim.Πz)
 
     # return dcdp_tmpvars(uin,uex,duin,duex,duexσ,duexψ,ubVfull,dubVfull,dubV_σ,dubV_ψ,q,lse,tmp,Πψtmp,IminusTEVp)

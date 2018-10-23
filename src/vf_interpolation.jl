@@ -1,6 +1,6 @@
 using Interpolations: Flag, Quadratic, InPlace
 
-export ItpSharedEV, set_up_dcdp_workers
+export ItpSharedEV
 
 struct ItpSharedEV{T,A1<:Interpolations.AbstractInterpolation{T},A2<:Interpolations.AbstractInterpolation{T},A3<:Interpolations.AbstractInterpolation{T},TT<:Tuple}
   EV::A1
@@ -45,7 +45,7 @@ function ItpSharedEV(sev::SharedEV{T,N,N2,TT}, p::dcdp_primitives, σ::Real=1.0;
     itp_dEVσ  = BSplineInterpolation(tweight(sev.dEVσ), sev.dEVσ, it_dEVσ, OnCell(), Val{0}())
 
     # information for how to scale the interpolation object
-    scalegrid(x::AbstractRange{S}) where {S<:AbstractFloat} = x
+    scalegrid(x::Range{S}) where {S<:AbstractFloat} = x
     scalegrid(x::Integer) = Base.OneTo(x)
     scalegrid(x::AbstractVector) = Base.OneTo(length(x))
 
@@ -67,11 +67,11 @@ for typ in (:parallel, :serial)
     fun = Symbol("$(typ)_prefilterByView!")
     @eval begin
         function ($fun)(sev::SharedEV{T,N,N2}, isev::ItpSharedEV, dograd::Bool=true) where {T,N,N2}
-            Ntyps = (length(sev.itypes[end]), )
-            ($fun)(sev.EV, isev.EV.itp,         Ntyps...)
+            Ntyps = length(sev.itypes)
+            ($fun)(sev.EV, isev.EV.itp,        length.(sev.itypes)...)
             if dograd
-                ($fun)(sev.dEV, isev.dEV.itp,   Ntyps...)
-                ($fun)(sev.dEVσ, isev.dEVσ.itp, Ntyps...)
+                ($fun)(sev.dEV, isev.dEV.itp,   length.(sev.itypes)...)
+                ($fun)(sev.dEVσ, isev.dEVσ.itp, length.(sev.itypes)...)
             end
         end
     end
@@ -93,13 +93,12 @@ end
 
 # TODO: MAKE SURE to check if data is within the indices
 
-unsafegetityp(grid::AbstractArray, idx::Real) = idx
+unsafegetityp(grid::Range, idx::Real) = idx
 unsafegetityp(grid::Vector, idx::Integer) = grid[idx]
 
 getitype(grid::Vector, idx::Integer) = unsafegetityp(grid, idx)
-
-function getitype(grid::AbstractArray, idx::Real)
-    minimum(grid) <= idx <= maximum(grid) || throw(DomainError(idx))
+function getitype(grid::Range, idx::Real)
+    minimum(grid) <= idx <= maximum(grid) || throw(DomainError())
     unsafegetityp(grid, idx)
 end
 
