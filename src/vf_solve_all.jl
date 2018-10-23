@@ -20,5 +20,5 @@ end
 
 
 solve_vf_all!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θ::AbstractVector,   σ::Real, itype::Tuple, dograd::Bool     ; kwargs...) = solve_vf_all!(evs, t, p,     θ,                 σ,    itype, Val{dograd}; kwargs...)
-solve_vf_all!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θ::AbstractVector,            itype::Tuple, dograd::Type     ; kwargs...) = solve_vf_all!(evs, t, p, _θt(θ, p, itype[2]), _σv(θ), itype,      dograd; kwargs...)
-solve_vf_all!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θ::AbstractVector,            itype::Tuple, dograd::Bool=true; kwargs...) = solve_vf_all!(evs, t, p, _θt(θ, p, itype[2]), _σv(θ), itype, Val{dograd}; kwargs...)
+solve_vf_all!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θ::AbstractVector,            itype::Tuple, dograd::Type     ; kwargs...) = solve_vf_all!(evs, t, p, _θt(θ, p), _σv(θ), itype,      dograd; kwargs...)
+solve_vf_all!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θ::AbstractVector,            itype::Tuple, dograd::Bool=true; kwargs...) = solve_vf_all!(evs, t, p, _θt(θ, p), _σv(θ), itype, Val{dograd}; kwargs...)

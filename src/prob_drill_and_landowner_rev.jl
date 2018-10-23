@@ -97,7 +97,7 @@ function prDrill_infill!(
             for j in 1:nψ
                 @views update_IminusTVp!(IminusTEVp, Πz, β, ubV[:,j,1])
                 fact = lufact(IminusTEVp)
-                A_ldiv_B!(fact, EU0[:,j])
+                ldiv!(fact, EU0[:,j])
             end
         end
     end
@@ -151,7 +151,7 @@ function prDrill_infill!(evs::dcdp_Emax, tmpv::dcdp_tmpvars, prim::dcdp_primitiv
 end
 
 function prDrill_infill!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives{FF}, EU::AbstractArray3, P::AbstractArray4, tmpc::dcdp_tmpcntrfact, θ::AbstractVector, itype::Tuple) where {FF}
-    θt, σ = _θt(θ, p, itype[2]), _σv(θ)
+    θt, σ = _θt(θ, p), _σv(θ)
     pdct = makepdct(p, Val{:u})
     fillflows!(t, p, θt, σ, itype...)
     fillflowrevs!(FF, flowrev, tmpc.rin, tmpc.rex, θt, σ, pdct, itype...)
@@ -160,7 +160,7 @@ end
 
 
 function serial_counterfact_all!(sev::SharedEV, tmpv::dcdp_tmpvars, prim::dcdp_primitives, sEU::AbstractArray, sP::AbstractArray, tmpc::dcdp_tmpcntrfact, θ::AbstractVector)
-    for Idx in CartesianRange( length.(sev.itypes) )
+    for Idx in CartesianIndices( length.(sev.itypes) )
         evs, typs = dcdp_Emax(sev, Idx.I...)
         EU,P = vwEUP(sEU, sP, Idx.I...)
         itype = getindex.(sev.itypes, Idx.I)

@@ -26,7 +26,7 @@ let i = 17,
     dubV .= @view(tmpv.duin[:,:,:,1:dmaxp1,2])
 
     logsumexp3!(lse,tmp,ubV)
-    for CI in CartesianRange(size(lsetest))
+    for CI in CartesianIndices(size(lsetest))
         lsetest[CI] = logsumexp(@view(ubV[CI,:]))
     end
     @show findmax(abs.(lsetest .- lse))
@@ -34,7 +34,7 @@ let i = 17,
 
     # logsumexp_and_softmax3
     logsumexp_and_softmax3!(lse, qvw, tmp, ubV)
-    @test all(sum(qvw,3) .≈ 1.0)
+    @test all(sum(qvw, dims=3) .≈ 1.0)
     @show findmax(abs.(lsetest .- lse))
     @test lsetest ≈ lse
 

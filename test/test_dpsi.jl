@@ -2,9 +2,10 @@ println("doing big test of σ gradient")
 let nψ = 31,
     nv = 31,
     wp = well_problem(dmx,4,10),
-    ψspace = linspace(-6.0, 6.0, nψ),
-    vspace = linspace(-3.0, 3.0, nv),
-    prim = dcdp_primitives(:addlin, β, wp, zspace, Πp1, ψspace),
+    ψspace = range(-6.0, stop=6.0, length=nψ),
+    vspace = range(-3.0, stop=3.0, length=nv),
+    z1space = (zspace[1],),
+    prim = dcdp_primitives(:exproy, β, wp, z1space, Πp1, ψspace),
     tmpv = dcdp_tmpvars(prim),
     evs = dcdp_Emax(prim),
     σv = 0.5,
@@ -16,12 +17,12 @@ let nψ = 31,
     hh = σ2 - σ1,
     nSexp = _nSexp(wp)
 
-    sev = SharedEV([1,], prim, [1./8.], 1:1)
+    sev = SharedEV([1,], prim, [1.0/8.], 1:1)
     evs, typs = dcdp_Emax(sev, 1, 1)
     sitev = ItpSharedEV(sev, prim, σv)
 
-    pdct = Base.product( zspace..., vspace, vspace, 1:nSexp)
-    dEVσ = Array{T}(size(pdct))
+    pdct = Base.product( z1space..., vspace, vspace, 1:nSexp)
+    dEVσ = Array{T}(undef, size(pdct))
     EVσ1 = similar(dEVσ)
     EVσ2 = similar(dEVσ)
     fdEVσ = similar(dEVσ)
@@ -29,6 +30,9 @@ let nψ = 31,
 
     solve_vf_all!(evs, tmpv, prim, θt, σv, itype, Val{true})
     serial_prefilterByView!(sev,sitev)
+
+    @show pdct
+
     for (i,xi) in enumerate(pdct)
         z, u, v, s = xi
         ψ = u + σv*v
@@ -55,7 +59,7 @@ let nψ = 31,
     fdEVσ .= (EVσ2 .- EVσ1) ./ hh
 
     maxv, idx = findmax(abs.(fdEVσ .- dEVσ))
-    println("worst value is $maxv at $(ind2sub(fdEVσ, idx)) for full dEV/dσ")
+    println("worst value is $maxv at $(CartesianIndices(fdEVσ)[idx]) for full dEV/dσ")
     println("mean abs error is $(mean(abs.(fdEVσ .- dEVσ)))")
     println("mean sqd error is $(var(fdEVσ .- dEVσ)). 90pctile = $(quantile(vec(abs.(fdEVσ .- dEVσ)), 0.9))")
     @test fdEVσ ≈ dEVσ

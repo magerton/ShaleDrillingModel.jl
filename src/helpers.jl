@@ -7,7 +7,7 @@ If `M<:SparseMatrixCSC`, ensure that diagonal has all entries (even if zero).
 """
 function ensure_diagonal(Π::M) where {T<:Number, M<:SparseMatrixCSC{T}}
     n = size(Π, 1)
-    A = Π + speye(T,n)
+    A = Π +  SparseMatrixCSC{T}(I, n, n)
     typeof(A) == M || throw(error("type of Πnew != typeof(Π)"))
     Arows = rowvals(A)
     Avals = nonzeros(A)
