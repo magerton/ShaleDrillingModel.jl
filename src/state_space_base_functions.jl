@@ -51,6 +51,8 @@ function state_idx(t1::Integer, t0::Integer, D::Integer, d1::Integer, dmx, Dmx, 
     throw(error("invalid state"))
 end
 
+state_idx(t1::Integer, t0::Integer, D::Integer, d1::Integer, wp::well_problem) = state_idx(t1,t0,D,d1, wp.dmax, wp.Dmax, wp.τ0max, wp.τ1max, wp.ext)
+
 # --------------------- given a state index, return information --------------------
 
 function _regime(s::Integer, endpts::NTuple{6,Int})::Symbol

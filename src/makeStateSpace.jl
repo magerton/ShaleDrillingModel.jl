@@ -11,8 +11,6 @@ export
   explore_state_inds,
   infill_state_inds
 
-include("state_space_base_functions.jl")
-
 # -------- new structs --------
 
 "Deterministic state  (`τ1`, `τ0` `D`, `d1`)"
@@ -34,6 +32,8 @@ struct well_problem
   SS::Vector{state}
   Sprime::Matrix{Int}
 end
+
+include("state_space_base_functions.jl")
 
 # ------------- methods for state ----------
 
