@@ -1,21 +1,12 @@
 export flow, flowdθ, flowdσ, flowdψ
 
-# make primitives. Note: flow payoffs, gradient, and grad wrt `σ` must have the following structure:
-# ```julia
-# f(  ::Type{Val{FF}}, θ::AbstractVector{T}, σ::T,   z... , ψ::T,             d::Integer, d1::Integer, Dgt0::Bool, geoid::Real, roy::Real)
-# df( ::Type{Val{FF}}, θ::AbstractVector{T}, σ::T,   z... , ψ::T, k::Integer, d::Integer, d1::Integer, Dgt0::Bool, geoid::Real, roy::Real)
-# dfσ(::Type{Val{FF}}, θ::AbstractVector{T}, σ::T,   z... , ψ::T,             d::Integer,                          geoid::Real, roy::Real)
-# dfψ(::Type{Val{FF}}, θ::AbstractVector{T}, σ::T,   z... , ψ::T,             d::Integer,                          geoid::Real, roy::Real)
-# ```
-
-
 # functions in case we have volatility regime
 @inline flowrev(FF::Type, θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer, d1::Integer, Dgt0::Bool,                geoid::Real, roy::T) where {T} = flowrev(FF, θ, σ, logp, ψ,    d, d1, Dgt0,                  geoid, roy)
-@inline flowdσ(FF::Type,  θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer,                                         geoid::Real, roy::T) where {T} = flowdσ( FF, θ, σ, logp, ψ,    d,                            geoid, roy)
-@inline flow(  FF::Type,  θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {T} = flow(   FF, θ, σ, logp, ψ,    d, d1, Dgt0, sgn_ext,         geoid, roy)
-@inline flowdθ(FF::Type,  θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T, k::Integer, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {T} = flowdθ( FF, θ, σ, logp, ψ, k, d, d1, Dgt0, sgn_ext,         geoid, roy)
-@inline flowdψ(FF::Type,  θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer, st::Union{state,Bool},                  geoid::Real, roy::T) where {T} = flowdψ( FF, θ, σ, logp, ψ,    d, st,                        geoid, roy)
-@inline flowdψ(FF::Type,  θ::AbstractVector{T}, σ::T, logp::T,                  ψ::T,             d::Integer, st::state,                              geoid::Real, roy::T) where {T} = flowdψ( FF, θ, σ, logp, ψ,    d, _sign_lease_extension(st), geoid, roy)
+@inline flowdσ( FF::Type, θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer,                                         geoid::Real, roy::T) where {T} = flowdσ( FF, θ, σ, logp, ψ,    d,                            geoid, roy)
+@inline flow(   FF::Type, θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {T} = flow(   FF, θ, σ, logp, ψ,    d, d1, Dgt0, sgn_ext,         geoid, roy)
+@inline flowdθ( FF::Type, θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T, k::Integer, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {T} = flowdθ( FF, θ, σ, logp, ψ, k, d, d1, Dgt0, sgn_ext,         geoid, roy)
+@inline flowdψ( FF::Type, θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer, st::Union{state,Bool},                  geoid::Real, roy::T) where {T} = flowdψ( FF, θ, σ, logp, ψ,    d, st,                        geoid, roy)
+@inline flowdψ( FF::Type, θ::AbstractVector{T}, σ::T, logp::T,                  ψ::T,             d::Integer, st::state,                              geoid::Real, roy::T) where {T} = flowdψ( FF, θ, σ, logp, ψ,    d, _sign_lease_extension(st), geoid, roy)
 
 # --------------------------- common revenue functions & derivatives  --------------------------------------
 
@@ -42,9 +33,9 @@ end
     rev_exp(θ0,θ1,θ2,θ3,θ4,σ,logp,ψ,false,geoid, roy) * θ4 * _ρ(σ)
 end
 
-# -----------------------------------------------------------------------------------------------------------------------------
-# --------------------------------------------------- exponential roy --------------------------------------------------------------------
-# -----------------------------------------------------------------------------------------------------------------------------
+# -----------------------------------------
+# Flows
+# -----------------------------------------
 
 
 @inline function flow(::Type{Val{:exproy}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {T}
@@ -59,16 +50,31 @@ end
 end
 
 
+@inline function flow(::Type{Val{:exproy_extend}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {T}
+    if d == 0
+        sgn_ext && return θ[9] + θ[10]*ψ
+        return zero(T)
+    end
+    u = rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy) + (d==1 ?  θ[6] : θ[7] ) # + θ[8]*d)
+    d>1      && (u *= d)
+    d1 == 1  && (u += θ[8])
+    return u::T
+end
 
-@inline function flowdθ(::Type{Val{:exproy}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {T}
+# -----------------------------------------
+# dθ
+# -----------------------------------------
+
+
+@inline function flowdθ(::Type{Val{:exproy}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {T}
     d == 0 && !sgn_ext && return zero(T)
 
     # revenue
-    k == 1  && return (- d * exp(θ[2] + θ[3]*logp + θ[4]*geoid + Eexpψ(θ[5], σ, ψ, Dgt0) ) * roy                                  )::T
-    k == 2  && return (  d * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy)                                           )::T
-    k == 3  && return (  d * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy) * logp                                    )::T
-    k == 4  && return (  d * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy) * convert(T,geoid)                        )::T
-    k == 5  && return (  d * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy) * ( Dgt0 ? ψ : ψ*_ρ(σ) + θ[k]*(1-_ρ2(σ))) )::T
+    k == 1  && return - d * exp(θ[2] + θ[3]*logp + θ[4]*geoid + Eexpψ(θ[5], σ, ψ, Dgt0) ) * roy
+    k == 2  && return   d * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy)
+    k == 3  && return   d * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy) * logp
+    k == 4  && return   d * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy) * convert(T,geoid)
+    k == 5  && return   d * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy) * ( Dgt0 ? ψ : ψ*_ρ(σ) + θ[k]*(1-_ρ2(σ)))
 
     # drilling cost
     k == 6  && return  d  == 1 ? one(T)  : zero(T)
@@ -77,24 +83,68 @@ end
     k == 8  && return  d1 == 1 ? one(T)  : zero(T)
 
     # extension cost
-    k == 9 && return d == 0 && sgn_ext ? one(T) : zero(T)
-    # k == 11 && return d == 0 && sgn_ext ? ψ      : zero(T)
+    k == 9  && return d == 0 && sgn_ext ? one(T) : zero(T)
+    # k == 10 && return d == 0 && sgn_ext ? ψ      : zero(T)
 
     throw(error("$k out of bounds"))
 end
 
-@inline function flowdσ(::Type{Val{:exproy}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, geoid::Real, roy::T) where {T}
+
+
+@inline function flowdθ(::Type{Val{:exproy_extend}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {T}
+    d == 0 && !sgn_ext && return zero(T)
+
+    # revenue
+    k == 1  && return - d * exp(θ[2] + θ[3]*logp + θ[4]*geoid + Eexpψ(θ[5], σ, ψ, Dgt0) ) * roy
+    k == 2  && return   d * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy)
+    k == 3  && return   d * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy) * logp
+    k == 4  && return   d * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy) * convert(T,geoid)
+    k == 5  && return   d * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy) * ( Dgt0 ? ψ : ψ*_ρ(σ) + θ[k]*(1-_ρ2(σ)))
+
+    # drilling cost
+    k == 6  && return  d  == 1 ? one(T)  : zero(T)
+    k == 7  && return  d  == 1 ? zero(T) : convert(T,d)
+    # k == 8  && return  d  == 1 ? zero(T) : convert(T,d^2)
+    k == 8  && return  d1 == 1 ? one(T)  : zero(T)
+
+    # extension cost
+    k == 9  && return d == 0 && sgn_ext ? one(T) : zero(T)
+    k == 10 && return d == 0 && sgn_ext ? ψ      : zero(T)
+
+    throw(error("$k out of bounds"))
+end
+
+# -----------------------------------------
+# dσ
+# -----------------------------------------
+
+@inline function flowdσ(::FF, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, geoid::Real, roy::T)::T where {FF <: Union{Type{Val{:exproy}}, Type{Val{:exproy_extend}}},  T}
     if d == 0
         return zero(T)
     else
-        return (d * drevdσ_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,geoid, roy))::T
+        return d * drevdσ_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,geoid, roy)
     end
 end
 
+# -----------------------------------------
+# dψ
+# -----------------------------------------
+
+
 @inline function flowdψ(::Type{Val{:exproy}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, sgn_ext::Bool, geoid::Real, roy::T) where {T}
     if d == 0
-        return zero(T) # sgn_ext ? θ[11] : zero(T)
+        return zero(T) # sgn_ext ? θ[10] : zero(T)
     else
         return (d * drevdψ_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,geoid, roy))::T
+    end
+end
+
+
+
+@inline function flowdψ(::Type{Val{:exproy_extend}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, sgn_ext::Bool, geoid::Real, roy::T)::T where {T}
+    if d == 0
+        return sgn_ext ? θ[10] : zero(T)
+    else
+        return d * drevdψ_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,geoid, roy)
     end
 end

@@ -5,7 +5,7 @@
         ψspace = range(-6.0, stop=6.0, length=nψ),
         vspace = range(-3.0, stop=3.0, length=nv),
         z1space = (zspace[1],),
-        prim = dcdp_primitives(:exproy, β, wp, z1space, Πp1, ψspace),
+        prim = dcdp_primitives(flowfuncname, β, wp, z1space, Πp1, ψspace),
         tmpv = dcdp_tmpvars(prim),
         evs = dcdp_Emax(prim),
         σv = 0.5,
@@ -63,7 +63,7 @@
         maxv, idx = findmax(abs.(fdEVσ .- dEVσ))
         println("worst value is $maxv at $(CartesianIndices(fdEVσ)[idx]) for full dEV/dσ")
         println("mean abs error is $(mean(abs.(fdEVσ .- dEVσ)))")
-        println("mean sqd error is $(var(fdEVσ .- dEVσ)). 90pctile = $(quantile(vec(abs.(fdEVσ .- dEVσ)), 0.9))")
+        println("mean sqd error is $(var(fdEVσ .- dEVσ)). 99.9pctile = $(quantile(vec(abs.(fdEVσ .- dEVσ)), 0.999))")
         @test fdEVσ ≈ dEVσ
     end
 end
