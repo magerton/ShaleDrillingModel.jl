@@ -37,3 +37,20 @@ dev ssh://git@github.com/magerton/ShaleDrillingData.jl.git
 dev ssh://git@github.com/magerton/ShaleDrillingEstimation.jl.git
 dev ssh://git@github.com/magerton/ShaleDrillingPostEstimation.jl.git
 ```
+
+
+Alternatively,
+
+```julia
+dev D:/libraries/julia/dev/CountPlus
+dev D:/libraries/julia/dev/Halton
+dev D:/libraries/julia/dev/JuliaTex
+dev D:/libraries/julia/dev/GenGlobal
+dev D:/libraries/julia/dev/MarksRandomEffects
+dev D:/libraries/julia/dev/OrderedResponse
+dev D:/libraries/julia/dev/MarkovTransitionMatrices
+dev D:/libraries/julia/dev/ShaleDrillingModel
+dev D:/libraries/julia/dev/ShaleDrillingData
+dev D:/libraries/julia/dev/ShaleDrillingEstimation
+dev D:/libraries/julia/dev/ShaleDrillingPostEstimation
+```
