@@ -5,7 +5,7 @@
         ψspace = range(-6.0, stop=6.0, length=nψ),
         vspace = range(-3.0, stop=3.0, length=nv),
         z1space = (zspace[1],),
-        prim = dcdp_primitives(flowfuncname, β, wp, z1space, Πp1, ψspace),
+        prim = dcdp_primitives(flowfuncname, β, wp, zspace, Πp, ψspace),
         tmpv = dcdp_tmpvars(prim),
         evs = dcdp_Emax(prim),
         σv = 0.5,
@@ -25,7 +25,7 @@
         evs, typs = dcdp_Emax(sev, 1, 1)
         sitev = ItpSharedEV(sev, prim, σv)
 
-        pdct = Base.product( z1space..., vspace, vspace, 1:nSexp)
+        pdct = Base.product( zspace..., vspace, vspace, 1:nSexp)
         dEVσ = Array{T}(undef, size(pdct))
         EVσ1 = similar(dEVσ)
         EVσ2 = similar(dEVσ)
@@ -36,26 +36,26 @@
         serial_prefilterByView!(sev,sitev)
 
         for (i,xi) in enumerate(pdct)
-            z, u, v, s = xi
+            zp, zv, u, v, s = xi
             ψ = u + σv*v
-            dpsi = gradient_d(Val{length(prim.zspace)+1}, sitev.EV, z, ψ, s, 1, 1)
-            dEVσ[i] = dpsi*v + sitev.dEVσ[z,ψ,s,1,1]
+            dpsi = gradient_d(Val{length(prim.zspace)+1}, sitev.EV, zp, zv, ψ, s, 1, 1)
+            dEVσ[i] = dpsi*v + sitev.dEVσ[zp,zv,ψ,s,1,1]
         end
 
         solve_vf_all!(evs, tmpv, prim, θt, σ1, itype, Val{false})
         serial_prefilterByView!(sev,sitev,false)
         for (i,xi) in enumerate(pdct)
-            z, u, v, s = xi
+            zp, zv, u, v, s = xi
             ψ = u + σ1*v
-            EVσ1[i] = sitev.EV[z,ψ,s,1,1]
+            EVσ1[i] = sitev.EV[zp,zv,ψ,s,1,1]
         end
 
         solve_vf_all!(evs, tmpv, prim, θt, σ2, itype, Val{false})
         serial_prefilterByView!(sev,sitev,false)
         for (i,xi) in enumerate(pdct)
-            z, u, v, s = xi
+            zp, zv, u, v, s = xi
             ψ = u + σ2*v
-            EVσ2[i] = sitev.EV[z,ψ,s,1,1]
+            EVσ2[i] = sitev.EV[zp,zv,ψ,s,1,1]
         end
 
         fdEVσ .= (EVσ2 .- EVσ1) ./ hh
@@ -64,6 +64,6 @@
         println("worst value is $maxv at $(CartesianIndices(fdEVσ)[idx]) for full dEV/dσ")
         println("mean abs error is $(mean(abs.(fdEVσ .- dEVσ)))")
         println("mean sqd error is $(var(fdEVσ .- dEVσ)). 99.9pctile = $(quantile(vec(abs.(fdEVσ .- dEVσ)), 0.999))")
-        @test fdEVσ ≈ dEVσ
+        @test (fdEVσ ≈ dEVσ) || maxv < 1e-6 
     end
 end

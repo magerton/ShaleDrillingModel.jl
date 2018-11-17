@@ -1,12 +1,12 @@
 export flow, flowdθ, flowdσ, flowdψ
 
 # functions in case we have volatility regime
-@inline flowrev(FF::Type, θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer, d1::Integer, Dgt0::Bool,                geoid::Real, roy::T) where {T} = flowrev(FF, θ, σ, logp, ψ,    d, d1, Dgt0,                  geoid, roy)
-@inline flowdσ( FF::Type, θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer,                                         geoid::Real, roy::T) where {T} = flowdσ( FF, θ, σ, logp, ψ,    d,                            geoid, roy)
-@inline flow(   FF::Type, θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {T} = flow(   FF, θ, σ, logp, ψ,    d, d1, Dgt0, sgn_ext,         geoid, roy)
-@inline flowdθ( FF::Type, θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T, k::Integer, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {T} = flowdθ( FF, θ, σ, logp, ψ, k, d, d1, Dgt0, sgn_ext,         geoid, roy)
-@inline flowdψ( FF::Type, θ::AbstractVector{T}, σ::T, logp::T, regime::Integer, ψ::T,             d::Integer, st::Union{state,Bool},                  geoid::Real, roy::T) where {T} = flowdψ( FF, θ, σ, logp, ψ,    d, st,                        geoid, roy)
-@inline flowdψ( FF::Type, θ::AbstractVector{T}, σ::T, logp::T,                  ψ::T,             d::Integer, st::state,                              geoid::Real, roy::T) where {T} = flowdψ( FF, θ, σ, logp, ψ,    d, _sign_lease_extension(st), geoid, roy)
+@inline flowrev(FF::Type, θ::AbstractVector{T}, σ::T, logp::T, logvol::Real, ψ::T,             d::Integer, d1::Integer, Dgt0::Bool,                geoid::Real, roy::T) where {T} = flowrev(FF, θ, σ, logp, ψ,    d, d1, Dgt0,                  geoid, roy)
+@inline flowdσ( FF::Type, θ::AbstractVector{T}, σ::T, logp::T, logvol::Real, ψ::T,             d::Integer,                                         geoid::Real, roy::T) where {T} = flowdσ( FF, θ, σ, logp, ψ,    d,                            geoid, roy)
+@inline flow(   FF::Type, θ::AbstractVector{T}, σ::T, logp::T, logvol::Real, ψ::T,             d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {T} = flow(   FF, θ, σ, logp, ψ,    d, d1, Dgt0, sgn_ext,         geoid, roy)
+@inline flowdθ( FF::Type, θ::AbstractVector{T}, σ::T, logp::T, logvol::Real, ψ::T, k::Integer, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {T} = flowdθ( FF, θ, σ, logp, ψ, k, d, d1, Dgt0, sgn_ext,         geoid, roy)
+@inline flowdψ( FF::Type, θ::AbstractVector{T}, σ::T, logp::T, logvol::Real, ψ::T,             d::Integer, st::Union{state,Bool},                  geoid::Real, roy::T) where {T} = flowdψ( FF, θ, σ, logp, ψ,    d, st,                        geoid, roy)
+@inline flowdψ( FF::Type, θ::AbstractVector{T}, σ::T, logp::T,               ψ::T,             d::Integer, st::state,                              geoid::Real, roy::T) where {T} = flowdψ( FF, θ, σ, logp, ψ,    d, _sign_lease_extension(st), geoid, roy)
 
 # --------------------------- common revenue functions & derivatives  --------------------------------------
 

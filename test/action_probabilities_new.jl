@@ -7,10 +7,10 @@
         geoid = geology_types[1],
         itype = (geoid, roy,),
         pids = [1,],
-        rngs = (pspace, vspace, vspace, 0:dmax(wp), 1:length(wp), geology_types, royalty_rates,),
-        idxs = (1:2:31, 1:5:51, 1:5:51, 0:dmax(wp), 1:length(wp), Base.OneTo(ngeo), Base.OneTo(nroy),),
+        rngs = (zspace...,      vspace, vspace, 0:dmax(wp), 1:length(wp), geology_types, royalty_rates,),
+        idxs = (1:2:31, 1:3:11, 1:5:51, 1:5:51, 0:dmax(wp), 1:length(wp), Base.OneTo(ngeo), Base.OneTo(nroy),),
         idx_sz = length.((θfull, idxs...)),
-        prim = dcdp_primitives(:exproy, β, wp, (pspace,), Πp1, ψspace),
+        prim = dcdp_primitives(flowfuncname, β, wp, zspace, Πp, ψspace),
         tmpv = dcdp_tmpvars(prim),
         sev = SharedEV(pids, prim, rngs[end-1:end]...),
         isev = ItpSharedEV(sev, prim, σv),
@@ -30,10 +30,13 @@
         CR = CartesianIndices(length.(idxs))
 
 
-        let uv = (1.,1.), z = (1.2,), dp1 = 1, s_idx = 1, itypidx = (1, 1,)
+        let uv = (1.,1.), z = getindex.(zspace, 7), dp1 = 1, s_idx = 1, itypidx = (1, 1,), tmpgrad = Vector{Float64}(undef, idx_sz[1])
             θtvw = _θt(θfull, prim.nθt)
             σ0 = _σv(θfull)
-            logP!(Vector{Float64}(undef, idx_sz[1]), tmp, θtvw, σ0, prim, isev, uv, z, dp1, s_idx, itypidx, true)
+            @test idx_sz[1] == length(θtvw)+1
+            @test length(tmpgrad) == idx_sz[1]
+            @test length(tmpgrad) == length(θtvw)+1
+            logP!(tmpgrad, tmp, θtvw, σ0, prim, isev, uv, z, dp1, s_idx, itypidx, true)
         end
         # -----------------------
 
@@ -45,14 +48,14 @@
         println("solved round 1. doing logP")
         grad .= 0.0
         for CI in CR
-            zi, ui, vi, di, si, gi, ri = CI.I
-            z , u , v , d , s , g , r  = getindex.(rngs, CI.I)
+            zpi, zvi, ui, vi, di, si, gi, ri = CI.I
+            zp , zv , u , v , d , s , g , r  = getindex.(rngs, CI.I)
 
             θtvw = _θt(θfull, prim)
             σ0 = _σv(θfull)
 
             if d ∈ ShaleDrillingModel._actionspace(prim.wp, s) # && !(s ∈ ShaleDrillingModel.ind_lrn(prim.wp.endpts))
-                @views lp = logP!(grad[:,CI], tmp, θtvw, σ0, prim, isev,  (u,v), (z,), d, s, (gi, ri,), dograd)
+                @views lp = logP!(grad[:,CI], tmp, θtvw, σ0, prim, isev,  (u,v), (zp,zv,), d, s, (gi, ri,), dograd)
             end
         end
 
@@ -73,11 +76,11 @@
             serial_solve_vf_all!(sev, tmpv, prim, θ1, Val{dograd}; maxit0=12, maxit1=20, vftol=1e-10)
             print("logp: θ[$k]-h\t")
             for CI in CR
-                zi, ui, vi, di, si, gi, ri = CI.I
-                z , u , v , d , s , g , r  = getindex.(rngs, CI.I)
+                zpi, zvi, ui, vi, di, si, gi, ri = CI.I
+                zp , zv , u , v , d , s , g , r  = getindex.(rngs, CI.I)
                 θtvw1 = _θt(θ1, prim)
                 if d ∈ ShaleDrillingModel._actionspace(prim.wp, s) # && !(s ∈ ShaleDrillingModel.ind_lrn(prim.wp.endpts))
-                    fdgrad[k,CI] -= logP!(Vector{T}(), tmp, θtvw1, σ1, prim, isev, (u,v), (z,), d, s, (gi,ri), dograd)
+                    fdgrad[k,CI] -= logP!(Vector{T}(), tmp, θtvw1, σ1, prim, isev, (u,v), (zp,zv,), d, s, (gi,ri), dograd)
                 end
             end
 
@@ -85,11 +88,11 @@
             serial_solve_vf_all!(sev, tmpv, prim, θ2, Val{dograd}; maxit0=12, maxit1=20, vftol=1e-10)
             println("updating fdgrad")
             for CI in CR
-                zi, ui, vi, di, si, gi, ri = CI.I
-                z , u , v , d , s , g , r  = getindex.(rngs, CI.I)
+                zpi, zvi, ui, vi, di, si, gi, ri = CI.I
+                zp , zv , u , v , d , s , g , r  = getindex.(rngs, CI.I)
                 θtvw2 = _θt(θ2, prim)
                 if d ∈ ShaleDrillingModel._actionspace(prim.wp, s) # && !(s ∈ ShaleDrillingModel.ind_lrn(prim.wp.endpts))
-                    fdgrad[k,CI] += logP!(Vector{T}(), tmp, θtvw2, σ2, prim, isev, (u,v), (z,), d, s, (gi,ri,), dograd)
+                    fdgrad[k,CI] += logP!(Vector{T}(), tmp, θtvw2, σ2, prim, isev, (u,v), (zp,zv,), d, s, (gi,ri,), dograd)
                     fdgrad[k,CI] /= hh
                 end
             end

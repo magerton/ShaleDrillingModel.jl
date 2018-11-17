@@ -32,7 +32,7 @@ function solve_vf_infill!(
     ubVfull::AbstractArray3, dubVfull::AbstractArray4,                        # choice-specific VF
     lse::AbstractMatrix, tmp::AbstractMatrix, IminusTEVp::AbstractMatrix,     # temp vars
     wp::well_problem, Πz::AbstractMatrix, β::Real;                            # problem structure
-    maxit0::Integer=12, maxit1::Integer=20, vftol::Real=1e-11                 # convergence options
+    maxit0::Integer=30, maxit1::Integer=20, vftol::Real=1e-9                  # convergence options
     )
 
     nz,nψ,nS = size(EV)

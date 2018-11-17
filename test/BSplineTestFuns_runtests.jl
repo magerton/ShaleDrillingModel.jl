@@ -1,11 +1,11 @@
 using SharedArrays
 using Interpolations: BSplineInterpolation, tweight, scale
 using Random
+# using BSplineExtensions
+# using Interpolations
+# using Test
 
 @testset "bspline funs" begin
-    # using BSplineExtensions
-    # using Interpolations
-    # using Test
 
     x = SharedArray{Float64}(100, 100, 10, 10)
     endsz = (map(i -> size(x,i), 3:4)...,)

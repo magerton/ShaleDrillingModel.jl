@@ -23,7 +23,7 @@ Create price/cost transition matrices using [MarkovTransitionMatrices.jl](https:
 
 
 ```julia
-]add AxisAlgorithms BenchmarkTools Calculus CategoricalArrays DataFrames Distributions FileIO Formatting GLM GR Gadfly IndirectArrays Interpolations JLD2 MixedModels NLSolversBase NLopt Optim PkgDev Plots Primes Profile ProgressMeter PyPlot RData Ratios StatsBase StatsFuns StatsModels
+]add AxisAlgorithms BenchmarkTools Calculus CategoricalArrays DataFrames Distributions FileIO Formatting GLM GR Gadfly IndirectArrays Interpolations JLD2 MixedModels NLSolversBase NLopt Optim Plots Primes Profile ProgressMeter PyPlot RData Ratios StatsBase StatsFuns StatsModels
 
 dev ssh://git@github.com/magerton/CountPlus.git
 dev ssh://git@github.com/magerton/Halton.git

@@ -13,10 +13,10 @@ using Statistics
 using SparseArrays
 
 # jldpath = Base.joinpath(Pkg.dir("ShaleDrillingData"), "data/price-transitions.jld")
-jldpath = joinpath(ENV["JULIA_PKG_DEVDIR"], "ShaleDrillingData/data/price-vol-transitions.jld")
-@load jldpath logpspace logσspace Πp
+jldpath = joinpath(ENV["JULIA_PKG_DEVDIR"], "ShaleDrillingData/data/price-transitions.jld")
+@load jldpath pspace Πp Πp1
 
-# Πp2 = Πp1
+Πp2 = Πp1
 # Πp1 = Πp
 
 # some primitives
@@ -36,7 +36,7 @@ geology_types = 1.3430409262656042:0.1925954901417719:5.194950729101042
 nψ, dmx, nz, nv =  51, 3, size(Πp,1), 51
 wp = well_problem(dmx,4,5,3,2)
 
-zspace, ψspace, dspace, d1space, vspace = (logpspace, logσspace,), range(-3.75, stop=3.75, length=nψ), 0:dmx, 0:1, range(-3.0, stop=3.0, length=nv)
+zspace, ψspace, dspace, d1space, vspace = (pspace,1:2), range(-3.75, stop=3.75, length=nψ), 0:dmx, 0:1, range(-3.0, stop=3.0, length=nv)
 
 flowfuncname = :exproy_extend
 prim = dcdp_primitives(flowfuncname, β, wp, zspace, Πp, ψspace)
@@ -61,7 +61,7 @@ include("test_transition.jl")
 
 println("filling per-period payoffs")
 
-let geoid = 2, roy = 0.25, itype = (geoid, roy,)
+let roy = 0.25, geoid = 2, itype = (geoid, roy,)
     @views fillflows!(flow(prim), flow, tmpv.uin[:,:,:,   1], tmpv.uin[:,:,:,   2], tmpv.uex, θt, σv, makepdct(prim, θt, Val{:u},  σv), itype...)
     fillflows_grad!(tmpv, prim, θt, σv, itype...)
 end
@@ -83,4 +83,4 @@ include("parallel_solution.jl")
 
 include("action_probabilities_new.jl")
 
-include("BSplineTestFuns_runtests.jl")
+# include("BSplineTestFuns_runtests.jl")
