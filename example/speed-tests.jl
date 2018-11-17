@@ -22,7 +22,7 @@ royalty_rates = [0.125, 1.0/6.0, 0.1875, 0.20, 0.225, 0.25]
 royalty_types = 1:length(royalty_rates)
 
 # geology types
-geology_types = 1.3430409262656042:0.1925954901417719:5.194950729101042
+geology_types = range(1.3430409262656042, stop=5.194950729101042, length=21)
 
 # grids for prices & unobserved heterogeneity
 nψ = 41
@@ -42,7 +42,7 @@ flowfuncname = :exproy_extend
 wp = well_problem(7,8,120,60,24)
 
 # load datasets
-println("loading transitions")
+println("loading (old) transitions")
 datadir = joinpath(ENV["JULIA_PKG_DEVDIR"], "ShaleDrillingData", "data")
 # pvdat = load(joinpath(datadir, "price-vol-transitions.jld"))  # logpspace logσspace Πp
 pdat  = load(joinpath(datadir, "price-transitions.jld"))      # pspace Πp Πp1
@@ -62,14 +62,14 @@ extrema_logp = [0.8852633,  2.485073]
 extrema_logσ = [-3.372397, -2.060741]
 
 sdlogσ = 0.09381059
-nlogp = 45
-nlogσ = 13
+nlogp = 35
+nlogσ = 11
 
 # sparse versions
-minp = 1e-5
+minp = 1e-4
 
 # make range for coefs
-logσspace = range(extrema_logσ[1] - 3*sdlogσ, stop=extrema_logσ[2] + 3*sdlogσ, length=nlogσ)
+logσspace = range(extrema_logσ[1] - 2*sdlogσ, stop=extrema_logσ[2] + 2*sdlogσ, length=nlogσ)
 logpspace = range(extrema_logp[1] - log(2.0), stop=extrema_logp[2] + log(2.0), length=nlogp)
 
 # create log σ discretization
@@ -94,7 +94,7 @@ println("Πpvol has $(length(Πpvol.nzval)) values")
 
 # k = 11
 # Pxform = reshape(P, nlogp, nlogσ, nlogp, nlogσ)
-heatmap(P)
+# heatmap(P)
 # heatmap(P[nlogp*k+1:nlogp*(k+1), nlogp*k+1:nlogp*(k+1)])
 # heatmap(P[11:35:(35*nlogσ), 11:35:(35*nlogσ)])
 # heatmap(Pxform[35,:,35,:])
@@ -102,7 +102,7 @@ heatmap(P)
 # sum(Pxform[35,:,35,:],dims=2)
 
 # plot moments matched for log P
-plot(logpspace, [ps_from_sigma[sig][:L] for sig in logσspace ], yticks = 1:11, labels = ["$(round(exp(sig); digits=2))" for sig in logσspace], xlabel="Log p", ylabel="Moments matched")
+# plot(logpspace, [ps_from_sigma[sig][:L] for sig in logσspace ], yticks = 1:11, labels = ["$(round(exp(sig); digits=2))" for sig in logσspace], xlabel="Log p", ylabel="Moments matched")
 # savefig("D:/projects/royalty-rates-and-drilling/plots/moments-matched-logponly.pdf")
 
 
@@ -120,26 +120,27 @@ function prim_tmp_evs(zspace,Πp)
 end
 
 dograd = false
-# pids = [1,]
+pids = [1,]
 typidx = (11,3,)
 itypes = (geology_types,royalty_rates)
 typs = getindex.(itypes, typidx)
 
-
-
-
-println("\n\ndoing NO vol")
-tup = prim_tmp_evs((pdat["pspace"],),       pdat["Πp1"])
-println("Πp has $(length(tup[3].Πz.nzval)) values")
-@btime solve_vf_all!(tup..., θfull, typs, dograd; maxit0=30, maxit1=20, vftol=1e-9)
-
-println("\n\ndoing hi/lo vol")
-tup = prim_tmp_evs((pdat["pspace"],1:2,),   pdat["Πp"])
-println("Πp has $(length(tup[3].Πz.nzval)) values")
-@btime solve_vf_all!(tup..., θfull, typs, dograd; maxit0=30, maxit1=20, vftol=1e-9)
+# println("\n\ndoing NO vol")
+# tup = prim_tmp_evs((pdat["pspace"],),       pdat["Πp1"])
+# println("Πp has $(length(tup[3].Πz.nzval)) values")
+# @btime solve_vf_all!(tup..., θfull, typs, dograd; maxit0=30, maxit1=20, vftol=1e-9)
+#
+# println("\n\ndoing hi/lo vol")
+# tup = prim_tmp_evs((pdat["pspace"],1:2,),   pdat["Πp"])
+# println("Πp has $(length(tup[3].Πz.nzval)) values")
+# @btime solve_vf_all!(tup..., θfull, typs, dograd; maxit0=30, maxit1=20, vftol=1e-9)
 
 println("\n\ndoing giant price/vol matrix")
 tup = prim_tmp_evs((logpspace, logσspace,), Πpvol)
 println("Πp has $(length(tup[3].Πz.nzval)) values")
 zero!(tup[1])
 @btime solve_vf_all!(tup..., θfull, typs, dograd; maxit0=30, maxit1=20, vftol=1e-9)
+
+# println("\nSolving for all types")
+# sev = SharedEV(pids, tup[3], geology_types[1:3], royalty_rates[1:2])
+# @btime serial_solve_vf_all!(sev, tup[2], tup[3], θfull, Val{dograd}; maxit0=30, maxit1=20, vftol=1e-9)
