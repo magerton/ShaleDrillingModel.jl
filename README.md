@@ -7,6 +7,8 @@
 [![codecov.io](http://codecov.io/github/magerton/ShaleDrillingModel.jl/coverage.svg?branch=master)](http://codecov.io/github/magerton/ShaleDrillingModel.jl?branch=master) -->
 
 
+Need to uncap ShowItLikeYouBuildIt. See <https://discourse.julialang.org/t/package-compatibility-caps/15301>
+
 # Example
 
 To get the package & everything needed, run
