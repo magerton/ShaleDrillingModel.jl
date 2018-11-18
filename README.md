@@ -54,3 +54,17 @@ dev D:/libraries/julia/dev/ShaleDrillingData
 dev D:/libraries/julia/dev/ShaleDrillingEstimation
 dev D:/libraries/julia/dev/ShaleDrillingPostEstimation
 ```
+
+```julia
+dev ~/.julia/dev/CountPlus
+dev ~/.julia/dev/Halton
+dev ~/.julia/dev/JuliaTex
+dev ~/.julia/dev/GenGlobal
+dev ~/.julia/dev/MarksRandomEffects
+dev ~/.julia/dev/OrderedResponse
+dev ~/.julia/dev/MarkovTransitionMatrices
+dev ~/.julia/dev/ShaleDrillingModel
+dev ~/.julia/dev/ShaleDrillingData
+dev ~/.julia/dev/ShaleDrillingEstimation
+dev ~/.julia/dev/ShaleDrillingPostEstimation
+```
