@@ -10,12 +10,12 @@ export check_dΠψ, _dψ1dθρ, _ρ, _ψ2, _ψ1
 # end
 
 # levels versions
-@inline _ρ(θρ::Real) = 2 * logistic(θρ) - 1
+# @inline _ρ(θρ::Real) = 2 * logistic(θρ) - 1
+# @inline _dρdθρ(θρ::Real) = (ex = exp(-θρ); 2 * ex / (1+ex)^2)
+@inline _ρ(θρ::Real) = logistic(θρ)
+@inline _dρdθρ(θρ::Real) = (z = logistic(θp); z*(1-z) )
 
 @inline _ρ2(θρ::Real) = _ρ(θρ)^2
-
-@inline _dρdθρ(θρ::Real) = (ex = exp(-θρ); 2 * ex / (1+ex)^2)
-
 _dρdσ = _dρdθρ # alias
 
 @inline _ψ1(u::Real,v::Real,ρ::Real) = ρ*u + sqrt(1-ρ^2)*v
