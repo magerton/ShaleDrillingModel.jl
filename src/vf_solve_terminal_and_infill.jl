@@ -32,7 +32,7 @@ function solve_vf_infill!(
     ubVfull::AbstractArray3, dubVfull::AbstractArray4,                        # choice-specific VF
     lse::AbstractMatrix, tmp::AbstractMatrix, IminusTEVp::AbstractMatrix,     # temp vars
     wp::well_problem, Πz::AbstractMatrix, β::Real;                            # problem structure
-    maxit0::Integer=30, maxit1::Integer=20, vftol::Real=1e-9                  # convergence options
+    maxit0::Integer=35, maxit1::Integer=20, vftol::Real=1e-9                  # convergence options
     )
 
     nz,nψ,nS = size(EV)
@@ -81,11 +81,11 @@ function solve_vf_infill!(
             converged, iter, bnds = try
                 solve_inf_pfit!(EV0, ubV, lse, tmp, IminusTEVp, Πz, β; maxit=maxit1, vftol=vftol)
             catch
-                @warn("pfit threw error. trying vfit.")
+                @warn "pfit threw error. trying vfit."
                 solve_inf_vfit!(EV0, ubV, lse, tmp, Πz, β; maxit=5000, vftol=vftol)
             end
 
-            # converged || warn("Did not converge at state $i after $iter pfit. McQueen-Porteus bnds: $bnds")
+            # converged || @warn "Did not converge at state $i after $iter pfit. McQueen-Porteus bnds: $bnds"
             if dograd
                 # TODO: only allows 0-payoff if no action
                 ubV[:,:,1] .= β .* EV0
