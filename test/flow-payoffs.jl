@@ -1,6 +1,6 @@
 @testset "Flow gradients" begin
 
-    p0 = dcdp_primitives(:exproy,               β, wp, zspace, Πp, ψspace)
+    p0 = dcdp_primitives(:exproy_Dgt0,          β, wp, zspace, Πp, ψspace)
     p1 = dcdp_primitives(:exproy_extend,        β, wp, zspace, Πp, ψspace)
     p2 = dcdp_primitives(:exproy_extend_constr, β, wp, zspace, Πp, ψspace)
 

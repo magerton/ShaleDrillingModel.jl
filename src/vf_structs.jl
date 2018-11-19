@@ -25,7 +25,7 @@ end
 function dcdp_primitives(FF::Symbol, β::T, wp::well_problem, zspace::TT, Πz::AM, ψspace::AV) where {T,TT,AM,AV}
     FF ∈ (:exp1roy1p,)                          && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 7)
     FF ∈ (:exp,:exp1roy,:exproy_extend_constr)  && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 8)
-    FF ∈ (:exproy,)                             && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 9)
+    FF ∈ (:exproy,:exproy_Dgt0)                 && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 9)
     FF ∈ (:exproy_extend,)                      && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 10)
 
     # FF ∈ (:breaklin, :breakexp) && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 13)
