@@ -78,9 +78,12 @@ end
 
 include("vf_interpolation.jl")
 
-include("test_dpsi.jl")
 include("parallel_solution.jl")
 
 include("action_probabilities_new.jl")
 
 include("BSplineTestFuns_runtests.jl")
+
+
+
+# include("test_dpsi.jl") DEPRECATED & INCORRECT???
