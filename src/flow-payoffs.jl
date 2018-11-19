@@ -52,7 +52,7 @@ end
 
 @inline function flow(::Type{Val{:exproy_extend}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {T}
     if d == 0
-        sgn_ext && return θ[9] + θ[10]*ψ
+        sgn_ext && return θ[9] + θ[10]*exp(ψ)
         return zero(T)
     end
     u = rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy) + (d==1 ?  θ[6] : θ[7] ) # + θ[8]*d)
@@ -63,7 +63,7 @@ end
 
 @inline function flow(::Type{Val{:exproy_extend_constr}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {T}
     if d == 0
-        sgn_ext && return θ[7] + θ[8]*ψ
+        sgn_ext && return θ[7] + θ[8]*exp(ψ)
         return zero(T)
     end
     u = rev_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,Dgt0,geoid, roy) + (d==1 ?  θ[4] : θ[5] ) # + θ[8]*d)
@@ -96,7 +96,7 @@ end
 
     # extension cost
     k == 9  && return d == 0 && sgn_ext ? one(T) : zero(T)
-    # k == 10 && return d == 0 && sgn_ext ? ψ      : zero(T)
+    # k == 10 && return d == 0 && sgn_ext ? exp(ψ) : zero(T)
 
     throw(error("$k out of bounds"))
 end
@@ -120,7 +120,7 @@ end
 
     # extension cost
     k == 9  && return d == 0 && sgn_ext ? one(T) : zero(T)
-    k == 10 && return d == 0 && sgn_ext ? ψ      : zero(T)
+    k == 10 && return d == 0 && sgn_ext ? exp(ψ) : zero(T)
 
     throw(error("$k out of bounds"))
 end
@@ -142,7 +142,7 @@ end
 
     # extension cost
     k == 7  && return d == 0 && sgn_ext ? one(T) : zero(T)
-    k == 8  && return d == 0 && sgn_ext ? ψ      : zero(T)
+    k == 8  && return d == 0 && sgn_ext ? exp(ψ) : zero(T)
 
     throw(error("$k out of bounds"))
 end
@@ -187,7 +187,7 @@ end
 
 @inline function flowdψ(::Type{Val{:exproy_extend}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, sgn_ext::Bool, geoid::Real, roy::T)::T where {T}
     if d == 0
-        return sgn_ext ? θ[10] : zero(T)
+        return sgn_ext ? θ[10]*exp(ψ) : zero(T)
     else
         return d * drevdψ_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,geoid, roy)
     end
@@ -196,7 +196,7 @@ end
 
 @inline function flowdψ(::Type{Val{:exproy_extend_constr}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, sgn_ext::Bool, geoid::Real, roy::T)::T where {T}
     if d == 0
-        return sgn_ext ? θ[8] : zero(T)
+        return sgn_ext ? θ[8]*exp(ψ) : zero(T)
     else
         return d * drevdψ_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,geoid, roy)
     end

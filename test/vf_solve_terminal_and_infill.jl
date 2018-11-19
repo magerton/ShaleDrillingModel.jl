@@ -48,11 +48,11 @@ end
 
     @views maxv, idx = findmax(abs.(fdEV[:,:,2:end,:].-evs.dEV[:,:,2:end,:]))
     @views sub = CartesianIndices(fdEV[:,:,2:end,:])[idx]
-    @show "worst value is $maxv at $sub for dθ[2:end]"
+    println("worst value is $maxv at $sub for dθ[2:end]")
 
     maxv, idx = findmax(abs.(fdEV.-evs.dEV))
     sub = CartesianIndices(fdEV)[idx]
-    @show "worst value is $maxv at $sub"
+    println("worst value is $maxv at $sub")
     # @test fdEV ≈ evs.dEV
     @test 0.0 < maxv < 1.0
     @test all(isfinite.(evs.dEV))

@@ -59,13 +59,13 @@ zero!(tmpv)
     # infill
     @views maxv, idx = findmax(abs.(fdEV[:,:,:,_nSexp(wp)+1:end].-evs.dEV[:,:,:,_nSexp(wp)+1:end]))
     sub = CartesianIndices(fdEV)[idx]
-    @show "worst value is $maxv at $sub for infill"
+    println("worst value is $maxv at $sub for infill")
 
 
     # exploration
     @views maxv, idx = findmax(abs.(fdEV[:,:,:,1:_nSexp(wp)].-evs.dEV[:,:,:,1:_nSexp(wp)]))
     sub = CartesianIndices(fdEV)[idx]
-    @show "worst value is $maxv at $sub for exploratory"
+    println("worst value is $maxv at $sub for exploratory")
 
     @test 0.0 < maxv < 0.1
     @test all(isfinite.(evs.dEV))
@@ -140,7 +140,7 @@ end
         @test size(fdEVσvw) == size(evs.dEVσ)
         @views maxv, idx = findmax(abs.(fdEVσvw.-evs.dEVσ))
         sub = CartesianIndices(fdEVσvw)[idx]
-        @show "worst value is $maxv at $sub for dσ"
+        println("worst value is $maxv at $sub for dσ")
         @show extrema(fdEVσvw)
         @show extrema(evs.dEVσ)
 
