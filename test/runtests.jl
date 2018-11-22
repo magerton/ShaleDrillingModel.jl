@@ -4,16 +4,18 @@ const IN_SLURM = "SLURM_JOBID" in keys(ENV)
 using Distributed
 IN_SLURM && using ClusterManagers
 
+using ShaleDrillingData
 using ShaleDrillingModel
 using Test
 using StatsFuns
 using JLD2
+using FileIO
 using Interpolations
 using Statistics
 using SparseArrays
 
 # jldpath = Base.joinpath(Pkg.dir("ShaleDrillingData"), "data/price-transitions.jld")
-jldpath = joinpath(ENV["JULIA_PKG_DEVDIR"], "ShaleDrillingData/data/price-vol-transitions.jld")
+jldpath = joinpath(dirname(pathof(ShaleDrillingData)), "..", "data/price-vol-transitions.jld")
 @load jldpath logpspace logσspace Πp
 
 # Πp2 = Πp1

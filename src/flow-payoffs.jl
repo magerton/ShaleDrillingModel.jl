@@ -21,7 +21,7 @@ function Eexpψ(θ4::T, σ::T, ψ::T, Dgt0::Bool) where {T<:Real}
 end
 
 @inline function rev_exp(θ0::Real, θ1::T, θ2::Real, θ3::T, θ4::T, σ::T, logp::Real, ψ::Real, Dgt0::Bool, geoid::Real, roy::Real) where {T<:Real}
-    r = (one(T)-θ0*roy) * exp(θ1 + θ2*logp + θ3*geoid + Eexpψ(θ4, σ, ψ, Dgt0))
+    r = (one(T)-θ0*roy) * exp(θ1 + exp(θ2)*logp + θ3*geoid + Eexpψ(θ4, σ, ψ, Dgt0))
     return r::T
 end
 
@@ -80,7 +80,7 @@ end
         sgn_ext && return θ[7] + θ[8]*exp(ψ)
         return zero(T)
     end
-    u = rev_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,Dgt0,geoid, roy) + (d==1 ?  θ[4] : θ[5] ) # + θ[8]*d)
+    u = rev_exp(1,θ[1],  0  ,θ[2],θ[3],σ,logp,ψ,Dgt0,geoid, roy) + (d==1 ?  θ[4] : θ[5] ) # + θ[8]*d)
     d>1      && (u *= d)
     d1 == 1  && (u += θ[6])
     return u::T
@@ -98,7 +98,7 @@ end
     # revenue
     k == 1  && return - d * exp(θ[2] + θ[3]*logp + θ[4]*geoid + Eexpψ(θ[5], σ, ψ, Dgt0) ) * roy
     k == 2  && return   d * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy)
-    k == 3  && return   d * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy) * logp
+    k == 3  && return   d * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy) * logp * exp(θ[3])
     k == 4  && return   d * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy) * convert(T,geoid)
     k == 5  && return   d * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy) * ( Dgt0 ? ψ : ψ*_ρ(σ) + θ[k]*(1-_ρ2(σ)))
 
@@ -120,7 +120,7 @@ end
     # revenue
     k == 1  && return - d * exp(θ[2] + θ[3]*logp + θ[4]*geoid + Eexpψ(θ[5], σ, ψ, Dgt0) ) * roy
     k == 2  && return   d * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy)
-    k == 3  && return   d * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy) * logp
+    k == 3  && return   d * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy) * logp * exp(θ[3])
     k == 4  && return   d * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy) * convert(T,geoid)
     k == 5  && return   d * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy) * ( Dgt0 ? ψ : ψ*_ρ(σ) + θ[k]*(1-_ρ2(σ)))
 
@@ -146,7 +146,7 @@ end
     # revenue
     k == 1  && return - d * exp(θ[2] + θ[3]*logp + θ[4]*geoid + Eexpψ(θ[5], σ, ψ, Dgt0) ) * roy
     k == 2  && return   d * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy)
-    k == 3  && return   d * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy) * logp
+    k == 3  && return   d * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy) * logp  * exp(θ[3])
     k == 4  && return   d * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy) * convert(T,geoid)
     k == 5  && return   d * rev_exp(θ[1],θ[2],θ[3],θ[4],θ[5],σ,logp,ψ,Dgt0,geoid, roy) * ( Dgt0 ? ψ : ψ*_ρ(σ) + θ[k]*(1-_ρ2(σ)))
 
@@ -168,9 +168,9 @@ end
     d == 0 && !sgn_ext && return zero(T)
 
     # revenue
-    k == 1  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,Dgt0,geoid, roy)
-    k == 2  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,Dgt0,geoid, roy) * convert(T,geoid)
-    k == 3  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,Dgt0,geoid, roy) * ( Dgt0 ? ψ : ψ*_ρ(σ) + θ[k]*(1-_ρ2(σ)))
+    k == 1  && return   d * rev_exp(1,θ[1],0,θ[2],θ[3],σ,logp,ψ,Dgt0,geoid, roy)
+    k == 2  && return   d * rev_exp(1,θ[1],0,θ[2],θ[3],σ,logp,ψ,Dgt0,geoid, roy) * convert(T,geoid)
+    k == 3  && return   d * rev_exp(1,θ[1],0,θ[2],θ[3],σ,logp,ψ,Dgt0,geoid, roy) * ( Dgt0 ? ψ : ψ*_ρ(σ) + θ[k]*(1-_ρ2(σ)))
 
     # drilling cost
     k == 4  && return  d  == 1 ? one(T)  : zero(T)
@@ -202,7 +202,7 @@ end
     if d == 0
         return zero(T)
     else
-        return d * drevdσ_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,geoid, roy)
+        return d * drevdσ_exp(1,θ[1],0,θ[2],θ[3],σ,logp,ψ,geoid, roy)
     end
 end
 
@@ -235,6 +235,6 @@ end
     if d == 0
         return sgn_ext ? θ[8]*exp(ψ) : zero(T)
     else
-        return d * drevdψ_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,geoid, roy)
+        return d * drevdψ_exp(1,θ[1],0,θ[2],θ[3],σ,logp,ψ,geoid, roy)
     end
 end

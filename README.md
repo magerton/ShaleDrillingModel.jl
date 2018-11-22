@@ -25,7 +25,7 @@ Create price/cost transition matrices using [MarkovTransitionMatrices.jl](https:
 
 
 ```julia
-]add AxisAlgorithms BenchmarkTools Calculus CategoricalArrays DataFrames Distributions FileIO Formatting GLM GR Gadfly IndirectArrays Interpolations JLD2 MixedModels NLSolversBase NLopt Optim Plots Primes Profile ProgressMeter PyPlot RData Ratios StatsBase StatsFuns StatsModels
+]add AxisAlgorithms BenchmarkTools Calculus CategoricalArrays DataFrames Distributions FileIO Formatting GLM GR Gadfly IndirectArrays Interpolations@0.8.0 JLD2 MixedModels NLSolversBase NLopt Optim Plots Primes Profile ProgressMeter PyPlot RData Ratios StatsBase StatsFuns StatsModels
 
 dev ssh://git@github.com/magerton/CountPlus.git
 dev ssh://git@github.com/magerton/Halton.git
@@ -69,4 +69,19 @@ dev ~/.julia/dev/ShaleDrillingModel
 dev ~/.julia/dev/ShaleDrillingData
 dev ~/.julia/dev/ShaleDrillingEstimation
 dev ~/.julia/dev/ShaleDrillingPostEstimation
+```
+
+
+```julia
+dev ~/libraries/julia/dev/CountPlus
+dev ~/libraries/julia/dev/Halton
+dev ~/libraries/julia/dev/JuliaTex
+dev ~/libraries/julia/dev/GenGlobal
+dev ~/libraries/julia/dev/MarksRandomEffects
+dev ~/libraries/julia/dev/OrderedResponse
+dev ~/libraries/julia/dev/MarkovTransitionMatrices
+dev ~/libraries/julia/dev/ShaleDrillingModel
+dev ~/libraries/julia/dev/ShaleDrillingData
+dev ~/libraries/julia/dev/ShaleDrillingEstimation
+dev ~/libraries/julia/dev/ShaleDrillingPostEstimation
 ```
