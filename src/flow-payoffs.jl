@@ -62,6 +62,18 @@ end
 end
 
 
+@inline function flow(::Type{Val{:constr}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {T}
+    if d == 0
+        sgn_ext && return θ[7]
+        return zero(T)
+    end
+    u = rev_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,Dgt0,geoid, roy) + (d==1 ?  θ[4] : θ[5] ) # + θ[8]*d)
+    d>1      && (u *= d)
+    d1 == 1  && (u += θ[6])
+    return u::T
+end
+
+
 @inline function flow(::Type{Val{:exproy_Dgt0}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {T}
     if d == 0
         sgn_ext && return θ[9]
@@ -171,6 +183,25 @@ end
 end
 
 
+@inline function flowdθ(::Type{Val{:constr}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {T}
+    d == 0 && !sgn_ext && return zero(T)
+
+    # revenue
+    k == 1  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,Dgt0,geoid,roy)
+    k == 2  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,Dgt0,geoid,roy) * geoid
+    k == 3  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,Dgt0,geoid,roy) * ( Dgt0 ? ψ : ψ*_ρ(σ) + θ[k]*(1-_ρ2(σ)))
+
+    # drilling cost
+    k == 4  && return  d  == 1 ? one(T)  : zero(T)
+    k == 5  && return  d  == 1 ? zero(T) : convert(T,d)
+    k == 6  && return  d1 == 1 ? one(T)  : zero(T)
+
+    # extension cost
+    k == 7  && return d == 0 && sgn_ext ? one(T) : zero(T)
+
+    throw(error("$k out of bounds"))
+end
+
 
 
 @inline function flowdθ(::Type{Val{:exproy_extend}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {T}
@@ -231,7 +262,7 @@ end
     end
 end
 
-@inline function flowdσ(::Type{Val{:exproy_extend_constr}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, geoid::Real, roy::T)::T where {T}
+@inline function flowdσ(::FF, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, geoid::Real, roy::T)::T where {FF <: Union{ Type{Val{:exproy_extend_constr}}, Type{Val{:constr}} }, T}
     if d == 0
         return zero(T)
     else
@@ -271,6 +302,17 @@ end
         return (d * drevdψ_exp(1,θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,geoid, roy))::T
     end
 end
+
+
+@inline function flowdψ(::Type{Val{:constr}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, sgn_ext::Bool, geoid::Real, roy::T) where {T}
+    if d == 0
+        return zero(T) # sgn_ext ? θ[10] : zero(T)
+    else
+        return (d * drevdψ_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,geoid, roy))::T
+    end
+end
+
+
 
 
 @inline function flowdψ(::Type{Val{:exproy_extend}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, sgn_ext::Bool, geoid::Real, roy::T)::T where {T}
