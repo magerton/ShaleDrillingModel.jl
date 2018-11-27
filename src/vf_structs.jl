@@ -24,6 +24,7 @@ end
 
 function dcdp_primitives(FF::Symbol, β::T, wp::well_problem, zspace::TT, Πz::AM, ψspace::AV) where {T,TT,AM,AV}
     FF ∈ (:constr_onecost,)                     && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 5)
+    FF ∈ (:extend_constr_onecost,)              && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 6)
     FF ∈ (:constr,)                             && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 7)
     FF ∈ (:exp,:exp1roy,:exproy_extend_constr)  && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 8)
     FF ∈ (:exproy,:exproy_Dgt0)                 && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 9)

@@ -122,6 +122,16 @@ end
     return u::T
 end
 
+@inline function flow(::Type{Val{:extend_constr_onecost}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {T}
+    if d == 0
+        sgn_ext && return θ[5] + θ[6]*exp(ψ)
+        return zero(T)
+    end
+    u = rev_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,Dgt0,geoid, roy) + θ[4]
+    d>1      && (u *= d)
+    return u::T
+end
+
 
 # -----------------------------------------
 # dθ
@@ -236,6 +246,25 @@ end
 
 
 
+@inline function flowdθ(::Type{Val{:extend_constr_onecost}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {T}
+    d == 0 && !sgn_ext && return zero(T)
+
+    # revenue
+    k == 1  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,Dgt0,geoid,roy)
+    k == 2  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,Dgt0,geoid,roy) * geoid
+    k == 3  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,Dgt0,geoid,roy) * ( Dgt0 ? ψ : ψ*_ρ(σ) + θ[k]*(1-_ρ2(σ)))
+
+    # drilling cost
+    k == 4  && return d == 0 ? zero(T) : convert(T,d)
+
+    # extension cost
+    k == 5  && return d == 0 && sgn_ext ? one(T) : zero(T)
+    k == 6  && return d == 0 && sgn_ext ? exp(ψ) : zero(T)
+
+    throw(error("$k out of bounds"))
+end
+
+
 
 
 @inline function flowdθ(::Type{Val{:exproy_extend}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {T}
@@ -296,7 +325,7 @@ end
     end
 end
 
-@inline function flowdσ(::FF, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, geoid::Real, roy::T)::T where {FF <: Union{ Type{Val{:exproy_extend_constr}}, Type{Val{:constr}}, Type{Val{:constr_onecost}} }, T}
+@inline function flowdσ(::FF, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, geoid::Real, roy::T)::T where {FF <: Union{ Type{Val{:exproy_extend_constr}}, Type{Val{:constr}}, Type{Val{:constr_onecost}}, Type{Val{:extend_constr_onecost}} }, T}
     if d == 0
         return zero(T)
     else
@@ -360,6 +389,16 @@ end
 @inline function flowdψ(::Type{Val{:exproy_extend_constr}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, sgn_ext::Bool, geoid::Real, roy::T)::T where {T}
     if d == 0
         return sgn_ext ? θ[8]*exp(ψ) : zero(T)
+    else
+        return d * drevdψ_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,geoid, roy)
+    end
+end
+
+
+
+@inline function flowdψ(::Type{Val{:extend_constr_onecost}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, sgn_ext::Bool, geoid::Real, roy::T)::T where {T}
+    if d == 0
+        return sgn_ext ? θ[6]*exp(ψ) : zero(T)
     else
         return d * drevdψ_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,geoid, roy)
     end
