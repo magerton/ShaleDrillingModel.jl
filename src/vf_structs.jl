@@ -23,6 +23,8 @@ struct dcdp_primitives{FF,T<:Real,AM<:AbstractMatrix{T},TT<:Tuple,AV<:AbstractVe
 end
 
 function dcdp_primitives(FF::Symbol, β::T, wp::well_problem, zspace::TT, Πz::AM, ψspace::AV) where {T,TT,AM,AV}
+
+    FF ∈ (:restricted_q,)                       && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 3)
     FF ∈ (:constr_onecost,)                     && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 5)
     FF ∈ (:extend_constr_onecost,)              && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 6)
     FF ∈ (:constr,)                             && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 7)

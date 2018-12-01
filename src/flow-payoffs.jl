@@ -133,6 +133,19 @@ end
 end
 
 
+@inline function flow(::Type{Val{:restricted_q}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {T}
+    if d == 0
+        sgn_ext && return θ[3]
+        return zero(T)
+    end
+    u = rev_exp(1, θ[1], 1, 0.5632772, 0.4459161, σ,logp,ψ,Dgt0,geoid, roy) + θ[2]
+    d>1      && (u *= d)
+    return u::T
+end
+
+
+
+
 # -----------------------------------------
 # dθ
 # -----------------------------------------
@@ -313,6 +326,17 @@ end
 
 
 
+@inline function flowdθ(::Type{Val{:restricted_q}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {T}
+    d == 0 && !sgn_ext && return zero(T)
+
+    # revenue
+    k == 1  && return d * rev_exp(1,θ[1],1, 0.5632772, 0.4459161,σ,logp,ψ,Dgt0,geoid, roy)
+    k == 2  && return convert(T,d)
+    k == 3  && return d == 0 && sgn_ext ? one(T) : zero(T)
+
+    throw(error("$k out of bounds"))
+end
+
 # -----------------------------------------
 # dσ
 # -----------------------------------------
@@ -338,6 +362,15 @@ end
         return zero(T)
     else
         return d * drevdσ_exp(1,θ[1],θ[2],θ[3],θ[4],σ,logp,ψ,geoid, roy)
+    end
+end
+
+
+@inline function flowdσ(::Type{Val{:restricted_q}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, geoid::Real, roy::T)::T where {T}
+    if d == 0
+        return zero(T)
+    else
+        return d * drevdσ_exp(1,θ[1],1, 0.5632772, 0.4459161,σ,logp,ψ,geoid, roy)
     end
 end
 
@@ -375,6 +408,13 @@ end
 end
 
 
+@inline function flowdψ(::Type{Val{:restricted_q}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, sgn_ext::Bool, geoid::Real, roy::T) where {FF <: Union{ Type{Val{:constr}}, Type{Val{:constr_onecost}} }, T}
+    if d == 0
+        return zero(T) # sgn_ext ? θ[10] : zero(T)
+    else
+        return (d * drevdψ_exp(1,θ[1],1, 0.5632772, 0.4459161,σ,logp,ψ,geoid, roy))::T
+    end
+end
 
 
 @inline function flowdψ(::Type{Val{:exproy_extend}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, sgn_ext::Bool, geoid::Real, roy::T)::T where {T}
