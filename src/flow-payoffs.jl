@@ -144,6 +144,33 @@ end
 end
 
 
+@inline function flow(::Type{Val{:restricted_q_Dgt0}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {T}
+    if d == 0
+        sgn_ext && return θ[4]
+        return zero(T)
+    end
+    u = rev_exp(1, θ[1], 1, 0.5632772, 0.4459161, σ,logp,ψ,Dgt0,geoid, roy) + (!Dgt0 ? θ[2] : θ[3] )
+    d>1      && (u *= d)
+    return u::T
+end
+
+
+# -----------------------------------------
+# number of parms
+# -----------------------------------------
+
+function number_of_model_parms(FF::Symbol)::Int
+    FF ∈ (:restricted_q,)                       && return  3
+    FF ∈ (:restricted_q_Dgt0,)                  && return  4
+    FF ∈ (:constr_onecost,)                     && return  5
+    FF ∈ (:extend_constr_onecost,)              && return  6
+    FF ∈ (:constr,)                             && return  7
+    FF ∈ (:exp,:exp1roy,:exproy_extend_constr)  && return  8
+    FF ∈ (:exproy,:exproy_Dgt0)                 && return  9
+    FF ∈ (:exproy_extend,)                      && return 10
+    throw(error("FF = $(FF) not recognized"))
+end
+
 
 
 # -----------------------------------------
@@ -337,6 +364,20 @@ end
     throw(error("$k out of bounds"))
 end
 
+
+@inline function flowdθ(::Type{Val{:restricted_q_Dgt0}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {T}
+    d == 0 && !sgn_ext && return zero(T)
+
+    # revenue
+    k == 1  && return d * rev_exp(1,θ[1],1, 0.5632772, 0.4459161,σ,logp,ψ,Dgt0,geoid, roy)
+    k == 2  && return !Dgt0 ? convert(T,d) : zero(T)
+    k == 3  && return !Dgt0 ? zero(T)      : convert(T,d)
+    k == 4  && return d == 0 && sgn_ext ? one(T) : zero(T)
+
+    throw(error("$k out of bounds"))
+end
+
+
 # -----------------------------------------
 # dσ
 # -----------------------------------------
@@ -366,7 +407,7 @@ end
 end
 
 
-@inline function flowdσ(::Type{Val{:restricted_q}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, geoid::Real, roy::T)::T where {T}
+@inline function flowdσ(::FF, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, geoid::Real, roy::T)::T where {FF <: Union{Type{Val{:restricted_q}}, Type{Val{:restricted_q_Dgt0}}}, T}
     if d == 0
         return zero(T)
     else
@@ -408,7 +449,7 @@ end
 end
 
 
-@inline function flowdψ(::Type{Val{:restricted_q}}, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, sgn_ext::Bool, geoid::Real, roy::T) where {FF <: Union{ Type{Val{:constr}}, Type{Val{:constr_onecost}} }, T}
+@inline function flowdψ(::FF, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, sgn_ext::Bool, geoid::Real, roy::T) where {FF <: Union{Type{Val{:restricted_q}}, Type{Val{:restricted_q_Dgt0}}}, T}
     if d == 0
         return zero(T) # sgn_ext ? θ[10] : zero(T)
     else

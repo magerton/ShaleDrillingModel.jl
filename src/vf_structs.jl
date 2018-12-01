@@ -23,17 +23,7 @@ struct dcdp_primitives{FF,T<:Real,AM<:AbstractMatrix{T},TT<:Tuple,AV<:AbstractVe
 end
 
 function dcdp_primitives(FF::Symbol, β::T, wp::well_problem, zspace::TT, Πz::AM, ψspace::AV) where {T,TT,AM,AV}
-
-    FF ∈ (:restricted_q,)                       && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 3)
-    FF ∈ (:constr_onecost,)                     && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 5)
-    FF ∈ (:extend_constr_onecost,)              && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 6)
-    FF ∈ (:constr,)                             && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 7)
-    FF ∈ (:exp,:exp1roy,:exproy_extend_constr)  && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 8)
-    FF ∈ (:exproy,:exproy_Dgt0)                 && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 9)
-    FF ∈ (:exproy_extend,)                      && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 10)
-
-    # FF ∈ (:breaklin, :breakexp) && return dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, 13)
-    throw(error("$FF is unknown"))
+    dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, number_of_model_parms(FF))
 end
 
 flow(prim::dcdp_primitives{FF}) where {FF} = FF
