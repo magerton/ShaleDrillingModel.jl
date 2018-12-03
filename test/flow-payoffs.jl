@@ -9,8 +9,8 @@
 
     σ = 0.25
 
-    a = ShaleDrillingModel.STARTING_log_ogip # 0.561244
-    b = ShaleDrillingModel.STARTING_σ_ψ      # 0.42165
+    a = STARTING_log_ogip # 0.561244
+    b = STARTING_σ_ψ      # 0.42165
 
     v3 = [-4.28566,       -5.45746,           -0.3, ]
     v4 = [-4.28566,       -4.71627, -5.80131, -0.3, ]

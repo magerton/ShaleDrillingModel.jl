@@ -1,4 +1,5 @@
-export flow, flowdθ, flowdσ, flowdψ
+export flow, flowdθ, flowdσ, flowdψ, STARTING_σ_ψ, STARTING_log_ogip
+
 
 # functions in case we have volatility regime
 @inline flowrev(FF::Type, θ::AbstractVector{T}, σ::T, logp::T, logvol::Real, ψ::T,             d::Integer, d1::Integer, Dgt0::Bool,                geoid::Real, roy::T) where {T} = flowrev(FF, θ, σ, logp, ψ,    d, d1, Dgt0,                  geoid, roy)
