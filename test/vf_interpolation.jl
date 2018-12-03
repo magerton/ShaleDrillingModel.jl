@@ -1,5 +1,5 @@
 @testset "VF Inteprolation" begin
-    let prim = dcdp_primitives(:exproy, β, wp, zspace, Πp, ψspace),
+    let prim = dcdp_primitives(flowfuncname, β, wp, zspace, Πp, ψspace),
         tmpv = dcdp_tmpvars(prim),
         royalty_rates = [0.25,],
         geology_types = 2:2

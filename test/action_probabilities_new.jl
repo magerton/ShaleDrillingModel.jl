@@ -106,9 +106,9 @@
         @test all(isfinite.(grad))
 
 
+        @test fdgrad ≈ grad
         maxv, idx =  findmax(abs.(fdgrad .- grad))
         println("worst value is $maxv at $(CartesianIndices(fdgrad)[idx]) for dlogP")
-        @test fdgrad ≈ grad
         @test maxv < 1.5e-7
     end
 end

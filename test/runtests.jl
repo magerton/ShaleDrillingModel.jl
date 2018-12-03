@@ -29,9 +29,12 @@ geology_types = 1.3430409262656042:0.1925954901417719:5.194950729101042
 
 # initial parameters
 #    [roy, cons,   p, ogip, ψ , ##   c0,     c+, d_{-1}, ## exten_cons, ##  z -> ρ(z)
-θt = [1.0,  0.0, 1.0, 1.0, 1.0,  -8.921, -6.982, 2.627,           -1.0] # ,      0.1613  ]
-θt = [3.66508, -14.91197, 1.83802, 2.74480, 2.35507, -6.57268, -4.91350, 2.41477, -0.45302, -0.0,]
-σv = 1.65
+# θt = [1.0,  0.0, 1.0, 1.0, 1.0,  -8.921, -6.982, 2.627,           -1.0] # ,      0.1613  ]
+# θt = [3.66508, -14.91197, 1.83802, 2.74480, 2.35507, -6.57268, -4.91350, 2.41477, -0.45302, -0.0,]
+flowfuncname = :one
+θt = [-4.28566, ShaleDrillingModel.STARTING_log_ogip, ShaleDrillingModel.STARTING_σ_ψ, -5.45746, -0.3, ]
+σv = 0.25
+
 θfull = vcat(θt, σv)
 
 # problem sizes
@@ -40,7 +43,6 @@ wp = well_problem(dmx,4,5,3,2)
 
 zspace, ψspace, dspace, d1space, vspace = (logpspace, logσspace,), range(-3.75, stop=3.75, length=nψ), 0:dmx, 0:1, range(-3.0, stop=3.0, length=nv)
 
-flowfuncname = :exproy_extend
 prim = dcdp_primitives(flowfuncname, β, wp, zspace, Πp, ψspace)
 tmpv = dcdp_tmpvars(prim)
 evs = dcdp_Emax(prim)
@@ -79,13 +81,8 @@ let geoid = 2, roy = 0.25, itype = (geoid, roy,)
 end
 
 include("vf_interpolation.jl")
-
 include("parallel_solution.jl")
-
 include("action_probabilities_new.jl")
-
 include("BSplineTestFuns_runtests.jl")
-
-
 
 # include("test_dpsi.jl") DEPRECATED & INCORRECT???
