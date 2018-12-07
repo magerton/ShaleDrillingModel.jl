@@ -35,8 +35,8 @@ end
 end
 
 # const STARTING_σ_well   = 0x1.b4ebd272a442cp-2 # = 0.426681
-const STARTING_σ_ψ      = 0x1.afc4f342cf11fp-2 # = 0.42165
-const STARTING_log_ogip = 0x1.1f5b5085b8a6ap-1 # = 0.561244
+const STARTING_σ_ψ      = 0x1.de6481c8f3d3p-2 # = 0.4671 # 0x1.afc4f342cf11fp-2 # = 0.42165
+const STARTING_log_ogip = 0x1.bd03657dcfea3p-1 # = 0.8692  # 0x1.1f5b5085b8a6ap-1 # = 0.561244
 
 @inline    rev_exp_restricted(θ1::T, σ::T, logp::Real, ψ::Real, Dgt0::Bool, geoid::Real, roy::Real) where {T} = rev_exp(   1, θ1, 1, STARTING_log_ogip, STARTING_σ_ψ, σ, logp, ψ, Dgt0, geoid, roy)
 @inline drevdσ_exp_restricted(θ1::T, σ::T, logp::Real, ψ::Real,             geoid::Real, roy::Real) where {T} = drevdσ_exp(1, θ1, 1, STARTING_log_ogip, STARTING_σ_ψ, σ, logp, ψ,       geoid, roy)
@@ -62,10 +62,22 @@ end
         sgn_ext && return θ[6]
         return zero(T)
     end
-    u = rev_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,Dgt0,geoid, roy) + (d==1 ?  θ[4] : θ[5] )
+    u = rev_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,Dgt0,geoid, roy) + (d==1 ? θ[4] : θ[5] )
     d>1      && (u *= d)
     return u::T
 end
+
+@inline function flow(::Type{Val{:dgt1_d1}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {T}
+    if d == 0
+        sgn_ext && return θ[7]
+        return zero(T)
+    end
+    u = rev_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,Dgt0,geoid, roy) + (d==1 ? θ[4] : θ[5] ) # + θ[8]*d)
+    d>1      && (u *= d)
+    d1 == 1  && (u += θ[6])
+    return u::T
+end
+
 
 @inline function flow(::Type{Val{:Dgt0}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {T}
     if d == 0
@@ -76,8 +88,6 @@ end
     d>1      && (u *= d)
     return u::T
 end
-
-
 
 @inline function flow(::Type{Val{:dgt1_ext}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {T}
     if d == 0
@@ -113,6 +123,19 @@ end
 end
 
 
+@inline function flow(::Type{Val{:dgt1_d1_restr}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {T}
+    if d == 0
+        sgn_ext && return θ[5]
+        return zero(T)
+    end
+    u = rev_exp_restricted(θ[1], σ, logp, ψ, Dgt0, geoid, roy) + (d==1 ? θ[2] : θ[3] )
+    d>1      && (u *= d)
+    d1 == 1  && (u += θ[4])
+    return u::T
+end
+
+
+
 @inline function flow(::Type{Val{:dgt1_ext_restr}}, θ::AbstractVector{T}, σ::T,    logp::T, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {T}
     if d == 0
         sgn_ext && return θ[4] + θ[5]*ψ
@@ -141,9 +164,9 @@ end
 function number_of_model_parms(FF::Symbol)::Int
     FF ∈ (:one_restr,)                            && return  3
     FF ∈ (:dgt1_restr,:Dgt0_restr,)               && return  4
-    FF ∈ (:one,:dgt1_ext_restr,)                  && return  5
+    FF ∈ (:one,:dgt1_ext_restr, :dgt1_d1_restr,)  && return  5
     FF ∈ (:dgt1,:Dgt0,)                           && return  6
-    FF ∈ (:dgt1_ext,)                             && return  7
+    FF ∈ (:dgt1_ext,:dgt1_d1)                     && return  7
     # FF ∈ (:exp,:exp1roy,:exproy_extend_constr)  && return  8
     # FF ∈ (:exproy,:exproy_Dgt0)                 && return  9
     # FF ∈ (:exproy_extend,)                      && return 10
@@ -187,6 +210,24 @@ end
 
     throw(error("$k out of bounds"))
 end
+
+
+@inline function flowdθ(::Type{Val{:dgt1_d1}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {T}
+    d == 0 && !sgn_ext && return zero(T)
+
+    k == 1  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,Dgt0,geoid,roy)
+    k == 2  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,Dgt0,geoid,roy) * geoid
+    k == 3  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,Dgt0,geoid,roy) * ( Dgt0 ? ψ : ψ*_ρ(σ) + θ[k]*(1-_ρ2(σ)))
+
+    k == 4  && return  d  == 1 ? one(T)  : zero(T)
+    k == 5  && return  d  == 1 ? zero(T) : convert(T,d)
+    k == 6  && return  d1 == 1 ? one(T)  : zero(T)
+
+    k == 7  && return d == 0 && sgn_ext ? one(T) : zero(T)
+
+    throw(error("$k out of bounds"))
+end
+
 
 @inline function flowdθ(::Type{Val{:dgt1_ext}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {T}
     d == 0 && !sgn_ext && return zero(T)
@@ -253,6 +294,22 @@ end
 end
 
 
+@inline function flowdθ(::Type{Val{:dgt1_d1_restr}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {T}
+    d == 0 && !sgn_ext && return zero(T)
+
+    k == 1  && return d * rev_exp_restricted(θ[1], σ, logp, ψ, Dgt0, geoid, roy)
+
+    k == 2  && return d  == 1 ? one(T)  : zero(T)
+    k == 3  && return d  == 1 ? zero(T) : convert(T,d)
+    k == 4  && return d1 == 1 ? one(T)  : zero(T)
+
+    k == 5  && return d == 0 && sgn_ext ? one(T) : zero(T)
+
+    throw(error("$k out of bounds"))
+end
+
+
+
 @inline function flowdθ(::Type{Val{:dgt1_ext_restr}}, θ::AbstractVector{T}, σ::T,     logp::T, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {T}
     d == 0 && !sgn_ext && return zero(T)
 
@@ -287,13 +344,13 @@ end
 # -----------------------------------------
 
 
-@inline function flowdσ(::FF, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, geoid::Real, roy::T)::T where {FF <: Union{ Type{Val{:one}}, Type{Val{:dgt1}}, Type{Val{:Dgt0}}, Type{Val{:dgt1_ext}} }, T}
+@inline function flowdσ(::FF, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, geoid::Real, roy::T)::T where {FF <: Union{ Type{Val{:one}}, Type{Val{:dgt1}}, Type{Val{:Dgt0}}, Type{Val{:dgt1_ext}}, Type{Val{:dgt1_d1}} }, T}
     d == 0 && return zero(T)
     return d * drevdσ_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,geoid,roy)
 end
 
 
-@inline function flowdσ(::FF, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, geoid::Real, roy::T)::T where {FF <: Union{ Type{Val{:one_restr}}, Type{Val{:dgt1_restr}}, Type{Val{:Dgt0_restr}}, Type{Val{:dgt1_ext_restr}} }, T}
+@inline function flowdσ(::FF, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, geoid::Real, roy::T)::T where {FF <: Union{ Type{Val{:one_restr}}, Type{Val{:dgt1_restr}}, Type{Val{:Dgt0_restr}}, Type{Val{:dgt1_ext_restr}}, Type{Val{:dgt1_d1_restr}} }, T}
     d == 0 && return zero(T)
     return d * drevdσ_exp_restricted(θ[1],σ,logp,ψ,geoid,roy)
 end
@@ -304,13 +361,13 @@ end
 # -----------------------------------------
 
 
-@inline function flowdψ(::FF, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, sgn_ext::Bool, geoid::Real, roy::T) where {FF <: Union{ Type{Val{:one}}, Type{Val{:dgt1}}, Type{Val{:Dgt0}} }, T}
+@inline function flowdψ(::FF, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, sgn_ext::Bool, geoid::Real, roy::T) where {FF <: Union{ Type{Val{:one}}, Type{Val{:dgt1}}, Type{Val{:Dgt0}}, Type{Val{:dgt1_d1}} }, T}
     d == 0  && return zero(T) # sgn_ext ? θ[10] : zero(T)
     return (d * drevdψ_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,geoid,roy))::T
 end
 
 
-@inline function flowdψ(::FF, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, sgn_ext::Bool, geoid::Real, roy::T) where {FF <: Union{ Type{Val{:one_restr}}, Type{Val{:dgt1_restr}}, Type{Val{:Dgt0_restr}} }, T}
+@inline function flowdψ(::FF, θ::AbstractVector{T}, σ::T, logp::T, ψ::T, d::Integer, sgn_ext::Bool, geoid::Real, roy::T) where {FF <: Union{ Type{Val{:one_restr}}, Type{Val{:dgt1_restr}}, Type{Val{:Dgt0_restr}}, Type{Val{:dgt1_d1_restr}} }, T}
     d == 0  && return zero(T) # sgn_ext ? θ[10] : zero(T)
     return (d * drevdψ_exp_restricted(θ[1],σ,logp,ψ,geoid,roy))::T
 end

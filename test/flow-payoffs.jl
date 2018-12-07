@@ -4,11 +4,15 @@
     p4a  = dcdp_primitives( :dgt1_restr  , β, wp, zspace, Πp, ψspace)
     p4b  = dcdp_primitives( :Dgt0_restr  , β, wp, zspace, Πp, ψspace)
     p5   = dcdp_primitives( :one         , β, wp, zspace, Πp, ψspace)
+
     p6a  = dcdp_primitives( :dgt1        , β, wp, zspace, Πp, ψspace)
     p6b  = dcdp_primitives( :Dgt0        , β, wp, zspace, Πp, ψspace)
 
     p5a = dcdp_primitives( :dgt1_ext_restr, β, wp, zspace, Πp, ψspace)
     p7a = dcdp_primitives( :dgt1_ext      , β, wp, zspace, Πp, ψspace)
+
+    p5c = dcdp_primitives( :dgt1_d1_restr, β, wp, zspace, Πp, ψspace)
+    p7c = dcdp_primitives( :dgt1_d1      , β, wp, zspace, Πp, ψspace)
 
     σ = 0.25
 
@@ -25,6 +29,9 @@
 
     roy = 0.2
     geoid = 2
+
+    @test check_flowgrad(v5a, σ, p5c, geoid, roy)
+    @test check_flowgrad(v7a, σ, p7c, geoid, roy)
 
     @test check_flowgrad(v5a, σ, p5a, geoid, roy)
     @test check_flowgrad(v7a, σ, p7a, geoid, roy)
