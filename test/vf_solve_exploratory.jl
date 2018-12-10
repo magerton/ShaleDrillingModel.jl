@@ -71,7 +71,7 @@ zero!(tmpv)
     @test all(isfinite.(evs.dEV))
     @test all(isfinite.(fdEV))
 
-    @test fdEV ≈ evs.dEV
+    @test fdEV ≈ evs.dEV || maxv < 1.5e-6
     println("dEV/dθ looks ok! :)")
 end
 
@@ -132,7 +132,12 @@ end
         solve_vf_terminal!(evs, prim)
         solve_vf_infill!(evs, tmpv, prim, true)
         learningUpdate!(evs, tmpv, prim, σv, Val{true})
-        @test fdubv ≈ tmpv.dubV_σ
+
+        # test dubV_σ
+        maxv, idx = findmax(abs.(fdubv.-tmpv.dubV_σ))
+        sub = CartesianIndices(fdubv)[idx]
+        println("worst value is $maxv at $sub for dubV_σ")
+        @test fdubv ≈ tmpv.dubV_σ || maxv < 1.5e-6
         solve_vf_explore!(evs, tmpv, prim, true)
 
         # now test dσ
@@ -150,7 +155,7 @@ end
         @test all(isfinite.(fdEVσvw))
         @test 0.0 < maxv < 0.1
 
-        @test fdEVσvw ≈ evs.dEVσ
+        @test fdEVσvw ≈ evs.dEVσ || maxv < 1.5e-6
         println("dEV/dσ looks ok! :)")
     end
 end

@@ -1,14 +1,14 @@
 @testset "action probabilities" begin
     let royalty_rates = [0.25,],
-        geology_types = 1:1,
+        geology_types = [3.5,],
         nroy = length(royalty_rates),
         ngeo = length(geology_types),
         roy = royalty_rates[1],
         geoid = geology_types[1],
         itype = (geoid, roy,),
         pids = [1,],
-        rngs = (zspace...,      vspace, vspace, 0:dmax(wp), 1:length(wp), geology_types, royalty_rates,),
-        idxs = (1:2:31, 1:3:11, 1:5:51, 1:5:51, 0:dmax(wp), 1:length(wp), Base.OneTo(ngeo), Base.OneTo(nroy),),
+        rngs = (zspace...,                                        vspace, vspace, 0:dmax(wp), 1:length(wp), geology_types, royalty_rates,),
+        idxs = (2:2:length(zspace[1])-1, 2:3:length(zspace[2])-1, 1:5:51, 1:5:51, 0:dmax(wp), 1:length(wp), Base.OneTo(ngeo), Base.OneTo(nroy),),
         idx_sz = length.((θfull, idxs...)),
         prim = dcdp_primitives(flowfuncname, β, wp, zspace, Πp, ψspace),
         tmpv = dcdp_tmpvars(prim),
@@ -44,7 +44,7 @@
 
         dograd = true
 
-        serial_solve_vf_all!(sev, tmpv, prim, θfull, Val{dograd}; maxit0=12, maxit1=20, vftol=1e-10)
+        serial_solve_vf_all!(sev, tmpv, prim, θfull, Val{dograd}; maxit0=40, maxit1=20, vftol=1e-10)
         println("solved round 1. doing logP")
         grad .= 0.0
         for CI in CR
@@ -73,7 +73,7 @@
             σ2 = _σv(θ2)
 
 
-            serial_solve_vf_all!(sev, tmpv, prim, θ1, Val{dograd}; maxit0=12, maxit1=20, vftol=1e-10)
+            serial_solve_vf_all!(sev, tmpv, prim, θ1, Val{dograd}; maxit0=40, maxit1=20, vftol=1e-10)
             print("logp: θ[$k]-h\t")
             for CI in CR
                 zpi, zvi, ui, vi, di, si, gi, ri = CI.I
@@ -85,7 +85,7 @@
             end
 
             println("solving again for logp: θ[$k]+h....")
-            serial_solve_vf_all!(sev, tmpv, prim, θ2, Val{dograd}; maxit0=12, maxit1=20, vftol=1e-10)
+            serial_solve_vf_all!(sev, tmpv, prim, θ2, Val{dograd}; maxit0=40, maxit1=20, vftol=1e-10)
             println("updating fdgrad")
             for CI in CR
                 zpi, zvi, ui, vi, di, si, gi, ri = CI.I

@@ -14,6 +14,9 @@
     p5c = dcdp_primitives( :dgt1_d1_restr, β, wp, zspace, Πp, ψspace)
     p7c = dcdp_primitives( :dgt1_d1      , β, wp, zspace, Πp, ψspace)
 
+    p5d = dcdp_primitives( :dgt1_cost_restr, β, wp, (logp_space, logc_space, logσ_space,), Πpc, ψspace)
+    p7d = dcdp_primitives( :dgt1_cost      , β, wp, (logp_space, logc_space, logσ_space,), Πpc, ψspace)
+
     σ = 0.25
 
     a = STARTING_log_ogip # 0.561244
@@ -28,7 +31,10 @@
     v7a = [-4.28566, a, b, -4.71627, -5.80131, -0.2, -0.2, ]
 
     roy = 0.2
-    geoid = 2
+    geoid = 3.0
+
+    @test check_flowgrad(v5a, σ, p5d, geoid, roy)
+    @test check_flowgrad(v7a, σ, p7d, geoid, roy)
 
     @test check_flowgrad(v5a, σ, p5c, geoid, roy)
     @test check_flowgrad(v7a, σ, p7c, geoid, roy)

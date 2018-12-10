@@ -6,6 +6,7 @@ Calculus
 StatsBase
 Interpolations 0.8.0 0.9-
 Ratios
+ShaleDrillingData
 
 MarkovTransitionMatrices  # to make transition matrices
 

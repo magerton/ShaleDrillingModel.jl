@@ -1,4 +1,5 @@
 using ShaleDrillingModel
+using ShaleDrillingData
 using Test
 using StatsFuns
 using FileIO
@@ -9,7 +10,6 @@ using BenchmarkTools
 using MarkovTransitionMatrices
 using Plots
 using SparseArrays
-gr()
 
 
 # -----------------------------------------------------
@@ -29,68 +29,77 @@ nψ = 41
 ψspace = range(-4.0, stop=4.0, length=nψ)
 
 # initial parameters
-flowfuncname = :exproy_extend
-θt = [3.7, -13.0, 1.8, 2.4, 2.3, -6.5, -4.9, 2.4, -0.2, -1.7,]
-σv = 1.55
+flowfuncname = :dgt1_cost_restr
+θt = [-4.623, -6.309, -4.957, -0.2, -0.47,]
+σv = 0.1
 θfull = vcat(θt, σv)
 
-
 # discount
-β = (1.0234188 / 1.125) ^ (1.0/12.)
+β = (1.0234188 / 1.125) ^ (1.0/4.)
 
 # problem sizes
-wp = well_problem(7,8,120,60,24)
-
-# load datasets
-println("loading (old) transitions")
-datadir = joinpath(ENV["JULIA_PKG_DEVDIR"], "ShaleDrillingData", "data")
-# pvdat = load(joinpath(datadir, "price-vol-transitions.jld"))  # logpspace logσspace Πp
-pdat  = load(joinpath(datadir, "price-transitions.jld"))      # pspace Πp Πp1
-
-
-# -----------------------------------------------------
-#    Transition matrix construction
-# -----------------------------------------------------
-
-# make deviations
-zrandwalk(x::Real, st::Real, σ::Real) = (x - st) / σ
-
-# range for i,j block in matrix where block is n x n
-blockrange(i,j,n) = ((i-1)*n+1):(i*n),  ((j-1)*n+1):(j*n)
-
-extrema_logp = [0.8852633,  2.485073]
-extrema_logσ = [-3.372397, -2.060741]
-
-sdlogσ = 0.09381059
-nlogp = 35
-nlogσ = 11
+wp = well_problem(7,8,40,20,8)
 
 # sparse versions
 minp = 1e-4
 
-# make range for coefs
-logσspace = range(extrema_logσ[1] - 2*sdlogσ, stop=extrema_logσ[2] + 2*sdlogσ, length=nlogσ)
-logpspace = range(extrema_logp[1] - log(2.0), stop=extrema_logp[2] + log(2.0), length=nlogp)
+# make deviations
+zrandwalk(x1::Real, mu::Real, σ::Real) = (x1 - mu) / σ
+Elogc(x0::Real) = x0 + 0.1358467453 - 0.0007906602 * exp(x0)
+
+nlogp = 25
+nlogc = 13
+nlogσ = 9
+
+extrema_logp = [0.8510954,  2.405270]
+extrema_logc = [5.0805023,  5.318393]
+extrema_logσ = [-2.9558226, -1.542508]
+sdlogσ = 0.18667531
+cσ_to_pσ = 0.02777901 / 0.08488665
+
+    # make range for coefs
+logσ_space = range(extrema_logσ[1] - 2*sdlogσ, stop=extrema_logσ[2] + 2*sdlogσ, length=nlogσ)
+logp_space = range(extrema_logp[1] - log(2.0), stop=extrema_logp[2] + log(2.0), length=nlogp)
+logc_space = range(extrema_logc[1] - log(2.0), stop=extrema_logc[2] + log(2.0), length=nlogc)
+
+# range for i,j block in matrix where block is n x n
+blockrange(i,j,n) = ((i-1)*n+1):(i*n),  ((j-1)*n+1):(j*n)
 
 # create log σ discretization
-Pσ, JN, Λ, L_p1, approxErr = discreteNormalApprox(logσspace, logσspace, (x::Real,st::Real) -> zrandwalk(x,st,sdlogσ), 7)
+println("Discretizing log σ")
+Pσ, JN, Λ, L_p1, approxErr = discreteNormalApprox(logσ_space, logσ_space, (x::Real,st::Real) -> zrandwalk(x,st,sdlogσ), 7)
 all(sum(Pσ,dims=2) .≈ 1.0) || throw(error("each row of π must sum to 1"))
 
 # match moments for logp
-p_from_sigma(logσ::Real) = Dict( [:P, :JN, :Λ, :L, :approxErr,] .=> discreteNormalApprox(logpspace, logpspace, (x::Real,st::Real) -> zrandwalk(x, st, exp(logσ)), 11) )
-ps_from_sigma = Dict(logσspace .=> [p_from_sigma(logσ) for logσ in logσspace])
+p_from_sigma(logσ::Real) = Dict( [:P, :JN, :Λ, :L, :approxErr,] .=> discreteNormalApprox(logp_space, logp_space, (x1::Real,x0::Real) -> zrandwalk(x1, x0, exp(logσ)), 11) )
+c_from_sigma(logσ::Real) = Dict( [:P, :JN, :Λ, :L, :approxErr,] .=> discreteNormalApprox(logc_space, logc_space, (x1::Real,x0::Real) -> zrandwalk(x1, x0, exp(logσ)*cσ_to_pσ), 5) )
+
+println("Discretizing log p and log c")
+ps_from_sigma = [p_from_sigma(logσ) for logσ in logσ_space]
+cs_from_sigma = [c_from_sigma(logσ) for logσ in logσ_space]
 
 # Fill giant transition matrix
-P = Matrix{eltype(logpspace)}(undef, nlogp*nlogσ, nlogp*nlogσ)
-for (j, logσ) in enumerate(logσspace)
-  for i in 1:nlogσ
-    P[blockrange(i,j,nlogp)...] .= Pσ[i, j] .* ps_from_sigma[logσ][:P]
+println("Filling transition matrix")
+P  = Matrix{eltype(logp_space)}(undef, nlogp*nlogσ, nlogp*nlogσ)
+PC = Matrix{eltype(logp_space)}(undef, nlogp*nlogc*nlogσ, nlogp*nlogc*nlogσ)
+for (j, logσj) in enumerate(logσ_space)
+  for (i, logσi) in enumerate(logσ_space)
+    P[blockrange(i,j,nlogp)...]        .= Pσ[i, j] .* ps_from_sigma[i][:P]
+    PC[blockrange(i,j,nlogp*nlogc)...] .= Pσ[i, j] .* kron( cs_from_sigma[i][:P],  ps_from_sigma[i][:P])
   end
 end
 
 # sparsify transigion
-Πpvol = MarkovTransitionMatrices.sparsify!(P, minp)
-println("Πpvol has $(length(Πpvol.nzval)) values")
+Πp = MarkovTransitionMatrices.sparsify!(P, minp)
+Πpc = MarkovTransitionMatrices.sparsify!(PC, minp)
+P = 0.0 # destroy P
+PC = 0.0
+zspace = (logp_space, logσ_space,) # (logp_space, logc_space, logσ_space,)
+zcspace = (logp_space, logc_space, logσ_space,)
+
+# sparsify transigion
+println("Πp has $(length(Πp.nzval)) values")
+println("Πpc has $(length(Πpc.nzval)) values")
 
 # k = 11
 # Pxform = reshape(P, nlogp, nlogσ, nlogp, nlogσ)
@@ -102,7 +111,7 @@ println("Πpvol has $(length(Πpvol.nzval)) values")
 # sum(Pxform[35,:,35,:],dims=2)
 
 # plot moments matched for log P
-# plot(logpspace, [ps_from_sigma[sig][:L] for sig in logσspace ], yticks = 1:11, labels = ["$(round(exp(sig); digits=2))" for sig in logσspace], xlabel="Log p", ylabel="Moments matched")
+# plot(logp_space, [ps_from_sigma[sig][:L] for sig in logσ_space ], yticks = 1:11, labels = ["$(round(exp(sig); digits=2))" for sig in logσ_space], xlabel="Log p", ylabel="Moments matched")
 # savefig("D:/projects/royalty-rates-and-drilling/plots/moments-matched-logponly.pdf")
 
 
@@ -110,8 +119,8 @@ println("Πpvol has $(length(Πpvol.nzval)) values")
 #    speed tests
 # -----------------------------------------------------
 
-function prim_tmp_evs(zspace,Πp)
-    prim = dcdp_primitives(flowfuncname, β, wp, zspace, Πp, ψspace)
+function prim_tmp_evs(FFname, zzspace, bigp)
+    prim = dcdp_primitives(FFname, β, wp, zzspace, bigp, ψspace)
     tmpv = dcdp_tmpvars(prim)
     evs = dcdp_Emax(prim)
     ShaleDrillingModel.check_size(prim, evs)
@@ -122,7 +131,7 @@ end
 dograd = false
 pids = [1,]
 typidx = (11,3,)
-itypes = (geology_types,royalty_rates)
+itypes = (geology_types,royalty_rates,)
 typs = getindex.(itypes, typidx)
 
 # println("\n\ndoing NO vol")
@@ -136,10 +145,20 @@ typs = getindex.(itypes, typidx)
 # @btime solve_vf_all!(tup..., θfull, typs, dograd; maxit0=30, maxit1=20, vftol=1e-9)
 
 println("\n\ndoing giant price/vol matrix")
-tup = prim_tmp_evs((logpspace, logσspace,), Πpvol)
-println("Πp has $(length(tup[3].Πz.nzval)) values")
+tup = prim_tmp_evs(:dgt1_cost_restr, zcspace, Πpc)
+println("Πz has $(length(tup[3].Πz.nzval)) values")
 zero!(tup[1])
-@btime solve_vf_all!(tup..., θfull, typs, dograd; maxit0=30, maxit1=20, vftol=1e-9)
+
+@show @btime solve_vf_all!(tup..., θfull, typs, dograd; maxit0=30, maxit1=20, vftol=1e-8)
+@show @btime solve_vf_all!(tup..., θfull, typs, dograd; maxit0=40, maxit1=20, vftol=1e-8)
+@show @btime solve_vf_all!(tup..., θfull, typs, dograd; maxit0=50, maxit1=20, vftol=1e-8)
+
+tup = prim_tmp_evs(:dgt1_restr, zspace, Πp)
+println("Πz has $(length(tup[3].Πz.nzval)) values")
+zero!(tup[1])
+@btime solve_vf_all!(tup..., θfull, typs, dograd; maxit0=40, maxit1=20, vftol=1e-9)
+
+
 
 # println("\nSolving for all types")
 # sev = SharedEV(pids, tup[3], geology_types[1:3], royalty_rates[1:2])
