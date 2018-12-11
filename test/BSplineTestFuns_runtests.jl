@@ -7,7 +7,7 @@ using Random
 
 @testset "bspline funs" begin
 
-    x = SharedArray{Float64}(100, 100, 10, 10)
+    x = SharedArray{Float64}(100, 100, 10, 10; pids=[1,])
     endsz = (map(i -> size(x,i), 3:4)...,)
     rand!(x)
 

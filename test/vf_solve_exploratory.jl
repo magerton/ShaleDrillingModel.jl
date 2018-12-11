@@ -48,7 +48,7 @@ zero!(tmpv)
         fdEV[:,:,k,:] ./= hh
     end
 
-        # ----------------- analytic -----------------
+    # ----------------- analytic -----------------
 
     fillflows_grad!(tmpv, prim, θt, σv, itype...)
     solve_vf_terminal!(evs, prim)
@@ -56,16 +56,13 @@ zero!(tmpv)
     learningUpdate!(evs, tmpv, prim, σv)
     solve_vf_explore!(evs, tmpv, prim, true)
 
-    # infill
+    # check infill + learning portion gradient
     @views maxv, idx = findmax(abs.(fdEV[:,:,:,_nSexp(wp)+1:end].-evs.dEV[:,:,:,_nSexp(wp)+1:end]))
-    sub = CartesianIndices(fdEV)[idx]
-    println("worst value is $maxv at $sub for infill")
+    println("worst value is $maxv at $(CartesianIndices(fdEV)[idx]) for infill")
 
-
-    # exploration
+    # check exploration portion of gradient
     @views maxv, idx = findmax(abs.(fdEV[:,:,:,1:_nSexp(wp)].-evs.dEV[:,:,:,1:_nSexp(wp)]))
-    sub = CartesianIndices(fdEV)[idx]
-    println("worst value is $maxv at $sub for exploratory")
+    println("worst value is $maxv at $(CartesianIndices(fdEV)[idx]) for exploratory")
 
     @test 0.0 < maxv < 0.1
     @test all(isfinite.(evs.dEV))
@@ -135,27 +132,27 @@ end
 
         # test dubV_σ
         maxv, idx = findmax(abs.(fdubv.-tmpv.dubV_σ))
-        sub = CartesianIndices(fdubv)[idx]
-        println("worst value is $maxv at $sub for dubV_σ")
-        @test fdubv ≈ tmpv.dubV_σ || maxv < 1.5e-6
-        solve_vf_explore!(evs, tmpv, prim, true)
+        @test fdubv ≈ tmpv.dubV_σ || maxv < 6.0e-7
+        println("worst value is $maxv at $(CartesianIndices(fdubv)[idx]) for dubV_σ")
+        @show extrema(fdubv)
+        @show extrema(tmpv.dubV_σ)
 
         # now test dσ
+        solve_vf_explore!(evs, tmpv, prim, true)
         fdEVσvw = @view(fdEVσ[:,:,1:nsexp1])
         @test size(fdEVσvw) == size(evs.dEVσ)
-        @views maxv, idx = findmax(abs.(fdEVσvw.-evs.dEVσ))
-        sub = CartesianIndices(fdEVσvw)[idx]
-        println("worst value is $maxv at $sub for dσ")
+        maxv, idx = findmax(abs.(fdEVσvw.-evs.dEVσ))
+        println("worst value is $maxv at $(CartesianIndices(fdEVσvw)[idx]) for dσ")
         @show extrema(fdEVσvw)
         @show extrema(evs.dEVσ)
 
-        maximum(abs.((evs.dEVσ .- fdEVσvw)[:,:,2:end-1]))
+        @show maximum(abs.((evs.dEVσ .- fdEVσvw)[:,:,2:end-1]))
 
         @test all(isfinite.(evs.dEVσ))
         @test all(isfinite.(fdEVσvw))
         @test 0.0 < maxv < 0.1
 
-        @test fdEVσvw ≈ evs.dEVσ || maxv < 1.5e-6
+        @test fdEVσvw ≈ evs.dEVσ # || maxv < 1.5e-6
         println("dEV/dσ looks ok! :)")
     end
 end

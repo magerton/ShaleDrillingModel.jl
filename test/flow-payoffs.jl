@@ -14,8 +14,8 @@
     p5c = dcdp_primitives( :dgt1_d1_restr, β, wp, zspace, Πp, ψspace)
     p7c = dcdp_primitives( :dgt1_d1      , β, wp, zspace, Πp, ψspace)
 
-    p5d = dcdp_primitives( :dgt1_cost_restr, β, wp, (logp_space, logc_space, logσ_space,), Πpc, ψspace)
-    p7d = dcdp_primitives( :dgt1_cost      , β, wp, (logp_space, logc_space, logσ_space,), Πpc, ψspace)
+    p5d = dcdp_primitives( :dgt1_cost_restr, β, wp, (logp_space, logc_space, ), Πpconly, ψspace)
+    p7d = dcdp_primitives( :dgt1_cost      , β, wp, (logp_space, logc_space, ), Πpconly, ψspace)
 
     σ = 0.25
 

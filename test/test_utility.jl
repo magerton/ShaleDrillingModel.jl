@@ -11,13 +11,14 @@
    σ2 = σv + h
    hh = σ2 - σ1
 
-   pdct = Base.product(zspace..., ψspace, 0:dmax(wp), 0:0, false, true)
+   zpdct = Base.product(zspace...)
+   stpdct = Base.product(ψspace, 0:dmax(wp), 0:0, false, true)
 
-   fillflows!(flow(p), flow,  duex, θt, σ1, pdct, itype...)
-   fillflows!(flow(p), flow, fduex, θt, σ2, pdct, itype...)
+   fillflows!(flow(p), flow,  duex, θt, σ1, zpdct, stpdct, itype...)
+   fillflows!(flow(p), flow, fduex, θt, σ2, zpdct, stpdct, itype...)
    fduex .-= duex
    fduex ./= hh
-   fillflows!(flow(p), flowdσ, duex, θt, σv, makepdct(p, θt, Val{:u}, σv), itype...)
+   fillflows!(flow(p), flowdσ, duex, θt, σv, makepdct(p, θt, Val{:u}, σv)..., itype...)
 
    @views maxv, idx = findmax(abs.(duex .- fduex))
    sub = CartesianIndices(duex)[idx]

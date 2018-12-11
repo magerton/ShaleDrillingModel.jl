@@ -8,7 +8,7 @@
         itype = (geoid, roy,),
         pids = [1,],
         rngs = (zspace...,                                        vspace, vspace, 0:dmax(wp), 1:length(wp), geology_types, royalty_rates,),
-        idxs = (2:2:length(zspace[1])-1, 2:3:length(zspace[2])-1, 1:5:51, 1:5:51, 0:dmax(wp), 1:length(wp), Base.OneTo(ngeo), Base.OneTo(nroy),),
+        idxs = (2:2:length(zspace[1])-1, 2:3:length(zspace[2])-1, 1:5:nv, 1:5:nv, 0:dmax(wp), 1:length(wp), 1:ngeo,        1:nroy,),
         idx_sz = length.((θfull, idxs...)),
         prim = dcdp_primitives(flowfuncname, β, wp, zspace, Πp, ψspace),
         tmpv = dcdp_tmpvars(prim),
@@ -29,7 +29,7 @@
         zero!(sev)
         CR = CartesianIndices(length.(idxs))
 
-
+        # test that things just solve...
         let uv = (1.,1.), z = getindex.(zspace, 7), dp1 = 1, s_idx = 1, itypidx = (1, 1,), tmpgrad = Vector{Float64}(undef, idx_sz[1])
             θtvw = _θt(θfull, prim.nθt)
             σ0 = _σv(θfull)
@@ -112,9 +112,6 @@
         @test maxv < 1.5e-7
     end
 end
-
-
-
 
 
 

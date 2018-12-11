@@ -29,7 +29,7 @@ end
 flow(prim::dcdp_primitives{FF}) where {FF} = FF
 
 # help us go from big parameter vector for all types to the relevant one
-_σv(θ::AbstractVector) = θ[end]
+_σv(θ::AbstractVector) = last(θ)
 
 # allows for adding 1 unit for σv
 _θt(x::AbstractVector, nθt::Integer,          p1::Integer=0) = view(x, 1:nθt+p1)

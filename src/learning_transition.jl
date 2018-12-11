@@ -1,17 +1,5 @@
 export check_dΠψ, _dψ1dθρ, _ρ, _ψ2, _ψ1
 
-
-# FIXME: Δ is a function of σ because step(ψspace) = 2*numsd*(1+σ^2)/(numpts-1).
-#        This, however, means we have to comptue dψ/dσ ∀ ψ
-# if false
-#     _hΔ(σ::Real, nsd::Real, n::Int) = 0.5 * _ψstep(σ, nsd, n)
-#     _dhΔdσ(σ::Real, nsd::Real, n::Int) = 0.5 * _dψstepdσv(σ, nsd, n)
-#     _hΔ(σ::Real, nsd::Real, n::Int, h::Real) = _hΔ(σ+h, nsd, n)
-# end
-
-# levels versions
-# @inline _ρ(θρ::Real) = 2 * logistic(θρ) - 1
-# @inline _dρdθρ(θρ::Real) = (ex = exp(-θρ); 2 * ex / (1+ex)^2)
 @inline _ρ(θρ::Real) = logistic(θρ)
 @inline _dρdθρ(θρ::Real) = (z = logistic(θρ); z*(1-z) )
 
