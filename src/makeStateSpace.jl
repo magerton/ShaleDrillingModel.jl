@@ -50,7 +50,7 @@ end
 state_space(dmax::Integer, Dmax::Integer, τ0max::Integer) = state_space(dmax,Dmax,τ0max,-1,0)
 
 function state_space(dmax::Integer, Dmax::Integer, τ0max::Integer, τ1max::Integer, ext::Integer)::Vector{state}
-    dmax < Dmax || throw(DomainError())
+    dmax <= Dmax || throw(DomainError())
     # Primary term with extension
     exp1 = [state(τ1,ext,0,0) for τ1 in τ1max:-1:0]
     # Exploratory drilling (with terminal lease expiration)

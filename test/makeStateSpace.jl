@@ -1,3 +1,18 @@
+# @testset "new state space" begin
+  wp = well_problem(8, 8, 30, 20, 8)
+  for (i,s) in enumerate(wp.SS)
+      for d in  ShaleDrillingModel._actionspace(i,wp)
+          @test ShaleDrillingModel._sprime(i,d,wp) ∈ 1:length(wp)
+      end
+  end
+
+
+      collect(ShaleDrillingModel._sprime(i,d,ep) for d in ShaleDrillingModel._actionspace(i,dDte...))
+
+
+# end
+
+
 @testset "make State Space" begin
 
     let dmx = 3,
