@@ -21,7 +21,7 @@ jldpath = joinpath(dirname(pathof(ShaleDrillingData)), "..", "data/price-vol-tra
 @load jldpath logp_space logc_space logσ_space Πp Πpc Πpconly
 
 # some primitives
-β = (1.02 / 1.125) ^ (1.0/12.0)  # real discount rate
+β = (1.02 / 1.125) ^ (1.0/4.0)  # real discount rate
 royalty_rates = [0.125, 1.0/6.0, 0.1875, 0.20, 0.225, 0.25]
 royalty_types = 1:length(royalty_rates)
 geology_types = 1.3430409262656042:0.1925954901417719:5.194950729101042

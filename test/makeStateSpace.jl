@@ -1,21 +1,53 @@
-# @testset "new state space" begin
-  wp = well_problem(8, 8, 30, 20, 8)
+@testset "sprime is in 1:length(wp)?" begin
+  wp = well_problem(4, 4, 5, 3, 2)
   for (i,s) in enumerate(wp.SS)
       for d in  ShaleDrillingModel._actionspace(i,wp)
-          @test ShaleDrillingModel._sprime(i,d,wp) ∈ 1:length(wp)
+              ShaleDrillingModel._sprime(i,d,wp) ∈ 1:length(wp) || println("d = $d, i = $i with si = $(wp.SS[i]), sprime = $(ShaleDrillingModel._sprime(i,d,wp))")
+              @test ShaleDrillingModel._sprime(i,d,wp) ∈ 1:length(wp)
       end
   end
+end
 
 
-      collect(ShaleDrillingModel._sprime(i,d,ep) for d in ShaleDrillingModel._actionspace(i,dDte...))
+@testset "Drilling transitions are ok" begin
+    wp = well_problem(4, 4, 5, 3, 2)
+    nS = length(wp)
 
+    # infill: d1 == 0 cascades down
+    for i = wp.endpts[4]+2 : 2 : nS-1
+        @test ShaleDrillingModel._sprime(i,0,wp) == i
+    end
 
-# end
+    # infill: d1 == 1
+    for i = wp.endpts[4]+1 : 2 : nS-2
+        @test ShaleDrillingModel._sprime(i,0,wp) == i+1
+        for d in 1:ShaleDrillingModel._max_action(i,wp)
+            @test ShaleDrillingModel._sprime(i,d,wp) == i+2*d
+        end
+    end
+
+    # initial lease term
+    for i = 1 :  wp.endpts[2]-1
+        @test ShaleDrillingModel._sprime(i,0,wp) == i+1
+    end
+
+    # last lease term
+    for i = wp.endpts[2]+1 : wp.endpts[3]
+        @test ShaleDrillingModel._sprime(i,0,wp) == i+1
+    end
+
+    # any drilling during a primary term
+    for i = wp.endpts[1]+1 : wp.endpts[3]
+        for d = 1:4
+            @test ShaleDrillingModel._sprime(i,d,wp) == wp.endpts[3]+1+d
+        end
+    end
+end
 
 
 @testset "make State Space" begin
 
-    let dmx = 3,
+    let dmx = 4,
         Dmx = 4,
         τ0mx = 5,
         τ1mx = 3,

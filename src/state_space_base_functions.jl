@@ -131,6 +131,9 @@ function _max_action(s::Integer, dmx::Integer, Dmx::Integer, endpts::NTuple{6,In
     throw(DomainError())
 end
 
+@inline _max_action(s::Integer, wp::well_problem) = _max_action(s, wp.dmax, wp.Dmax, wp.endpts)
+
+
 function _num_actions(s::Integer, dmx::Integer, Dmx::Integer, endpts::NTuple{6,Int})::Int
     s <= endpts[1] && throw(DomainError(s, "s <= endpts[1] = $(endpts[1])"))
     s <= endpts[3] && return dmx+1
@@ -153,8 +156,8 @@ end
     elseif s <= endpts[4]
         return endpts[4] + 2*(s-endpts[3])-3  # was return endpts[3] + 2*d - 1. note d=(s-endpts[2]-1)
     elseif s < endpts[5]
-        d == 0  && return s + isodd(s-endpts[3])
-        d >  0  && return s + 2*d - iseven(s-endpts[3])
+        d == 0  && return s + iseven(s-endpts[3])
+        d >  0  && return s + 2*d - isodd(s-endpts[3])
     elseif s == endpts[5]
         return s
     else
