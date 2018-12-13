@@ -156,8 +156,8 @@ end
     elseif s <= endpts[4]
         return endpts[4] + 2*(s-endpts[3])-3  # was return endpts[3] + 2*d - 1. note d=(s-endpts[2]-1)
     elseif s < endpts[5]
-        d == 0  && return s + iseven(s-endpts[3])
-        d >  0  && return s + 2*d - isodd(s-endpts[3])
+        d == 0  && return s + isodd(s-endpts[4])
+        d >  0  && return s + 2*d - iseven(s-endpts[4])
     elseif s == endpts[5]
         return s
     else

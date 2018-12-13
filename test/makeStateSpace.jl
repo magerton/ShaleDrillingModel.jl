@@ -1,14 +1,3 @@
-@testset "sprime is in 1:length(wp)?" begin
-  wp = well_problem(4, 4, 5, 3, 2)
-  for (i,s) in enumerate(wp.SS)
-      for d in  ShaleDrillingModel._actionspace(i,wp)
-              ShaleDrillingModel._sprime(i,d,wp) ∈ 1:length(wp) || println("d = $d, i = $i with si = $(wp.SS[i]), sprime = $(ShaleDrillingModel._sprime(i,d,wp))")
-              @test ShaleDrillingModel._sprime(i,d,wp) ∈ 1:length(wp)
-      end
-  end
-end
-
-
 @testset "Drilling transitions are ok" begin
     wp = well_problem(4, 4, 5, 3, 2)
     nS = length(wp)
@@ -40,6 +29,36 @@ end
     for i = wp.endpts[1]+1 : wp.endpts[3]
         for d = 1:4
             @test ShaleDrillingModel._sprime(i,d,wp) == wp.endpts[3]+1+d
+        end
+    end
+end
+
+@testset "sprime is in 1:length(wp)?" begin
+    for dmx in 3:4
+        wp = well_problem(dmx, 4, 5, 3, 2)
+        for (i,s) in enumerate(wp.SS)
+            for d in  ShaleDrillingModel._actionspace(i,wp)
+                sp = ShaleDrillingModel._sprime(i,d,wp)
+                s = wp.SS[i]  # this state
+                t = wp.SS[sp] # next state
+                sp ∈ 1:length(wp) || println("dmax = $dmx d = $d, i = $i with si = $(wp.SS[i]), sprime = $(ShaleDrillingModel._sprime(i,d,wp))")
+                @test sp ∈ 1:length(wp)
+                @test t.D == s.D + d
+                if  i < length(wp) && i ∉ ShaleDrillingModel.ind_lrn(wp.endpts)
+                    @test t.d1 == Int(d > 0)
+                end
+
+                if i ∈ ShaleDrillingModel.ind_ex1(wp.endpts)
+                    @test t.τ1 == ( d == 0 ? s.τ1 -1 : -1)
+                    @test t.τ0 == ( d == 0 ? s.τ0 - (i == wp.endpts[2]) : -1)
+                end
+
+                if i ∈ ShaleDrillingModel.ind_ex0(wp.endpts)
+                    @test t.τ1 ==  s.τ1 == -1
+                    @test t.τ0 == ( d == 0 ? s.τ0 - 1 : -1)
+                end
+
+            end
         end
     end
 end
@@ -86,6 +105,7 @@ end
         @test idxs ⊆ 1:length(wp)
         @test 1:length(wp) ⊆ idxs
 
+        # test that we get back the state we want to get.
         for i in [ShaleDrillingModel.explore_state_inds(wp)..., ShaleDrillingModel.infill_state_inds(wp)..., ShaleDrillingModel.terminal_state_ind(wp)...,]
             st = SS[i]
             i_of_st = state_idx(st.τ1, st.τ0, st.D, st.d1,     dmx, Dmx, τ0mx, τ1mx, emx)

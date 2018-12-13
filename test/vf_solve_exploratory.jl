@@ -68,7 +68,7 @@ zero!(tmpv)
     @test all(isfinite.(evs.dEV))
     @test all(isfinite.(fdEV))
 
-    @test fdEV ≈ evs.dEV || maxv < 1.5e-6
+    @test fdEV ≈ evs.dEV || maxv < 1e-5
     println("dEV/dθ looks ok! :)")
 end
 
