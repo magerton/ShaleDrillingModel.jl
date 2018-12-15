@@ -39,9 +39,8 @@ end
     rev_exp(θ0,θ1,θ2,θ3,θ4,σ,logp,ψ,false,geoid, roy) * θ4 * _ρ(σ)
 end
 
-# const STARTING_σ_well   = 0x1.b4ebd272a442cp-2 # = 0.426681
-const STARTING_σ_ψ      = 0x1.de6481c8f3d3p-2 # = 0.4671 # 0x1.afc4f342cf11fp-2 # = 0.42165
-const STARTING_log_ogip = 0x1.bd03657dcfea3p-1 # = 0.8692  # 0x1.1f5b5085b8a6ap-1 # = 0.561244
+const STARTING_σ_ψ      = 0x1.baddbb87af68ap-2 # = 0.432
+const STARTING_log_ogip = 0x1.670bf3d5b282dp-1 # = 0.701
 
 @inline    rev_exp_restricted(θ1::T, σ::T, logp::Real, ψ::Real, Dgt0::Bool, geoid::Real, roy::Real) where {T} = rev_exp(   1, θ1, 1, STARTING_log_ogip, STARTING_σ_ψ, σ, logp, ψ, Dgt0, geoid, roy)
 @inline drevdσ_exp_restricted(θ1::T, σ::T, logp::Real, ψ::Real,             geoid::Real, roy::Real) where {T} = drevdσ_exp(1, θ1, 1, STARTING_log_ogip, STARTING_σ_ψ, σ, logp, ψ,       geoid, roy)
