@@ -22,7 +22,8 @@
 
     p6f = dcdp_primitives( :dgt1_pricecost_restr, β, wp, (logp_space, logc_space, ), Πpconly, ψspace)
     p8f = dcdp_primitives( :dgt1_pricecost      , β, wp, (logp_space, logc_space, ), Πpconly, ψspace)
-
+    p7f = dcdp_primitives( :dgt1_pricebreak_restr, β, wp, (logp_space, logc_space, ), Πpconly, ψspace)
+    p9f = dcdp_primitives( :dgt1_pricebreak      , β, wp, (logp_space, logc_space, ), Πpconly, ψspace)
 
     σ = 0.25
 
@@ -43,12 +44,17 @@
     v6f = [-4.28566,       1.0, -2.71627, -1.80131, -0.7, -0.2, ]
     v8f = [-4.28566, a, b, 1.0, -2.71627, -1.80131, -0.7, -0.2, ]
 
-    roy = 0.2
-    geoid = 3.0
+    v7f = [-4.28566,       1.0, 1.0, -2.71627, -1.80131, -0.7, -0.2, ]
+    v9f = [-4.28566, a, b, 1.0, 1.0, -2.71627, -1.80131, -0.7, -0.2, ]
+
+    roy = 0.225    # median royalty
+    geoid = 4.706  # median geology
+
+    @test check_flowgrad(v7f, σ, p7f, geoid, roy)
+    @test check_flowgrad(v9f, σ, p9f, geoid, roy)
 
     @test check_flowgrad(v6f, σ, p6f, geoid, roy)
     @test check_flowgrad(v8f, σ, p8f, geoid, roy)
-
 
     @test check_flowgrad(v6e, σ, p6e, geoid, roy)
     @test check_flowgrad(v8e, σ, p8e, geoid, roy)
