@@ -30,6 +30,9 @@
     p6g = dcdp_primitives( :cheby3_restr, β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
     p8g = dcdp_primitives( :cheby3      , β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
 
+    p7h = dcdp_primitives( :cheby3_dgt1_restr, β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
+    p9h = dcdp_primitives( :cheby3_dgt1      , β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
+
 
     σ = 0.25
 
@@ -56,6 +59,9 @@
     roy = 0.225    # median royalty
     geoid = 4.706  # median geology
 
+
+    @test check_flowgrad(v7f, σ, p7h, geoid, roy)
+    @test check_flowgrad(v9f, σ, p9h, geoid, roy)
 
     @test check_flowgrad(v5a, σ, p5g, geoid, roy)
     @test check_flowgrad(v7f, σ, p7g, geoid, roy)

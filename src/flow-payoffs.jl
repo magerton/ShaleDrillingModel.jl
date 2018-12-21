@@ -133,6 +133,33 @@ end
     return u::T
 end
 
+
+
+@inline function flow(::Type{Val{:cheby3_dgt1}}, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {N,T}
+    if d == 0
+        sgn_ext && return θ[9]
+        return zero(T)
+    end
+    x = last(z)
+    u = rev_exp(1,θ[1],1,θ[2],θ[3],σ,first(z),ψ,Dgt0,geoid, roy) + (d==1 ? θ[4] : θ[5] )*cheby0(x) + θ[6]*cheby1(x) + θ[7]*cheby2(x) + θ[8]*cheby3(x)
+    d>1 && (u *= d)
+    return u::T
+end
+
+@inline function flow(::Type{Val{:cheby3_dgt1_restr}}, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {N,T}
+    if d == 0
+        sgn_ext && return θ[7]
+        return zero(T)
+    end
+    x = last(z)
+    u = rev_exp_restricted(θ[1], σ, first(z), ψ, Dgt0, geoid, roy) + (d==1 ? θ[2] : θ[3] )*cheby0(x) + θ[4]*cheby1(x) + θ[5]*cheby2(x) + θ[6]*cheby3(x)
+    d>1 && (u *= d)
+    return u::T
+end
+
+
+
+
 # -----------------------------------------
 # number of parms
 # -----------------------------------------
@@ -142,9 +169,9 @@ function number_of_model_parms(FF::Symbol)::Int
     FF ∈ (:dgt1_restr,:Dgt0_restr,)                                              && return  4
     FF ∈ (:one,:dgt1_ext_restr, :dgt1_d1_restr,:dgt1_cost_restr,:cheby2_restr)   && return  5
     FF ∈ (:dgt1,:Dgt0,:dgt1_cost_Dgt0_restr,:dgt1_pricecost_restr,:cheby3_restr) && return  6
-    FF ∈ (:dgt1_ext,:dgt1_d1,:dgt1_cost,:dgt1_pricebreak_restr,:cheby2)          && return  7
-    FF ∈ (:dgt1_cost_Dgt0,:dgt1_pricecost,:cheby3)                               && return  8
-    FF ∈ (:dgt1_pricebreak,)                                                     && return  9
+    FF ∈ (:dgt1_ext,:dgt1_d1,:dgt1_cost,:dgt1_pricebreak_restr,:cheby2, :cheby3_dgt1_restr,)  && return  7
+    FF ∈ (:dgt1_cost_Dgt0,:dgt1_pricecost,:cheby3,)                               && return  8
+    FF ∈ (:dgt1_pricebreak,:cheby3_dgt1,)                                         && return  9
     # FF ∈ (:exproy_extend,)                      && return 10
     throw(error("FF = $(FF) not recognized"))
 end
@@ -238,6 +265,11 @@ end
 end
 
 
+
+
+
+
+
 @inline function flowdθ(::Type{Val{:cheby3}}, θ::AbstractVector{T}, σ::T,     z::NTuple{N,T}, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {N,T}
     d == 0 && !sgn_ext && return zero(T)
 
@@ -279,6 +311,50 @@ end
 end
 
 
+
+
+
+@inline function flowdθ(::Type{Val{:cheby3_dgt1}}, θ::AbstractVector{T}, σ::T,     z::NTuple{N,T}, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {N,T}
+    d == 0 && !sgn_ext && return zero(T)
+
+    # revenue
+    k == 1  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],σ,z[1],ψ,Dgt0,geoid,roy)
+    k == 2  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],σ,z[1],ψ,Dgt0,geoid,roy) * geoid
+    k == 3  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],σ,z[1],ψ,Dgt0,geoid,roy) * ( Dgt0 ? ψ : ψ*_ρ(σ) + θ[k]*(1-_ρ2(σ)))
+
+    # drilling cost
+    k == 4  && return d == 1 ? T( cheby0(z[2]) ) : zero(T)
+    k == 5  && return d <= 1 ? zero(T) : T( d*cheby0(z[2]) )
+    k == 6  && return d == 0 ? zero(T) : T( d*cheby1(z[2]) )
+    k == 7  && return d == 0 ? zero(T) : T( d*cheby2(z[2]) )
+    k == 8  && return d == 0 ? zero(T) : T( d*cheby3(z[2]) )
+
+    # extension cost
+    k == 9  && return d == 0 && sgn_ext ? one(T) : zero(T)
+
+    throw(error("$k out of bounds"))
+end
+
+
+
+@inline function flowdθ(::Type{Val{:cheby3_dgt1_restr}}, θ::AbstractVector{T}, σ::T,     z::NTuple{N,T}, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {N,T}
+    d == 0 && !sgn_ext && return zero(T)
+
+    # revenue
+    k == 1  && return   d * rev_exp_restricted(θ[1], σ, z[1], ψ, Dgt0, geoid, roy)
+
+    # drilling cost
+    k == 2  && return d == 1 ? T( cheby0(z[2]) ) : zero(T)
+    k == 3  && return d <= 1 ? zero(T) : T( d*cheby0(z[2]) )
+    k == 4  && return d == 0 ? zero(T) : T( d*cheby1(z[2]) )
+    k == 5  && return d == 0 ? zero(T) : T( d*cheby2(z[2]) )
+    k == 6  && return d == 0 ? zero(T) : T( d*cheby3(z[2]) )
+
+    # extension cost
+    k == 7  && return d == 0 && sgn_ext ? one(T) : zero(T)
+
+    throw(error("$k out of bounds"))
+end
 
 
 
