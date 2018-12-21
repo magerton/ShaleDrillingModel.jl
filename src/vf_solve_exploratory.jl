@@ -42,6 +42,18 @@ function solve_vf_explore!(
     for i in explore_state_inds(wp)
         ip = action0(wp,i)
 
+        # TODO: fillflows! for ubV, then ubV .+= β .* EV[:,:,actions()]
+        # algorithm
+        # (1) pin down EV[terminal]
+        # (2) fill u
+        # (3) form ubV[terminal-1] .= u[terminal-1] .+ β .* EV[terminal]
+        # (4) EV[terminal-1] .= logsumexp(ubV)
+        # (5) repeat 2-4
+
+        # so it makes sense that size(u) = (1:z, 1:ψ, 1:d, 1:wp)
+        # and size(du) = (nz,nψ,nθ,dmaxp1,nS)
+
+        # update ubV based on whether we have to pay for lease extension
         if i == wp.endpts[6]
             @views ubV[:,:,1] .= uex[:,:,1] .+ β .* EV[:,:,ip]
         else
