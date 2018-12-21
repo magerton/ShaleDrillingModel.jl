@@ -46,6 +46,20 @@ const STARTING_log_ogip = 0x1.670bf3d5b282dp-1 # = 0.701
 @inline drevdσ_exp_restricted(θ1::T, σ::T, logp::Real, ψ::Real,             geoid::Real, roy::Real) where {T} = drevdσ_exp(1, θ1, 1, STARTING_log_ogip, STARTING_σ_ψ, σ, logp, ψ,       geoid, roy)
 @inline drevdψ_exp_restricted(θ1::T, σ::T, logp::Real, ψ::Real,             geoid::Real, roy::Real) where {T} = drevdψ_exp(1, θ1, 1, STARTING_log_ogip, STARTING_σ_ψ, σ, logp, ψ,       geoid, roy)
 
+# Chebyshev polynomials
+# See http://www.aip.de/groups/soe/local/numres/bookcpdf/c5-8.pdf
+@inline checkinterval(x::Real,min::Real,max::Real) =  min <= x <= max || throw(DomainError("x = $x must be in [$min,$max]"))
+@inline checkinterval(x::Real) = checkinterval(x,-1,1)
+@inline cheby0(x::Real) = (checkinterval(x); return one(Float64))
+@inline cheby1(x::Real) = (checkinterval(x); return x)
+@inline cheby2(x::Real) = (checkinterval(x); return 2*x^2 - 1)
+@inline cheby3(x::Real) = (checkinterval(x); return 4*x^3 - 3*x)
+@inline cheby4(x::Real) = (checkinterval(x); return 8*(x^4 - x^2) + 1)
+
+# cheby03(x) = (cheby0(x), cheby1(x), cheby2(x), cheby3(x))
+# cheby03(0.2)
+
+
 # -----------------------------------------
 # Flows
 # -----------------------------------------
@@ -72,18 +86,65 @@ end
     return u::T
 end
 
+
+@inline function flow(::Type{Val{:cheby2}}, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {N,T}
+    if d == 0
+        sgn_ext && return θ[7]
+        return zero(T)
+    end
+    x = last(z)
+    u = rev_exp(1,θ[1],1,θ[2],θ[3],σ,first(z),ψ,Dgt0,geoid, roy) + θ[4]*cheby0(x) + θ[5]*cheby1(x) + θ[6]*cheby2(x)
+    d>1 && (u *= d)
+    return u::T
+end
+
+@inline function flow(::Type{Val{:cheby2_restr}}, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {N,T}
+    if d == 0
+        sgn_ext && return θ[5]
+        return zero(T)
+    end
+    x = last(z)
+    u = rev_exp_restricted(θ[1], σ, first(z), ψ, Dgt0, geoid, roy) + θ[2]*cheby0(x) + θ[3]*cheby1(x) + θ[4]*cheby2(x)
+    d>1 && (u *= d)
+    return u::T
+end
+
+
+
+@inline function flow(::Type{Val{:cheby3}}, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {N,T}
+    if d == 0
+        sgn_ext && return θ[8]
+        return zero(T)
+    end
+    x = last(z)
+    u = rev_exp(1,θ[1],1,θ[2],θ[3],σ,first(z),ψ,Dgt0,geoid, roy) + θ[4]*cheby0(x) + θ[5]*cheby1(x) + θ[6]*cheby2(x) + θ[7]*cheby3(x)
+    d>1 && (u *= d)
+    return u::T
+end
+
+@inline function flow(::Type{Val{:cheby3_restr}}, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {N,T}
+    if d == 0
+        sgn_ext && return θ[6]
+        return zero(T)
+    end
+    x = last(z)
+    u = rev_exp_restricted(θ[1], σ, first(z), ψ, Dgt0, geoid, roy) + θ[2]*cheby0(x) + θ[3]*cheby1(x) + θ[4]*cheby2(x) + θ[5]*cheby3(x)
+    d>1 && (u *= d)
+    return u::T
+end
+
 # -----------------------------------------
 # number of parms
 # -----------------------------------------
 
 function number_of_model_parms(FF::Symbol)::Int
-    FF ∈ (:one_restr,)                            && return  3
-    FF ∈ (:dgt1_restr,:Dgt0_restr,)               && return  4
-    FF ∈ (:one,:dgt1_ext_restr, :dgt1_d1_restr,:dgt1_cost_restr)         && return  5
-    FF ∈ (:dgt1,:Dgt0,:dgt1_cost_Dgt0_restr,:dgt1_pricecost_restr,)      && return  6
-    FF ∈ (:dgt1_ext,:dgt1_d1,:dgt1_cost,:dgt1_pricebreak_restr,)         && return  7
-    FF ∈ (:dgt1_cost_Dgt0,:dgt1_pricecost,)        && return  8
-    FF ∈ (:dgt1_pricebreak,)                       && return  9
+    FF ∈ (:one_restr,)                                                           && return  3
+    FF ∈ (:dgt1_restr,:Dgt0_restr,)                                              && return  4
+    FF ∈ (:one,:dgt1_ext_restr, :dgt1_d1_restr,:dgt1_cost_restr,:cheby2_restr)   && return  5
+    FF ∈ (:dgt1,:Dgt0,:dgt1_cost_Dgt0_restr,:dgt1_pricecost_restr,:cheby3_restr) && return  6
+    FF ∈ (:dgt1_ext,:dgt1_d1,:dgt1_cost,:dgt1_pricebreak_restr,:cheby2)          && return  7
+    FF ∈ (:dgt1_cost_Dgt0,:dgt1_pricecost,:cheby3)                               && return  8
+    FF ∈ (:dgt1_pricebreak,)                                                     && return  9
     # FF ∈ (:exproy_extend,)                      && return 10
     throw(error("FF = $(FF) not recognized"))
 end
@@ -126,6 +187,107 @@ end
 
     throw(error("$k out of bounds"))
 end
+
+
+
+
+
+
+
+
+
+
+
+
+@inline function flowdθ(::Type{Val{:cheby2}}, θ::AbstractVector{T}, σ::T,     z::NTuple{N,T}, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {N,T}
+    d == 0 && !sgn_ext && return zero(T)
+
+    # revenue
+    k == 1  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],σ,z[1],ψ,Dgt0,geoid,roy)
+    k == 2  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],σ,z[1],ψ,Dgt0,geoid,roy) * geoid
+    k == 3  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],σ,z[1],ψ,Dgt0,geoid,roy) * ( Dgt0 ? ψ : ψ*_ρ(σ) + θ[k]*(1-_ρ2(σ)))
+
+    # drilling cost
+    k == 4  && return d == 0 ? zero(T) : T( d*cheby0(z[2]) )
+    k == 5  && return d == 0 ? zero(T) : T( d*cheby1(z[2]) )
+    k == 6  && return d == 0 ? zero(T) : T( d*cheby2(z[2]) )
+
+    # extension cost
+    k == 7  && return d == 0 && sgn_ext ? one(T) : zero(T)
+
+    throw(error("$k out of bounds"))
+end
+
+
+
+@inline function flowdθ(::Type{Val{:cheby2_restr}}, θ::AbstractVector{T}, σ::T,     z::NTuple{N,T}, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {N,T}
+    d == 0 && !sgn_ext && return zero(T)
+
+    # revenue
+    k == 1  && return   d * rev_exp_restricted(θ[1], σ, z[1], ψ, Dgt0, geoid, roy)
+
+    # drilling cost
+    k == 2  && return d == 0 ? zero(T) : T( d*cheby0(z[2]) )
+    k == 3  && return d == 0 ? zero(T) : T( d*cheby1(z[2]) )
+    k == 4  && return d == 0 ? zero(T) : T( d*cheby2(z[2]) )
+
+    # extension cost
+    k == 5  && return d == 0 && sgn_ext ? one(T) : zero(T)
+
+    throw(error("$k out of bounds"))
+end
+
+
+@inline function flowdθ(::Type{Val{:cheby3}}, θ::AbstractVector{T}, σ::T,     z::NTuple{N,T}, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {N,T}
+    d == 0 && !sgn_ext && return zero(T)
+
+    # revenue
+    k == 1  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],σ,z[1],ψ,Dgt0,geoid,roy)
+    k == 2  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],σ,z[1],ψ,Dgt0,geoid,roy) * geoid
+    k == 3  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],σ,z[1],ψ,Dgt0,geoid,roy) * ( Dgt0 ? ψ : ψ*_ρ(σ) + θ[k]*(1-_ρ2(σ)))
+
+    # drilling cost
+    k == 4  && return d == 0 ? zero(T) : T( d*cheby0(z[2]) )
+    k == 5  && return d == 0 ? zero(T) : T( d*cheby1(z[2]) )
+    k == 6  && return d == 0 ? zero(T) : T( d*cheby2(z[2]) )
+    k == 7  && return d == 0 ? zero(T) : T( d*cheby3(z[2]) )
+
+    # extension cost
+    k == 8  && return d == 0 && sgn_ext ? one(T) : zero(T)
+
+    throw(error("$k out of bounds"))
+end
+
+
+
+@inline function flowdθ(::Type{Val{:cheby3_restr}}, θ::AbstractVector{T}, σ::T,     z::NTuple{N,T}, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {N,T}
+    d == 0 && !sgn_ext && return zero(T)
+
+    # revenue
+    k == 1  && return   d * rev_exp_restricted(θ[1], σ, z[1], ψ, Dgt0, geoid, roy)
+
+    # drilling cost
+    k == 2  && return d == 0 ? zero(T) : T( d*cheby0(z[2]) )
+    k == 3  && return d == 0 ? zero(T) : T( d*cheby1(z[2]) )
+    k == 4  && return d == 0 ? zero(T) : T( d*cheby2(z[2]) )
+    k == 5  && return d == 0 ? zero(T) : T( d*cheby3(z[2]) )
+
+    # extension cost
+    k == 6  && return d == 0 && sgn_ext ? one(T) : zero(T)
+
+    throw(error("$k out of bounds"))
+end
+
+
+
+
+
+
+
+
+
+
+
 
 
 # -----------------------------------------

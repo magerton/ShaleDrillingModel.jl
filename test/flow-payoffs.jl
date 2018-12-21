@@ -25,6 +25,12 @@
     p7f = dcdp_primitives( :dgt1_pricebreak_restr, β, wp, (logp_space, logc_space, ), Πpconly, ψspace)
     p9f = dcdp_primitives( :dgt1_pricebreak      , β, wp, (logp_space, logc_space, ), Πpconly, ψspace)
 
+    p5g = dcdp_primitives( :cheby2_restr, β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
+    p7g = dcdp_primitives( :cheby2      , β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
+    p6g = dcdp_primitives( :cheby3_restr, β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
+    p8g = dcdp_primitives( :cheby3      , β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
+
+
     σ = 0.25
 
     a = STARTING_log_ogip # 0.561244
@@ -49,6 +55,12 @@
 
     roy = 0.225    # median royalty
     geoid = 4.706  # median geology
+
+
+    @test check_flowgrad(v5a, σ, p5g, geoid, roy)
+    @test check_flowgrad(v7f, σ, p7g, geoid, roy)
+    @test check_flowgrad(v6f, σ, p6g, geoid, roy)
+    @test check_flowgrad(v8f, σ, p8g, geoid, roy)
 
     @test check_flowgrad(v7f, σ, p7f, geoid, roy)
     @test check_flowgrad(v9f, σ, p9f, geoid, roy)
