@@ -66,25 +66,6 @@ const STARTING_log_ogip = 0x1.670bf3d5b282dp-1 # = 0.701
 
 include("more-flow-payoffs.jl")
 
-@inline function flow(::Type{Val{:dgt1_pricebreak}}, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {N,T}
-    if d == 0
-        sgn_ext && return θ[9]
-        return zero(T)
-    end
-    u = rev_exp(1,θ[1],θ[4+Dgt0],θ[2],θ[3],σ,first(z),ψ,Dgt0,geoid, roy) + (d==1 ? θ[6] : θ[7] ) + θ[8]*exp(z[2])
-    d>1      && (u *= d)
-    return u::T
-end
-
-@inline function flow(::Type{Val{:dgt1_pricebreak_restr}}, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {N,T}
-    if d == 0
-        sgn_ext && return θ[7]
-        return zero(T)
-    end
-    u = rev_exp(1, θ[1], θ[2+Dgt0], STARTING_log_ogip, STARTING_σ_ψ, σ, first(z), ψ, Dgt0, geoid, roy) + (d==1 ? θ[4] : θ[5] ) + θ[6]*exp(z[2])
-    d>1      && (u *= d)
-    return u::T
-end
 
 
 @inline function flow(::Type{Val{:cheby2}}, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {N,T}
@@ -160,6 +141,31 @@ end
 
 
 
+@inline function flow(::Type{Val{:cheb3_cost}}, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {N,T}
+    if d == 0
+        sgn_ext && return θ[10]
+        return zero(T)
+    end
+    logp, logc, t = z
+    u = rev_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,Dgt0,geoid, roy) + (d==1 ? θ[4] : θ[5] )*cheby0(t) + θ[6]*cheby1(t) + θ[7]*cheby2(t) + θ[8]*cheby3(t) + θ[9]*exp(logc)
+    d>1 && (u *= d)
+    return u::T
+end
+
+@inline function flow(::Type{Val{:cheb3_cost_restr}}, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {N,T}
+    if d == 0
+        sgn_ext && return θ[8]
+        return zero(T)
+    end
+    logp, logc, t = z
+    u = rev_exp_restricted(θ[1], σ, logp, ψ, Dgt0, geoid, roy) + (d==1 ? θ[2] : θ[3] )*cheby0(t) + θ[4]*cheby1(t) + θ[5]*cheby2(t) + θ[6]*cheby3(t) + θ[7]*exp(logc)
+    d>1 && (u *= d)
+    return u::T
+end
+
+
+
+
 # -----------------------------------------
 # number of parms
 # -----------------------------------------
@@ -170,51 +176,15 @@ function number_of_model_parms(FF::Symbol)::Int
     FF ∈ (:one,:dgt1_ext_restr, :dgt1_d1_restr,:dgt1_cost_restr,:cheby2_restr)   && return  5
     FF ∈ (:dgt1,:Dgt0,:dgt1_cost_Dgt0_restr,:dgt1_pricecost_restr,:cheby3_restr) && return  6
     FF ∈ (:dgt1_ext,:dgt1_d1,:dgt1_cost,:dgt1_pricebreak_restr,:cheby2, :cheby3_dgt1_restr,)  && return  7
-    FF ∈ (:dgt1_cost_Dgt0,:dgt1_pricecost,:cheby3,)                               && return  8
+    FF ∈ (:dgt1_cost_Dgt0,:dgt1_pricecost,:cheby3,:cheb3_cost_restr,)             && return  8
     FF ∈ (:dgt1_pricebreak,:cheby3_dgt1,)                                         && return  9
-    # FF ∈ (:exproy_extend,)                      && return 10
+    FF ∈ (:cheb3_cost,)                                                           && return 10
     throw(error("FF = $(FF) not recognized"))
 end
 
 # -----------------------------------------
 # dθ
 # -----------------------------------------
-
-@inline function flowdθ(::Type{Val{:dgt1_pricebreak}}, θ::AbstractVector{T}, σ::T,    z::NTuple{N,T},  ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {N,T}
-    d == 0 && !sgn_ext && return zero(T)
-
-    k == 1  && return                   d * rev_exp(1,θ[1],θ[4+Dgt0],θ[2],θ[3],σ,z[1],ψ,Dgt0,geoid,roy)
-    k == 2  && return                   d * rev_exp(1,θ[1],θ[4+Dgt0],θ[2],θ[3],σ,z[1],ψ,Dgt0,geoid,roy) * geoid
-    k == 3  && return                   d * rev_exp(1,θ[1],θ[4+Dgt0],θ[2],θ[3],σ,z[1],ψ,Dgt0,geoid,roy) * ( Dgt0 ? ψ : ψ*_ρ(σ) + θ[k]*(1-_ρ2(σ)))
-    k == 4  && return  Dgt0 ? zero(T) : d * rev_exp(1,θ[1],θ[4+Dgt0],θ[2],θ[3],σ,z[1],ψ,Dgt0,geoid,roy) * first(z)
-    k == 5  && return !Dgt0 ? zero(T) : d * rev_exp(1,θ[1],θ[4+Dgt0],θ[2],θ[3],σ,z[1],ψ,Dgt0,geoid,roy) * first(z)
-
-    k == 6  && return  d  == 1 ? one(T)  : zero(T)
-    k == 7  && return  d  == 1 ? zero(T) : convert(T,d)
-    k == 8  && return  d*exp(z[2])
-
-    k == 9  && return d == 0 && sgn_ext ? one(T) : zero(T)
-
-    throw(error("$k out of bounds"))
-end
-
-
-@inline function flowdθ(::Type{Val{:dgt1_pricebreak_restr}}, θ::AbstractVector{T}, σ::T,    z::NTuple{N,T},  ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {N,T}
-    d == 0 && !sgn_ext && return zero(T)
-
-    k == 1  && return                   d * rev_exp(1, θ[1], θ[2+Dgt0], STARTING_log_ogip, STARTING_σ_ψ, σ,z[1],ψ,Dgt0,geoid,roy)
-    k == 2  && return  Dgt0 ? zero(T) : d * rev_exp(1, θ[1], θ[2+Dgt0], STARTING_log_ogip, STARTING_σ_ψ, σ,z[1],ψ,Dgt0,geoid,roy) * first(z)
-    k == 3  && return !Dgt0 ? zero(T) : d * rev_exp(1, θ[1], θ[2+Dgt0], STARTING_log_ogip, STARTING_σ_ψ, σ,z[1],ψ,Dgt0,geoid,roy) * first(z)
-
-    k == 4  && return  d  == 1 ? one(T)  : zero(T)
-    k == 5  && return  d  == 1 ? zero(T) : convert(T,d)
-    k == 6  && return  d*exp(z[2])
-
-    k == 7  && return d == 0 && sgn_ext ? one(T) : zero(T)
-
-    throw(error("$k out of bounds"))
-end
-
 
 
 
@@ -359,8 +329,52 @@ end
 
 
 
+@inline function flowdθ(::Type{Val{:cheb3_cost}}, θ::AbstractVector{T}, σ::T,     z::NTuple{N,T}, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {N,T}
+    d == 0 && !sgn_ext && return zero(T)
+
+    logp, logc, t = z
+
+    # revenue
+    k == 1  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,Dgt0,geoid,roy)
+    k == 2  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,Dgt0,geoid,roy) * geoid
+    k == 3  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],σ,logp,ψ,Dgt0,geoid,roy) * ( Dgt0 ? ψ : ψ*_ρ(σ) + θ[k]*(1-_ρ2(σ)))
+
+    # drilling cost
+    k == 4  && return d != 1 ? zero(T) : T(   cheby0(t) )
+    k == 5  && return d <= 1 ? zero(T) : T( d*cheby0(t) )
+    k == 6  && return d == 0 ? zero(T) : T( d*cheby1(t) )
+    k == 7  && return d == 0 ? zero(T) : T( d*cheby2(t) )
+    k == 8  && return d == 0 ? zero(T) : T( d*cheby3(t) )
+    k == 9  && return d == 0 ? zero(T) : T( d*exp(logc) )
+
+    # extension cost
+    k == 10  && return d == 0 && sgn_ext ? one(T) : zero(T)
+
+    throw(error("$k out of bounds"))
+end
 
 
+
+@inline function flowdθ(::Type{Val{:cheb3_cost_restr}}, θ::AbstractVector{T}, σ::T,     z::NTuple{N,T}, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {N,T}
+    d == 0 && !sgn_ext && return zero(T)
+
+    logp, logc, t = z
+
+    # revenue
+    k == 1  && return   d * rev_exp_restricted(θ[1], σ, logp, ψ, Dgt0, geoid, roy)
+
+    # drilling cost
+    k == 2  && return d != 1 ? zero(T) : T(   cheby0(t) )
+    k == 3  && return d <= 1 ? zero(T) : T( d*cheby0(t) )
+    k == 4  && return d == 0 ? zero(T) : T( d*cheby1(t) )
+    k == 5  && return d == 0 ? zero(T) : T( d*cheby2(t) )
+    k == 6  && return d == 0 ? zero(T) : T( d*cheby3(t) )
+    k == 7  && return d == 0 ? zero(T) : T( d*exp(logc) )
+    # extension cost
+    k == 8  && return d == 0 && sgn_ext ? one(T) : zero(T)
+
+    throw(error("$k out of bounds"))
+end
 
 
 
@@ -371,65 +385,30 @@ end
 # -----------------------------------------
 
 
-
-@inline function flowdσ(::FF, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, geoid::Real, roy::T)::T where {FF <: Union{ Type{Val{:dgt1_pricecost}} }, N, T}
+@inline function flowdσ(::FF, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, geoid::Real, roy::T)::T where {FF <: Union{ Type{Val{:one}}, Type{Val{:dgt1}}, Type{Val{:Dgt0}}, Type{Val{:dgt1_ext}}, Type{Val{:dgt1_d1}}, Type{Val{:dgt1_cost}}, Type{Val{:dgt1_cost_Dgt0}}, Type{Val{:cheby2}}, Type{Val{:cheby3}}, Type{Val{:cheby3_dgt1}}, Type{Val{:cheb3_cost}} }, N, T}
     d == 0 && return zero(T)
-    return d * drevdσ_exp(1,θ[1],θ[4],θ[2],θ[3],σ,first(z),ψ,geoid,roy)
+    return d * drevdσ_exp(1,θ[1],1,θ[2],θ[3],σ,z[1],ψ,geoid,roy)
 end
 
 
-@inline function flowdσ(::FF, θ::AbstractVector{T}, σ::T, z::NTuple{N,T},  ψ::T, d::Integer, geoid::Real, roy::T)::T where {FF <: Union{ Type{Val{:dgt1_pricecost_restr}} },N, T}
+@inline function flowdσ(::FF, θ::AbstractVector{T}, σ::T, z::NTuple{N,T},  ψ::T, d::Integer, geoid::Real, roy::T)::T where {FF <: Union{ Type{Val{:one_restr}}, Type{Val{:dgt1_restr}}, Type{Val{:Dgt0_restr}}, Type{Val{:dgt1_ext_restr}}, Type{Val{:dgt1_d1_restr}}, Type{Val{:dgt1_cost_restr}}, Type{Val{:dgt1_cost_Dgt0_restr}}, Type{Val{:cheby2_restr}}, Type{Val{:cheby3_restr}}, Type{Val{:cheby3_dgt1_restr}}, Type{Val{:cheb3_cost_restr}} },N, T}
     d == 0 && return zero(T)
-    return d * drevdσ_exp(1, θ[1], θ[2], STARTING_log_ogip, STARTING_σ_ψ, σ, first(z), ψ, geoid, roy)
+    return d * drevdσ_exp_restricted(θ[1],σ,z[1],ψ,geoid,roy)
 end
 
-
-
-
-# can do this b/c only needed for !Dgt0
-@inline function flowdσ(::FF, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, geoid::Real, roy::T)::T where {FF <: Union{ Type{Val{:dgt1_pricebreak}} }, N, T}
-    d == 0 && return zero(T)
-    Dgt0 = false
-    return d * drevdσ_exp(1,θ[1],θ[4+Dgt0],θ[2],θ[3],σ,first(z),ψ,geoid,roy)
-end
-
-
-@inline function flowdσ(::FF, θ::AbstractVector{T}, σ::T, z::NTuple{N,T},  ψ::T, d::Integer, geoid::Real, roy::T)::T where {FF <: Union{ Type{Val{:dgt1_pricebreak_restr}} },N, T}
-    d == 0 && return zero(T)
-    Dgt0 = false
-    return d * drevdσ_exp(1, θ[1], θ[2+Dgt0], STARTING_log_ogip, STARTING_σ_ψ, σ, first(z), ψ, geoid, roy)
-end
 
 
 # -----------------------------------------
 # dψ
 # -----------------------------------------
 
-
-@inline function flowdψ(::FF, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, sgn_ext::Bool, geoid::Real, roy::T) where {FF <: Union{ Type{Val{:dgt1_pricecost}} }, N, T}
+@inline function flowdψ(::FF, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, sgn_ext::Bool, geoid::Real, roy::T) where {FF <: Union{ Type{Val{:one}}, Type{Val{:dgt1}}, Type{Val{:Dgt0}}, Type{Val{:dgt1_d1}}, Type{Val{:dgt1_cost}}, Type{Val{:dgt1_cost_Dgt0}}, Type{Val{:cheby2}}, Type{Val{:cheby3}}, Type{Val{:cheby3_dgt1}}, Type{Val{:cheb3_cost}} },N, T}
     d == 0  && return zero(T) # sgn_ext ? θ[10] : zero(T)
-    return (d * drevdψ_exp(1,θ[1],θ[4],θ[2],θ[3],σ,first(z),ψ,geoid,roy))::T
+    return (d * drevdψ_exp(1,θ[1],1,θ[2],θ[3],σ,z[1],ψ,geoid,roy))::T
 end
 
 
-
-@inline function flowdψ(::FF, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, sgn_ext::Bool, geoid::Real, roy::T) where {FF <: Union{ Type{Val{:dgt1_pricecost_restr}} }, N, T}
+@inline function flowdψ(::FF, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, sgn_ext::Bool, geoid::Real, roy::T) where {FF <: Union{ Type{Val{:one_restr}}, Type{Val{:dgt1_restr}}, Type{Val{:Dgt0_restr}}, Type{Val{:dgt1_d1_restr}}, Type{Val{:dgt1_cost_restr}}, Type{Val{:dgt1_cost_Dgt0_restr}}, Type{Val{:cheby2_restr}}, Type{Val{:cheby3_restr}}, Type{Val{:cheby3_dgt1_restr}}, Type{Val{:cheb3_cost_restr}} },N, T}
     d == 0  && return zero(T) # sgn_ext ? θ[10] : zero(T)
-    return (d * drevdψ_exp(1,θ[1],θ[2], STARTING_log_ogip, STARTING_σ_ψ,σ,first(z),ψ,geoid,roy))::T
-end
-
-
-
-@inline function flowdψ(::FF, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, sgn_ext::Bool, geoid::Real, roy::T) where {FF <: Union{ Type{Val{:dgt1_pricebreak}} }, N, T}
-    d == 0  && return zero(T) # sgn_ext ? θ[10] : zero(T)
-    Dgt0 = false
-    return (d * drevdψ_exp(1,θ[1],θ[4+Dgt0],θ[2],θ[3],σ,first(z),ψ,geoid,roy))::T
-end
-
-
-
-@inline function flowdψ(::FF, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, sgn_ext::Bool, geoid::Real, roy::T) where {FF <: Union{ Type{Val{:dgt1_pricebreak_restr}} }, N, T}
-    d == 0  && return zero(T) # sgn_ext ? θ[10] : zero(T)
-    Dgt0 = false
-    return (d * drevdψ_exp(1,θ[1],θ[2+Dgt0], STARTING_log_ogip, STARTING_σ_ψ,σ,first(z),ψ,geoid,roy))::T
+    return (d * drevdψ_exp_restricted(θ[1],σ,z[1],ψ,geoid,roy))::T
 end

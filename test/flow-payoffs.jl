@@ -33,6 +33,8 @@
     p7h = dcdp_primitives( :cheby3_dgt1_restr, β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
     p9h = dcdp_primitives( :cheby3_dgt1      , β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
 
+    p8i = dcdp_primitives( :cheb3_cost_restr, β, wp,  (logp_space, logc_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
+    p10i = dcdp_primitives( :cheb3_cost      , β, wp, (logp_space, logc_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
 
     σ = 0.25
 
@@ -56,9 +58,14 @@
     v7f = [-4.28566,       1.0, 1.0, -2.71627, -1.80131, -0.7, -0.2, ]
     v9f = [-4.28566, a, b, 1.0, 1.0, -2.71627, -1.80131, -0.7, -0.2, ]
 
+    v8i  = [-3.58283,                     -13.9518*0.2, -12.5996*0.2, 11.6749*0.2, -6.40167*0.2, 2.0126*0.2, -0.2, -1.17545, ]
+    v10i = [-3.58283, 0.710067, 0.442882, -13.9518*0.2, -12.5996*0.2, 11.6749*0.2, -6.40167*0.2, 2.0126*0.2, -0.2, -1.17545, ]
+
     roy = 0.225    # median royalty
     geoid = 4.706  # median geology
 
+    @test check_flowgrad(v8i,  σ, p8i,  geoid, roy)
+    @test check_flowgrad(v10i, σ, p10i, geoid, roy)
 
     @test check_flowgrad(v7f, σ, p7h, geoid, roy)
     @test check_flowgrad(v9f, σ, p9h, geoid, roy)

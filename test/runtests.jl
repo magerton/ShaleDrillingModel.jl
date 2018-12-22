@@ -15,7 +15,6 @@ using Statistics
 using SparseArrays
 using Calculus
 
-
 # jldpath = Base.joinpath(Pkg.dir("ShaleDrillingData"), "data/price-transitions.jld")
 jldpath = joinpath(dirname(pathof(ShaleDrillingData)), "..", "data/price-vol-transitions.jld")
 @load jldpath logp_space logc_space logσ_space Πp Πpc Πpconly
@@ -50,33 +49,33 @@ include("BSplineTestFuns_runtests.jl")
 include("makeStateSpace.jl")
 include("flow-payoffs.jl")
 
-    # @testset  "testing flow gradients" begin
-    #     let geoid = 2, roy = 0.2
-    #         @test check_flowgrad(θt, σv, prim, geoid, roy)
-    #     end
-    #     @test check_dΠψ(σv, ψspace)
-    # end
-    #
-    # include("test_utility.jl")
-    # include("test_transition.jl")
-    #
-    # println("filling per-period payoffs")
-    #
-    # let geoid = 2, roy = 0.25, itype = (geoid, roy,)
-    #     @views fillflows!(flow(prim), flow, tmpv.uin[:,:,:,   1], tmpv.uin[:,:,:,   2], tmpv.uex, θt, σv, makepdct(prim, θt, Val{:u},  σv)..., itype...)
-    #     fillflows_grad!(tmpv, prim, θt, σv, itype...)
-    # end
-    #
-    # include("logsumexp3.jl")
-    #
-    # include("vf_solve_terminal_and_infill.jl")
-    # include("vf_solve_exploratory.jl")
-    #
-    # zero!(tmpv)
-    # let geoid = 2, roy = 0.25, itype = (geoid, roy,)
-    #     solve_vf_all!(evs, tmpv, prim, θt, σv, itype, Val{true})
-    # end
-    #
-    # include("vf_interpolation.jl")
-    # include("parallel_solution.jl")
-    # include("action_probabilities_new.jl")
+@testset  "testing flow gradients" begin
+    let geoid = 2, roy = 0.2
+        @test check_flowgrad(θt, σv, prim, geoid, roy)
+    end
+    @test check_dΠψ(σv, ψspace)
+end
+
+include("test_utility.jl")
+include("test_transition.jl")
+
+println("filling per-period payoffs")
+
+let geoid = 2, roy = 0.25, itype = (geoid, roy,)
+    @views fillflows!(flow(prim), flow, tmpv.uin[:,:,:,   1], tmpv.uin[:,:,:,   2], tmpv.uex, θt, σv, makepdct(prim, θt, Val{:u},  σv)..., itype...)
+    fillflows_grad!(tmpv, prim, θt, σv, itype...)
+end
+
+include("logsumexp3.jl")
+
+include("vf_solve_terminal_and_infill.jl")
+include("vf_solve_exploratory.jl")
+
+zero!(tmpv)
+let geoid = 2, roy = 0.25, itype = (geoid, roy,)
+    solve_vf_all!(evs, tmpv, prim, θt, σv, itype, Val{true})
+end
+
+include("vf_interpolation.jl")
+include("parallel_solution.jl")
+include("action_probabilities_new.jl")
