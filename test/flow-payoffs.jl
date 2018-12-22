@@ -25,13 +25,13 @@
     p7f = dcdp_primitives( :dgt1_pricebreak_restr, β, wp, (logp_space, logc_space, ), Πpconly, ψspace)
     p9f = dcdp_primitives( :dgt1_pricebreak      , β, wp, (logp_space, logc_space, ), Πpconly, ψspace)
 
-    p5g = dcdp_primitives( :cheby2_restr, β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
-    p7g = dcdp_primitives( :cheby2      , β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
-    p6g = dcdp_primitives( :cheby3_restr, β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
-    p8g = dcdp_primitives( :cheby3      , β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
+    p5g = dcdp_primitives( :cheb2_restr, β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
+    p7g = dcdp_primitives( :cheb2      , β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
+    p6g = dcdp_primitives( :cheb3_restr, β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
+    p8g = dcdp_primitives( :cheb3      , β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
 
-    p7h = dcdp_primitives( :cheby3_dgt1_restr, β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
-    p9h = dcdp_primitives( :cheby3_dgt1      , β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
+    p7h = dcdp_primitives( :cheb3_dgt1_restr, β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
+    p9h = dcdp_primitives( :cheb3_dgt1      , β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
 
     p8i = dcdp_primitives( :cheb3_cost_restr, β, wp,  (logp_space, logc_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
     p10i = dcdp_primitives( :cheb3_cost      , β, wp, (logp_space, logc_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
