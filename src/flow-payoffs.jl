@@ -1,18 +1,11 @@
 export flow, flowdθ, flowdσ, flowdψ, STARTING_σ_ψ, STARTING_log_ogip
 
 
-# functions in case we have volatility regime
-# @inline flowrev(FF::Type, θ::AbstractVector{T}, σ::T, logp::T,          logvol::Real, ψ::T,             d::Integer, d1::Integer, Dgt0::Bool,                geoid::Real, roy::T) where {T} = flowrev(FF, θ, σ, logp,       ψ,    d, d1, Dgt0,                  geoid, roy)
-# @inline flow(   FF::Type, θ::AbstractVector{T}, σ::T, logp::T,          logvol::Real, ψ::T,             d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {T} = flow(   FF, θ, σ, logp,       ψ,    d, d1, Dgt0, sgn_ext,         geoid, roy)
-# @inline flowdθ( FF::Type, θ::AbstractVector{T}, σ::T, logp::T,          logvol::Real, ψ::T, k::Integer, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {T} = flowdθ( FF, θ, σ, logp,       ψ, k, d, d1, Dgt0, sgn_ext,         geoid, roy)
-#
-# @inline flowdψ( FF::Type, θ::AbstractVector{T}, σ::T, logp::T,           logvol::Real, ψ::T,             d::Integer, st::Union{state,Bool},                  geoid::Real, roy::T) where {T} = flowdψ( FF, θ, σ, logp, ψ,    d, st,                        geoid, roy)
-# @inline flowdψ( FF::Type, θ::AbstractVector{T}, σ::T, logp::T, logc::T,  logvol::Real, ψ::T,             d::Integer, st::Union{state,Bool},                  geoid::Real, roy::T) where {T} = flowdψ( FF, θ, σ, logp, ψ,    d, st,                        geoid, roy)
-# @inline flowdψ( FF::Type, θ::AbstractVector{T}, σ::T, logp::T,                         ψ::T,             d::Integer, st::state,                              geoid::Real, roy::T) where {T} = flowdψ( FF, θ, σ, logp, ψ,    d, _sign_lease_extension(st), geoid, roy)
-# @inline flowdψ( FF::Type, θ::AbstractVector{T}, σ::T, logp::T, logc::T,                ψ::T,             d::Integer, st::state,                              geoid::Real, roy::T) where {T} = flowdψ( FF, θ, σ, logp, ψ,    d, _sign_lease_extension(st), geoid, roy)
-#
-# @inline flowdσ( FF::Type, θ::AbstractVector{T}, σ::T, logp::T,          logvol::Real, ψ::T, d::Integer, geoid::Real, roy::T) where {T} = flowdσ( FF, θ, σ, logp, ψ, d, geoid, roy)
-# @inline flowdσ( FF::Type, θ::AbstractVector{T}, σ::T, logp::T, logc::T, logvol::Real, ψ::T, d::Integer, geoid::Real, roy::T) where {T} = flowdσ( FF, θ, σ, logp, ψ, d, geoid, roy)
+# functions in case we have months to expiration
+@inline function flow(  FF::Type, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T,             d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, τ::Integer, geoid::Real, roy::T)::T where {N,T} = flow(  FF, θ, σ, z, ψ,    d, d1, Dgt0, sgn_ext, geoid, roy)
+@inline function flowdθ(FF::Type, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, k::Integer, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, τ::Integer, geoid::Real, roy::T)::T where {N,T} = flowdθ(FF, θ, σ, z, ψ, k, d, d1, Dgt0, sgn_ext, geoid, roy)
+@inline function flowdσ(FF::Type, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T,             d::Integer,                                         τ::Integer, geoid::Real, roy::T)::T where {N,T} = flowdσ(FF, θ, σ, z, ψ,    d,                    geoid, roy)
+@inline function flowdψ(FF::Type, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T,             d::Integer,                          sgn_ext::Bool, τ::Integer, geoid::Real, roy::T)::T where {N,T} = flowdψ(FF, θ, σ, z, ψ,    d,           sgn_ext, geoid, roy)
 
 # --------------------------- common revenue functions & derivatives  --------------------------------------
 

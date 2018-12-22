@@ -18,7 +18,7 @@
    fillflows!(flow(p), flow, fduex, θt, σ2, zpdct, stpdct, itype...)
    fduex .-= duex
    fduex ./= hh
-   fillflows!(flow(p), flowdσ, duex, θt, σv, makepdct(p, θt, Val{:u}, σv)..., itype...)
+   fillflows!(flow(p), flowdσ, duex, θt, σv, makepdct(p, Val{:u})..., itype...)
 
    @views maxv, idx = findmax(abs.(duex .- fduex))
    sub = CartesianIndices(duex)[idx]

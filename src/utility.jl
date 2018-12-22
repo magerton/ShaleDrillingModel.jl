@@ -27,17 +27,13 @@ function tweakstate(st::Tuple,  h::Real)
 end
 
 # fduσ(f::Function, θ::AbstractVector{T}, σ::T, st::Tuple, d1::Integer, Dgt0::Bool, roy::Real, h::T) where {T} = u(θ, σ+h, st..., d1, Dgt0, roy)
-flowfdψ(FF::Type, θ::AbstractVector{T},  σ::T, z::Tuple, st::Tuple, d1::Integer, Dgt0::Bool, sgnext::Bool, h::T, itype::Real...) where {T} = flow(FF, θ, σ, z, tweakstate(st, h)..., d1, Dgt0, sgnext, itype...)
+flowfdψ(FF::Type, θ::AbstractVector{T},  σ::T, z::Tuple, st::Tuple, d1::Integer, Dgt0::Bool, sgnext::Bool, τrem::Integer, h::T, itype::Real...) where {T} = flow(FF, θ, σ, z, tweakstate(st, h)..., d1, Dgt0, sgnext, τrem, itype...)
 
 # ------------------------------------ wrapper for all flows   -----------------
 
 makepdct(zspace::Tuple, ψspace::AbstractRange, wp::well_problem, nθt::Integer, ::Type{Val{:u}})  = Base.product(zspace...), Base.product(ψspace,         0:dmax(wp))
 makepdct(zspace::Tuple, ψspace::AbstractRange, wp::well_problem, nθt::Integer, ::Type{Val{:du}}) = Base.product(zspace...), Base.product(ψspace, 1:nθt,  0:dmax(wp))
-
-makepdct(zspace::Tuple, ψspace::StepRangeLen, wp::well_problem, θt::AbstractVector, typ::Type             ) = makepdct(zspace,      ψspace,      wp, length(θt), typ)
-makepdct(p::dcdp_primitives,                                                        typ::Type, σ::Real=1.0) = makepdct(_zspace(p), _ψspace(p), p.wp, _nθt(p),    typ)
-makepdct(p::dcdp_primitives,                                    nθt::Integer,       typ::Type, σ::Real=1.0) = makepdct(_zspace(p), _ψspace(p), p.wp, nθt,        typ)
-makepdct(p::dcdp_primitives,                                    θt::AbstractVector, typ::Type, σ::Real=1.0) = makepdct(p, length(θt), typ, σ)
+makepdct(p::dcdp_primitives, typ::Type) = makepdct(_zspace(p), _ψspace(p), p.wp, _nθt(p), typ)
 
 # ------------------------ check flow grad --------------
 
@@ -48,38 +44,41 @@ function check_flowgrad(FF::Type, θ::AbstractVector{T}, σ::T, zspace::Tuple, �
 
     isok = true
 
-    zpdct, stpdct = makepdct(zspace, ψspace, wp, θ, Val{:u})
+    zpdct, stpdct = makepdct(zspace, ψspace, wp, length(θ), Val{:u})
 
     for st in stpdct, z in zpdct
-        for d1Dgt0 in [(0,true,false,), (1,true,false,), (0,false,false,), (0,false,true,)]
-            u(θ) = flow(FF, θ, σ, z, st..., d1Dgt0..., itype...)
-            duθ!(dx,    FF, θ, σ, z, st,    d1Dgt0..., itype...)
-            Calculus.finite_difference!(u, θ, dxfd, :central)
-            if !(dxfd ≈ dx)
-                @warn "FF = $FF. Bad θ diff at $st, $d1Dgt0. du=$dx and fd = $dxfd"
+        # Loop over deterministic states... (d1::Integer, Dgt0::Bool, sgn_ext::Bool, τ::Integer, )
+        for τrem in 20:5:0
+            for d1Dgt0 in [(0,true,false,τrem,), (1,true,false,τrem,), (0,false,false,τrem,), (0,false,true,τrem,)]
+                u(θ) = flow(FF, θ, σ, z, st..., d1Dgt0..., itype...)
+                duθ!(dx,    FF, θ, σ, z, st,    d1Dgt0..., itype...)
+                Calculus.finite_difference!(u, θ, dxfd, :central)
+                if !(dxfd ≈ dx)
+                    @warn "FF = $FF. Bad θ diff at $st, $d1Dgt0. du=$dx and fd = $dxfd"
+                    return false
+                end
+            end
+
+            # check σ
+            d1 = 0
+            Dgt0 = false
+            sgnext = true
+            dσ = flowdσ(FF, θ, σ, z, st..., itype...)
+            fdσ = Calculus.derivative((σh::Real) ->  flow(FF, θ, σh, z, st..., d1, Dgt0, sgnext, τrem, itype...), σ, :central)
+            if !(dσ ≈ fdσ) && !isapprox(dσ,fdσ, atol= 1e-7)
+                @warn "Bad σ diff at (z,st,) = $((z,st,)). duσ = $dσ and fd = $fdσ"
                 return false
             end
-        end
 
-        # check σ
-        d1 = 0
-        Dgt0 = false
-        sgnext = true
-        dσ = flowdσ(FF, θ, σ, z, st..., itype...)
-        fdσ = Calculus.derivative((σh::Real) ->  flow(FF, θ, σh, z, st..., d1, Dgt0, sgnext, itype...), σ, :central)
-        if !(dσ ≈ fdσ) && !isapprox(dσ,fdσ, atol= 1e-7)
-            @warn "Bad σ diff at (z,st,) = $((z,st,)). duσ = $dσ and fd = $fdσ"
-            return false
-        end
+            # check ψ
+            for sgnext in (true,false,)
+                dψ = flowdψ(FF, θ, σ, z, st..., sgnext, itype...)
+                fdψ = Calculus.derivative((h::Real) -> flowfdψ(FF, θ, σ, z, st, d1, Dgt0, sgnext, τrem, h, itype...), 0.0, :central)
 
-        # check ψ
-        for sgnext in (true,false,)
-            dψ = flowdψ(FF, θ, σ, z, st..., sgnext, itype...)
-            fdψ = Calculus.derivative((h::Real) -> flowfdψ(FF, θ, σ, z, st, d1, Dgt0, sgnext, h, itype...), 0.0, :central)
-
-            if !(dψ ≈ fdψ) && !isapprox(dψ, fdψ, atol=1e-7)
-                @warn "Bad ψ diff at (z,st,) = $((z,st,)). duψ = $dψ and fdψ = $fdψ"
-                return false
+                if !(dψ ≈ fdψ) && !isapprox(dψ, fdψ, atol=1e-7)
+                    @warn "Bad ψ diff at (z,st,) = $((z,st,)). duψ = $dψ and fdψ = $fdψ"
+                    return false
+                end
             end
         end
     end
@@ -133,12 +132,12 @@ end
 # fill the flow-payoff (levels)
 fillflows!(FF::Type, uin::AbstractArray4, uex::AbstractArray3, θ::AbstractVector, σ::Real, zpdct::Base.Iterators.ProductIterator, stpdct::Base.Iterators.ProductIterator, itype::Real...)            = @views fillflows!(FF, flow, uin[:,:,:,1], uin[:,:,:,2],   uex, θ, σ, zpdct, stpdct, itype...)
 fillflows!(t::dcdp_tmpvars, p::dcdp_primitives{FF},            θ::AbstractVector, σ::Real, zpdct::Base.Iterators.ProductIterator, stpdct::Base.Iterators.ProductIterator, itype::Real...) where {FF} =        fillflows!(FF, t.uin,                            t.uex, θ, σ, zpdct, stpdct, itype...)
-fillflows!(t::dcdp_tmpvars, p::dcdp_primitives{FF},            θ::AbstractVector, σ::Real,                                                                                itype::Real...) where {FF} =        fillflows!(t, p, θ, σ,        makepdct(p, θ, Val{:u}, σ)...,                 itype...)
+fillflows!(t::dcdp_tmpvars, p::dcdp_primitives{FF},            θ::AbstractVector, σ::Real,                                                                                itype::Real...) where {FF} =        fillflows!(t, p, θ, σ,                              makepdct(p, Val{:u})..., itype...)
 
 function fillflows_grad!(t::dcdp_tmpvars, p::dcdp_primitives{FF}, θ::AbstractVector, σ::Real, itype::Real...) where {FF}
-    @views fillflows!(FF, flow,   t.uin[:,:,:,   1], t.uin[:,:,:,   2],  t.uex, θ, σ, makepdct(p, θ, Val{:u},  σ)..., itype...)
-    @views fillflows!(FF, flowdθ, t.duin[:,:,:,:,1], t.duin[:,:,:,:,2], t.duex, θ, σ, makepdct(p, θ, Val{:du}, σ)..., itype...)
-    fillflows!(       FF, flowdσ,                                      t.duexσ, θ, σ, makepdct(p, θ, Val{:u},  σ)..., itype...)
+    @views fillflows!(FF, flow,   t.uin[:,:,:,   1], t.uin[:,:,:,   2],  t.uex, θ, σ, makepdct(p, Val{:u})..., itype...)
+    @views fillflows!(FF, flowdθ, t.duin[:,:,:,:,1], t.duin[:,:,:,:,2], t.duex, θ, σ, makepdct(p, Val{:du})..., itype...)
+    fillflows!(       FF, flowdσ,                                      t.duexσ, θ, σ, makepdct(p, Val{:u})..., itype...)
 end
 
 
