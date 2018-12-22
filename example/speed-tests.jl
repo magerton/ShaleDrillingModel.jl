@@ -6,6 +6,7 @@ using FileIO
 using Interpolations
 using Statistics
 using SparseArrays
+using LinearAlgebra
 using BenchmarkTools
 using MarkovTransitionMatrices
 using Plots
@@ -13,92 +14,120 @@ using SparseArrays
 
 
 # -----------------------------------------------------
-#    Other VF parameters
+# VF setup
 # -----------------------------------------------------
 
-
-# royalty rates
-royalty_rates = [0.125, 1.0/6.0, 0.1875, 0.20, 0.225, 0.25]
-royalty_types = 1:length(royalty_rates)
-
-# geology types
-geology_types = range(1.3430409262656042, stop=5.194950729101042, length=21)
-
-# grids for prices & unobserved heterogeneity
-nψ = 41
-ψspace = range(-4.0, stop=4.0, length=nψ)
-
 # initial parameters
-flowfuncname = :dgt1_cost_restr
-θt = [-4.623, -6.309, -4.957, -0.2, -0.47,]
-σv = 0.1
-θfull = vcat(θt, σv)
+FF = :cheb3_cost_restr
+θfull = [-3.58283, -13.9518*0.3, -12.5996*0.3, 11.6749*0.3, -6.40167*0.3, 2.0126*0.3, -1.0, -1.17545, 0.673459,]
 
 # discount
 β = (1.0234188 / 1.125) ^ (1.0/4.)
 
 # problem sizes
-wp = well_problem(7,8,40,20,8)
+wp = well_problem(8, 8, 30, 20, 8)
 
-# sparse versions
+# -----------------------------------------------------
+# Price matrix
+# -----------------------------------------------------
+
 minp = 1e-4
 
 # make deviations
 zrandwalk(x1::Real, mu::Real, σ::Real) = (x1 - mu) / σ
-Elogc(x0::Real) = x0 + 0.1358467453 - 0.0007906602 * exp(x0)
+Elogc(x0::Real) = x0 + 0.017992141 - 0.004975763 * exp(x0)
 
-nlogp = 25
-nlogc = 13
+N_YEARS = 14
+nlogp = 17
+nlogc = 17
 nlogσ = 9
 
-extrema_logp = [0.8510954,  2.405270]
-extrema_logc = [5.0805023,  5.318393]
-extrema_logσ = [-2.9558226, -1.542508]
-sdlogσ = 0.18667531
+extrema_logp = [0.7923374  2.443669]
+extrema_logc = [0.5520625  1.446025]
+extrema_logσ = [-2.7975151 -1.579074]
+sd_logp = 0.10037167
+sd_logc = 0.05040059
+sd_logσ = 0.18021598
 cσ_to_pσ = 0.02777901 / 0.08488665
 
-    # make range for coefs
-logσ_space = range(extrema_logσ[1] - 2*sdlogσ, stop=extrema_logσ[2] + 2*sdlogσ, length=nlogσ)
+# make range for coefs
+logσ_space = range(extrema_logσ[1] - 2*sd_logσ, stop=extrema_logσ[2] + 2*sd_logσ, length=nlogσ)
 logp_space = range(extrema_logp[1] - log(2.0), stop=extrema_logp[2] + log(2.0), length=nlogp)
 logc_space = range(extrema_logc[1] - log(2.0), stop=extrema_logc[2] + log(2.0), length=nlogc)
+year_space = LinRange(-1, 1, N_YEARS)  # Using a LinRange is a bit hacky -- internally it goes to a BSpline(Constant()) instead of Bspline(Quadratic()), but then converts to StepRangeLen
 
 # range for i,j block in matrix where block is n x n
 blockrange(i,j,n) = ((i-1)*n+1):(i*n),  ((j-1)*n+1):(j*n)
 
 # create log σ discretization
 println("Discretizing log σ")
-Pσ, JN, Λ, L_p1, approxErr = discreteNormalApprox(logσ_space, logσ_space, (x::Real,st::Real) -> zrandwalk(x,st,sdlogσ), 7)
+flush(stdout)
+Pσ, JN, myΛ, L_p1, approxErr = discreteNormalApprox(logσ_space, logσ_space, (x::Real,st::Real) -> zrandwalk(x,st,sd_logσ), 7)
 all(sum(Pσ,dims=2) .≈ 1.0) || throw(error("each row of π must sum to 1"))
 
 # match moments for logp
-p_from_sigma(logσ::Real) = Dict( [:P, :JN, :Λ, :L, :approxErr,] .=> discreteNormalApprox(logp_space, logp_space, (x1::Real,x0::Real) -> zrandwalk(x1, x0, exp(logσ)), 11) )
-c_from_sigma(logσ::Real) = Dict( [:P, :JN, :Λ, :L, :approxErr,] .=> discreteNormalApprox(logc_space, logc_space, (x1::Real,x0::Real) -> zrandwalk(x1, x0, exp(logσ)*cσ_to_pσ), 5) )
+p_from_sigma(logσ::Real) = Dict( [:P, :JN, :Λ, :L, :approxErr,] .=> discreteNormalApprox(logp_space, logp_space, (x1::Real,x0::Real) -> zrandwalk(x1, x0, sd_logp), 11) )
+c_from_sigma(logσ::Real) = Dict( [:P, :JN, :Λ, :L, :approxErr,] .=> discreteNormalApprox(logc_space, logc_space, (x1::Real,x0::Real) -> zrandwalk(x1, Elogc(x0), sd_logc), 11) )
+P_year = Matrix(Tridiagonal(zeros(N_YEARS-1), vcat(fill(0.75,N_YEARS-1), 1.0), fill(0.25, N_YEARS-1)))
 
-println("Discretizing log p and log c")
-ps_from_sigma = [p_from_sigma(logσ) for logσ in logσ_space]
-cs_from_sigma = [c_from_sigma(logσ) for logσ in logσ_space]
+# println("Discretizing log p and log c")
+# ps_from_sigma = [p_from_sigma(logσ) for logσ in logσ_space]
+# cs_from_sigma = [c_from_sigma(logσ) for logσ in logσ_space]
+#
+# # Fill giant transition matrix
+# println("Filling transition matrix")
+# P = Matrix{eltype(logp_space)}(undef, nlogp*nlogc*nlogσ, nlogp*nlogc*nlogσ)
+# for (j, logσj) in enumerate(logσ_space)
+#   for (i, logσi) in enumerate(logσ_space)
+#     P[blockrange(i,j,nlogp*nlogc)...] .= Pσ[i, j] .* ps_from_sigma[i][:P] # kron( cs_from_sigma[i][:P],  ps_from_sigma[i][:P])
+#   end
+# end
 
-# Fill giant transition matrix
-println("Filling transition matrix")
-P  = Matrix{eltype(logp_space)}(undef, nlogp*nlogσ, nlogp*nlogσ)
-PC = Matrix{eltype(logp_space)}(undef, nlogp*nlogc*nlogσ, nlogp*nlogc*nlogσ)
-for (j, logσj) in enumerate(logσ_space)
-  for (i, logσi) in enumerate(logσ_space)
-    P[blockrange(i,j,nlogp)...]        .= Pσ[i, j] .* ps_from_sigma[i][:P]
-    PC[blockrange(i,j,nlogp*nlogc)...] .= Pσ[i, j] .* kron( cs_from_sigma[i][:P],  ps_from_sigma[i][:P])
-  end
-end
+PC = kron( c_from_sigma(log(sd_logc))[:P] ,  p_from_sigma(log(sd_logp))[:P] )
+PCY = kron(P_year, c_from_sigma(log(sd_logc))[:P] ,  p_from_sigma(log(sd_logp))[:P] )
+PY = kron(P_year, p_from_sigma(log(sd_logp))[:P])
 
 # sparsify transigion
-Πp = MarkovTransitionMatrices.sparsify!(P, minp)
-Πpc = MarkovTransitionMatrices.sparsify!(PC, minp)
+Πp = MarkovTransitionMatrices.sparsify!(PC, minp)
+Πpc = MarkovTransitionMatrices.sparsify!(PCY, minp)
+Πpyr = MarkovTransitionMatrices.sparsify!(PY, minp)
 P = 0.0 # destroy P
 PC = 0.0
-zspace = (logp_space, logσ_space,) # (logp_space, logc_space, logσ_space,)
-zcspace = (logp_space, logc_space, logσ_space,)
+PCY = 0.0
+
+THIS_Π = Πpc
+# zspace = (logp_space, logc_space,) # (logp_space, logc_space, logσ_space,)
+# zspace = (logp_space, year_space,) # (logp_space, logc_space, logσ_space,)
+zspace = (logp_space, logc_space, year_space,) # (logp_space, logc_space, logσ_space,)
+
+# -----------------------------------------------------
+# Types
+# -----------------------------------------------------
+
+# royalty rates
+royalty_rates = [0.125, 1.0/6., 0.1875, 0.20, 0.225, 0.25]
+royalty_types = 1:length(royalty_rates)
+extrema(i[2] for i in data_full.ichars) == (1,6,) || throw(error("Don't have royalty rates 1:6!"))
+
+# geology types
+n_gt = 11
+geology_types = range(1.3430409262656042, stop=5.194950729101042, length=n_gt)
+
+# number of simulations
+haltonbases = (2,3)
+haltonskip = 5000
+
+# grids for prices & unobserved heterogeneity
+nψ = 11
+ψspace = range(-4.0, stop=4.0, length=nψ)
+
+
+# -----------------------------------------------------
+# Types
+# -----------------------------------------------------
 
 # sparsify transigion
-println("Πp has $(length(Πp.nzval)) values")
+println("Πpyr has $(length(Πpyr.nzval)) values")
 println("Πpc has $(length(Πpc.nzval)) values")
 
 # k = 11
@@ -145,18 +174,20 @@ typs = getindex.(itypes, typidx)
 # @btime solve_vf_all!(tup..., θfull, typs, dograd; maxit0=30, maxit1=20, vftol=1e-9)
 
 println("\n\ndoing giant price/vol matrix")
-tup = prim_tmp_evs(:dgt1_cost_restr, zcspace, Πpc)
+tup = prim_tmp_evs(FF, zspace, Πpc)
 println("Πz has $(length(tup[3].Πz.nzval)) values")
 zero!(tup[1])
 
+@show @btime solve_vf_all!(tup..., θfull, typs, dograd; maxit0=20, maxit1=20, vftol=1e-8)
 @show @btime solve_vf_all!(tup..., θfull, typs, dograd; maxit0=30, maxit1=20, vftol=1e-8)
 @show @btime solve_vf_all!(tup..., θfull, typs, dograd; maxit0=40, maxit1=20, vftol=1e-8)
 @show @btime solve_vf_all!(tup..., θfull, typs, dograd; maxit0=50, maxit1=20, vftol=1e-8)
 
-tup = prim_tmp_evs(:dgt1_restr, zspace, Πp)
-println("Πz has $(length(tup[3].Πz.nzval)) values")
-zero!(tup[1])
-@btime solve_vf_all!(tup..., θfull, typs, dograd; maxit0=40, maxit1=20, vftol=1e-9)
+
+# tup = prim_tmp_evs(:dgt1_restr, zspace, Πp)
+# println("Πz has $(length(tup[3].Πz.nzval)) values")
+# zero!(tup[1])
+# @btime solve_vf_all!(tup..., θfull, typs, dograd; maxit0=40, maxit1=20, vftol=1e-9)
 
 
 
