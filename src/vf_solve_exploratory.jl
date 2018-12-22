@@ -4,14 +4,29 @@ export solve_vf_explore!
 # learningUpdate!(ubV, dubV, dubV_σ, uex, duex, duexσ, EV, dEV, s2idx, βΠψ, βdΠψ, ψspace, vspace, σ, β)
 # learningUpdate!(ubV, uex, EV, s2idx, βΠψ, ψspace, σ, β, v, h)
 
+function solve_vf_explore!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, dograd::Bool=true)
+    # EV::AbstractArray3     , dEV::AbstractArray4     , dEVσ::AbstractArray3 , # dEV_ψ::AbstractArray3 ,  # complete VF
+    # uex::AbstractArray3    , duex::AbstractArray4    , duexσ::AbstractArray3 , # duexψ::AbstractArray3 ,  # flow payoffs
+    # ubVfull::AbstractArray3, dubVfull::AbstractArray4, dubV_σ::AbstractArray3, # dubV_ψ::AbstractArray3,  # choice-specific VF
+    # q::AbstractArray3, lse::AbstractMatrix, tmp::AbstractMatrix,                                        # temp vars
+    # wp::well_problem, Πz::AbstractMatrix, β::Real,                                                      # transitions, etc
+    # )
 
-function solve_vf_explore!(
-    EV::AbstractArray3     , dEV::AbstractArray4     , dEVσ::AbstractArray3 , # dEV_ψ::AbstractArray3 ,  # complete VF
-    uex::AbstractArray3    , duex::AbstractArray4    , duexσ::AbstractArray3 , # duexψ::AbstractArray3 ,  # flow payoffs
-    ubVfull::AbstractArray3, dubVfull::AbstractArray4, dubV_σ::AbstractArray3, # dubV_ψ::AbstractArray3,  # choice-specific VF
-    q::AbstractArray3, lse::AbstractMatrix, tmp::AbstractMatrix,                                        # temp vars
-    wp::well_problem, Πz::AbstractMatrix, β::Real,                                                      # transitions, etc
-    )
+    EV       = evs.EV
+    dEV      = evs.dEV
+    dEV      = evs.dEVσ
+    uex      = t.uex
+    duex     = t.duex
+    duex     = t.duexσ
+    ubVfull  = t.ubVfull
+    dubVfull = t.dubVfull
+    dubV_σ   = t.dubV_σ
+    q        = t.q
+    lse      = t.lse
+    tmp      = t.tmp
+    wp       = p.wp
+    Πz       = p.Πz
+    β        = p.β
 
     nz,nψ,nS = size(EV)
     nSexp, dmaxp1, nd = _nSexp(wp), exploratory_dmax(wp)+1, dmax(wp)+1
@@ -26,7 +41,7 @@ function solve_vf_explore!(
     if dograd
         nθ = size(dEV,3)
         (nz,nψ,nθ,nS)     == size(dEV)      || throw(DimensionMismatch())
-        (nz,nψ,nSexp)     == size(dEVσ)    || throw(DimensionMismatch())
+        (nz,nψ,nSexp)     == size(dEVσ)     || throw(DimensionMismatch())
         (nz,nψ,nθ,dmaxp1) == size(duex)     || throw(DimensionMismatch())
         (nz,nψ,dmaxp1)    == size(q)        || throw(DimensionMismatch())
         (nz,nψ,nθ,nd)     == size(dubVfull) || throw(DimensionMismatch())
@@ -84,19 +99,18 @@ end
 
 
 
-function solve_vf_explore!(EV::AbstractArray3{T}, uex::AbstractArray3, ubVfull::AbstractArray3, lse::AbstractMatrix, tmp::AbstractMatrix, wp::well_problem, Πz::AbstractMatrix, β::Real) where {T}
-    zeros4 = Array{T}(undef, 0,0,0,0)
-    zeros3 = Array{T}(undef, 0,0,0)
-    solve_vf_explore!(EV,     zeros4, zeros3, # zeros3,
-                     uex,     zeros4, zeros3, # zeros3,
-                     ubVfull, zeros4, zeros3, # zeros3,
-                     zeros3, lse, tmp, wp, Πz, β
-                     )
-end
-
-solve_vf_explore!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, ::Type{Val{true}})  = solve_vf_explore!(evs.EV, evs.dEV, evs.dEVσ, t.uex, t.duex, t.duexσ, t.ubVfull, t.dubVfull, t.dubV_σ, t.q, t.lse, t.tmp, p.wp, p.Πz, p.β)
-solve_vf_explore!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, ::Type{Val{false}}) = solve_vf_explore!(evs.EV,                     t.uex,                  t.ubVfull,                            t.lse, t.tmp, p.wp, p.Πz, p.β)
-solve_vf_explore!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, dograd::Bool=true)  = solve_vf_explore!(evs, t, p, Val{dograd})
+# function solve_vf_explore!(EV::AbstractArray3{T}, uex::AbstractArray3, ubVfull::AbstractArray3, lse::AbstractMatrix, tmp::AbstractMatrix, wp::well_problem, Πz::AbstractMatrix, β::Real) where {T}
+#     zeros4 = Array{T}(undef, 0,0,0,0)
+#     zeros3 = Array{T}(undef, 0,0,0)
+#     solve_vf_explore!(EV,     zeros4, zeros3, # zeros3,
+#                      uex,     zeros4, zeros3, # zeros3,
+#                      ubVfull, zeros4, zeros3, # zeros3,
+#                      zeros3, lse, tmp, wp, Πz, β
+#                      )
+# end
+# solve_vf_explore!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, ::Type{Val{true}})  = solve_vf_explore!(evs.EV, evs.dEV, evs.dEVσ, t.uex, t.duex, t.duexσ, t.ubVfull, t.dubVfull, t.dubV_σ, t.q, t.lse, t.tmp, p.wp, p.Πz, p.β)
+# solve_vf_explore!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, ::Type{Val{false}}) = solve_vf_explore!(evs.EV,                     t.uex,                  t.ubVfull,                            t.lse, t.tmp, p.wp, p.Πz, p.β)
+# solve_vf_explore!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, dograd::Bool=true)  = solve_vf_explore!(evs, t, p, Val{dograd})
 
 
 

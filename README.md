@@ -23,9 +23,10 @@ See [example/example.jl](example/example.jl) for how to use.
 
 Create price/cost transition matrices using [MarkovTransitionMatrices.jl](https://github.com/magerton/MarkovTransitionMatrices.jl). [example/make_big_transition.jl](example/make_big_transition.jl) has an example of doing this. Note that the version of `MarkovTransitionMatrices.jl` being used is probably `new-moment-matching`, not `master`.
 
+Also, we need to use `Interpolations@0.8.0`, which requires `ShowItLikeYouBuildIt`. To obtain this package, modify `.julia/registries/General/S/ShowItLikeYouBuildIt/Compat.toml` to allow `julia = "0.6-1.1"`. If one creates a new branch, it can be rebased back on to master: `git rebase origin/master`.
 
 ```julia
-]add AxisAlgorithms BenchmarkTools Calculus CategoricalArrays DataFrames Distributions FileIO Formatting GLM GR Gadfly IndirectArrays Interpolations@0.8.0 JLD2 MixedModels NLSolversBase NLopt Optim Plots Primes Profile ProgressMeter PyPlot RData Ratios StatsBase StatsFuns StatsModels
+]add AxisAlgorithms BenchmarkTools Calculus CategoricalArrays DataFrames Distributions FileIO Formatting GLM GR Gadfly IndirectArrays Interpolations@0.8.0 JLD2 MixedModels NLSolversBase NLopt Optim Plots Primes Profile ProgressMeter PyPlot RData Ratios StatsBase StatsFuns StatsModels Feather
 
 dev ssh://git@github.com/magerton/CountPlus.git
 dev ssh://git@github.com/magerton/Halton.git
