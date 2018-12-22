@@ -8,7 +8,7 @@
         EVcopy = similar(sev.EV)
         EVcopy2 = similar(sev.EV)
 
-        serial_solve_vf_all!(sev, tmpv, prim, θfull, Val{false})
+        serial_solve_vf_all!(sev, tmpv, prim, θfull, false)
         EVcopy .= sev.EV
         EVcopy2 .= sev.EV
         @test !(EVcopy === sev.EV)

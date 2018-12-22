@@ -1,8 +1,6 @@
 zero!(tmpv)
 
 @testset "Exploratory EV gradient" begin
-    EV1 = similar(evs.EV)
-    EV2 = similar(evs.EV)
     T = Float64
     t = tmpv
     p = prim
@@ -12,6 +10,8 @@ zero!(tmpv)
     itype = (geoid, roy,)
     θ1 = similar(θt)
     θ2 = similar(θt)
+    EV1 = similar(evs.EV)
+    EV2 = similar(evs.EV)
     fdEV = similar(evs.dEV)
 
     zero!(evs.EV)
@@ -32,6 +32,8 @@ zero!(tmpv)
         hh = θ2[k] - θ1[k]
 
         fillflows_grad!(tmpv, prim, θ1, σv, itype...)
+        @test !all(t.uex .== 0.0)
+        @test !all(t.duex .== 0.0)
         solve_vf_terminal!(evs, prim)
         solve_vf_infill!(evs, tmpv, prim, false)
         learningUpdate!(evs, tmpv, prim, σv, false)

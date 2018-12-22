@@ -23,7 +23,7 @@
         fetch(s)
 
         zero!(sev)
-        @show parallel_solve_vf_all!(sev, vcat(θt,σv), Val{true})
+        @show parallel_solve_vf_all!(sev, vcat(θt,σv), true)
         @test all(isfinite.(sev.EV))
         @test all(isfinite.(sev.dEV))
         @test all(isfinite.(sev.dEVσ))

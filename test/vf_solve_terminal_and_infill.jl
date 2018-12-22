@@ -5,11 +5,21 @@
     t = tmpv
     p = prim
 
-    # full VFI
+    @test !all(t.uin .== 0.0)
+    @test !all(t.duin .== 0.0)
+
+    # test that full VFI does something
+    fill!(EV, 0.0)
     ShaleDrillingModel.solve_vf_terminal!(EV, dEV, dEVσ, wp)
-    ShaleDrillingModel.solve_vf_infill!(EV, t.uin, t.ubVfull, t.lse, t.tmp, t.IminusTEVp, p.wp, p.Πz, p.β)
-    ShaleDrillingModel.solve_vf_infill!(EV, dEV, t.uin, t.duin, t.ubVfull, t.dubVfull, t.lse, t.tmp, t.IminusTEVp, p.wp, p.Πz, p.β)
-    @test !all(EV .== 0.)
+    solve_vf_infill!(evs, t, p, false)
+    @test !all(EV .== 0.0)
+
+    # test that full VFI does something and gets gradient
+    fill!(EV, 0.0)
+    fill!(dEV, 0.0)
+    solve_vf_infill!(evs, t, p, true)
+    @test !all(EV .== 0.0)
+    @test !all(dEV .== 0.0)
 end
 
 # ---------------- Regime 1 VFI and PFI - test gradient ------------------

@@ -44,7 +44,7 @@
 
         dograd = true
 
-        serial_solve_vf_all!(sev, tmpv, prim, θfull, Val{dograd}; maxit0=40, maxit1=20, vftol=1e-10)
+        serial_solve_vf_all!(sev, tmpv, prim, θfull, dograd; maxit0=40, maxit1=20, vftol=1e-10)
         println("solved round 1. doing logP")
         grad .= 0.0
         for CI in CR
@@ -73,7 +73,7 @@
             σ2 = _σv(θ2)
 
 
-            serial_solve_vf_all!(sev, tmpv, prim, θ1, Val{dograd}; maxit0=40, maxit1=20, vftol=1e-10)
+            serial_solve_vf_all!(sev, tmpv, prim, θ1, dograd; maxit0=40, maxit1=20, vftol=1e-10)
             print("logp: θ[$k]-h\t")
             for CI in CR
                 zpi, zvi, ui, vi, di, si, gi, ri = CI.I
@@ -85,7 +85,7 @@
             end
 
             println("solving again for logp: θ[$k]+h....")
-            serial_solve_vf_all!(sev, tmpv, prim, θ2, Val{dograd}; maxit0=40, maxit1=20, vftol=1e-10)
+            serial_solve_vf_all!(sev, tmpv, prim, θ2, dograd; maxit0=40, maxit1=20, vftol=1e-10)
             println("updating fdgrad")
             for CI in CR
                 zpi, zvi, ui, vi, di, si, gi, ri = CI.I

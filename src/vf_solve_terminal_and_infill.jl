@@ -26,19 +26,30 @@ solve_vf_terminal!(evs::dcdp_Emax, prim::dcdp_primitives) = solve_vf_terminal!(e
 
 # ---------------------------------------------
 
-function solve_vf_infill!(
-    EV::AbstractArray3, dEV::AbstractArray4,                                  # value function
-    uin::AbstractArray4, duin::AbstractArray5,                                # flow utilities
-    ubVfull::AbstractArray3, dubVfull::AbstractArray4,                        # choice-specific VF
-    lse::AbstractMatrix, tmp::AbstractMatrix, IminusTEVp::AbstractMatrix,     # temp vars
-    wp::well_problem, Πz::AbstractMatrix, β::Real;                            # problem structure
-    maxit0::Integer=35, maxit1::Integer=20, vftol::Real=1e-9                  # convergence options
-    )
+function solve_vf_infill!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, dograd::Bool; maxit0::Integer=40, maxit1::Integer=20, vftol::Real=1e-9)
+
+    # EV::AbstractArray3     , dEV::AbstractArray4     , dEVσ::AbstractArray3 , # dEV_ψ::AbstractArray3 ,  # complete VF
+    # uex::AbstractArray3    , duex::AbstractArray4    , duexσ::AbstractArray3 , # duexψ::AbstractArray3 ,  # flow payoffs
+    # ubVfull::AbstractArray3, dubVfull::AbstractArray4, dubV_σ::AbstractArray3, # dubV_ψ::AbstractArray3,  # choice-specific VF
+    # q::AbstractArray3, lse::AbstractMatrix, tmp::AbstractMatrix,                                        # temp vars
+    # wp::well_problem, Πz::AbstractMatrix, β::Real,                                                      # transitions, etc
+    # )
+
+    EV         = evs.EV
+    dEV        = evs.dEV
+    uin        = t.uin
+    duin       = t.duin
+    ubVfull    = t.ubVfull
+    dubVfull   = t.dubVfull
+    lse        = t.lse
+    tmp        = t.tmp
+    IminusTEVp = t.IminusTEVp
+    wp         = p.wp
+    Πz         = p.Πz
+    β          = p.β
 
     nz,nψ,nS = size(EV)
     dmaxp1 = dmax(wp)+1
-
-    dograd = (length(dEV) > 0)
 
     # ------------------------ size checks ----------------------------------
 
@@ -59,15 +70,15 @@ function solve_vf_infill!(
     for i in ind_inf(wp)
         idxd, idxs, horzn, s = wp_info(wp, i)
 
-        ubV  = @view(ubVfull[:,:,idxd])
-        EV0  = @view(EV[:,:,i])
+        @views ubV  = ubVfull[:,:,idxd]
+        @views EV0  = EV[:,:,i]
         @views ubV .= uin[:,:,idxd,1+s.d1] .+ β .* EV[:,:,idxs]
 
         if dograd
-            dubV = @view(dubVfull[:,:,:,idxd])
-            dEV0 = @view(dEV[:,:,:,i])
-            dEV0 .= 0.0
-            dubV .= @view(duin[:,:,:,idxd,1+s.d1]) .+ β .* @view(dEV[:,:,:,idxs])
+            @views dubV = dubVfull[:,:,:,idxd]
+            @views dEV0 = dEV[:,:,:,i]
+            fill!(dEV0, 0.0)
+            @views dubV .= duin[:,:,:,idxd,1+s.d1] .+ β .* dEV[:,:,:,idxs]
         end
 
         if horzn == :Finite
@@ -96,16 +107,3 @@ function solve_vf_infill!(
         end
     end
 end
-
-# ---------------------------- wrappers ----------------------------------
-
-
-function solve_vf_infill!(EV::AbstractArray3{T}, uin::AbstractArray4, ubVfull::AbstractArray3, lse::AbstractMatrix, tmp::AbstractMatrix, IminusTEVp::AbstractMatrix, wp::well_problem, Πz::AbstractMatrix, β::Real; kwargs...) where {T}
-    zeros4 = Array{T}(undef, 0,0,0,0)
-    zeros5 = Array{T}(undef, 0,0,0,0,0)
-    solve_vf_infill!(EV, zeros4, uin, zeros5, ubVfull, zeros4, lse, tmp, IminusTEVp, wp, Πz, β; kwargs...)
-end
-
-solve_vf_infill!(e::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, ::Type{Val{true}} ; kwargs...) = solve_vf_infill!(e.EV, e.dEV, t.uin, t.duin, t.ubVfull, t.dubVfull, t.lse, t.tmp, t.IminusTEVp, p.wp, p.Πz, p.β; kwargs...)
-solve_vf_infill!(e::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, ::Type{Val{false}}; kwargs...) = solve_vf_infill!(e.EV,        t.uin,         t.ubVfull,             t.lse, t.tmp, t.IminusTEVp, p.wp, p.Πz, p.β; kwargs...)
-solve_vf_infill!(e::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, dograd::Bool=true; kwargs...) = solve_vf_infill!(e,t,p,Val{dograd};kwargs...)

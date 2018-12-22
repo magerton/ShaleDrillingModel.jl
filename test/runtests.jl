@@ -47,7 +47,7 @@ ShaleDrillingModel.check_size(prim, evs)
 
 include("BSplineTestFuns_runtests.jl")
 include("makeStateSpace.jl")
-include("flow-payoffs.jl")
+# include("flow-payoffs.jl")
 
 @testset  "testing flow gradients" begin
     let geoid = 2, roy = 0.2
@@ -73,7 +73,7 @@ include("vf_solve_exploratory.jl")
 
 zero!(tmpv)
 let geoid = 2, roy = 0.25, itype = (geoid, roy,)
-    solve_vf_all!(evs, tmpv, prim, θt, σv, itype, Val{true})
+    solve_vf_all!(evs, tmpv, prim, θt, σv, itype, true)
 end
 
 include("vf_interpolation.jl")

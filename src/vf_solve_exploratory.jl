@@ -4,7 +4,7 @@ export solve_vf_explore!
 # learningUpdate!(ubV, dubV, dubV_σ, uex, duex, duexσ, EV, dEV, s2idx, βΠψ, βdΠψ, ψspace, vspace, σ, β)
 # learningUpdate!(ubV, uex, EV, s2idx, βΠψ, ψspace, σ, β, v, h)
 
-function solve_vf_explore!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, dograd::Bool=true)
+function solve_vf_explore!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, dograd::Bool)
     # EV::AbstractArray3     , dEV::AbstractArray4     , dEVσ::AbstractArray3 , # dEV_ψ::AbstractArray3 ,  # complete VF
     # uex::AbstractArray3    , duex::AbstractArray4    , duexσ::AbstractArray3 , # duexψ::AbstractArray3 ,  # flow payoffs
     # ubVfull::AbstractArray3, dubVfull::AbstractArray4, dubV_σ::AbstractArray3, # dubV_ψ::AbstractArray3,  # choice-specific VF
@@ -14,10 +14,10 @@ function solve_vf_explore!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, 
 
     EV       = evs.EV
     dEV      = evs.dEV
-    dEV      = evs.dEVσ
+    dEVσ     = evs.dEVσ
     uex      = t.uex
     duex     = t.duex
-    duex     = t.duexσ
+    duexσ    = t.duexσ
     ubVfull  = t.ubVfull
     dubVfull = t.dubVfull
     dubV_σ   = t.dubV_σ
@@ -30,8 +30,6 @@ function solve_vf_explore!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, 
 
     nz,nψ,nS = size(EV)
     nSexp, dmaxp1, nd = _nSexp(wp), exploratory_dmax(wp)+1, dmax(wp)+1
-
-    dograd = (length(dEV) > 0)
 
     (nz,nψ,dmaxp1) == size(uex)       || throw(DimensionMismatch())
     (nz,nψ,nd) == size(ubVfull)       || throw(DimensionMismatch())
