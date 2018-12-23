@@ -34,30 +34,22 @@ function learningUpdate!(
     EV1     = @view(EV[ :,:,  lrn2inf])
     dEV1    = @view(dEV[:,:,:,lrn2inf])
 
+    EV2     = @view(EV[ :,:,  exp2lrn])
+    dEV2    = @view(dEV[:,:,:,exp2lrn])
+    dEVσ2   = @view(dEVσ[:,:,exp2lrn])
+
     # ----------- value --------------
     # ubVtilde = u[:,:,2:dmaxp1] + β * Πψ ⊗ I * EV[:,:,2:dmaxp1]
     _βΠψ!(Πψtmp, ψspace, σ, β)
-    A_mul_B_md!(ubV1, Πψtmp, EV1, 2)
-    EV[:,:,exp2lrn] .= ubV1
-    @views ubV1 .+= uex[:,:,d2plus]
+    A_mul_B_md!(EV2, Πψtmp, EV1, 2)
 
     # ---------- gradient ----------------
     # dubVtilde/dθ = du/dθ[:,:,:,2:dmaxp1] + β * Πψ ⊗ I * dEV/dθ[:,:,:,2:dmaxp1]
-    A_mul_B_md!(dubV1, Πψtmp, dEV1, 2)
-    dEV[:,:,:,exp2lrn] .= dubV1
-    @views dubV1 .+= duex[:,:,:,d2plus]
+    A_mul_B_md!(dEV2, Πψtmp, dEV1, 2)
 
     # ∂EVtilde/∂σ[:,:,2:dmaxp1] = ∂u/∂σ[:,:,2:dmaxp1] + β * dΠψ/dσ ⊗ I * EV[:,:,2:dmaxp1]
     _βΠψdθρ!(Πψtmp, ψspace, σ, β)
-    A_mul_B_md!(dubV_σ1, Πψtmp, EV1, 2)
-    dEVσ[:,:,exp2lrn] .= dubV_σ1
-    @views dubV_σ1 .+= duexσ[:,:,d2plus]
-
-    # # ∂EVtilde/∂ψ[:,:,2:dmaxp1] = ∂u/∂ψ[:,:,2:dmaxp1] + β * dΠψ/dψ ⊗ I * EV[:,:,2:dmaxp1]
-    # _βΠψdψ!(Πψtmp, ψspace, σ, β)
-    # A_mul_B_md!(dubV_ψ1, Πψtmp, EV1, 2)
-    # dEV_ψ[:,:,exp2lrn] .= dubV_ψ1
-    # @views dubV_ψ1 .+= duexψ[:,:,d2plus]
+    A_mul_B_md!(dEVσ2, Πψtmp, EV1, 2)
 end
 
 
