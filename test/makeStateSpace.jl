@@ -1,3 +1,9 @@
+@testset "Maxlease" begin
+    for wpp in (well_problem(3,4, 5,3,2), well_problem(3,4, 2,3,2), well_problem(3,4, 1,3,5), well_problem(3,16, 5,10,3))
+        @test maximum(ShaleDrillingModel._τrem(s) for s in wpp.SS) == ShaleDrillingModel.maxlease(wpp)
+    end
+end
+
 @testset "Drilling transitions are ok" begin
     wp = well_problem(4, 4, 5, 3, 2)
     nS = length(wp)

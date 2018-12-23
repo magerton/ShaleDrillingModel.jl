@@ -21,13 +21,6 @@ struct state
     d1::Int  # Drilling last period == 1, no drilling last period == 0
 end
 
-# Information about a state
-_d1(s::state) = s.d1
-_Dgt0(s::state) = s.D > 0
-_sgnext(s::state) =  s.τ1 == 0 && s.τ0 > 0
-_τrem(s::state) = max(s.τ1,0) + max(s.τ0,0)
-stateinfo(st::state) = (_d1(st), _Dgt0(st), _sgnext(st), _τrem(st),)
-
 "Structure of well problem"
 struct well_problem
   dmax::Int
@@ -100,6 +93,18 @@ endpts(     p::well_problem) = p.endpts
 horizon(p::well_problem, i::Integer) = _horizon(i,p.endpts)
 state(  p::well_problem, i::Integer) = p.SS[i]
 # exploratory_dmax(p::well_problem) = dmx_exp(dmax(p), Dmax(p), τmax(p))
+
+# maximum lease length (for mapping to chebyshev)
+@inline maxlease(ep::NTuple{6,Integer}) = max( ep[2]+max_ext(ep), ep[3]-ep[2] ) - 1
+@inline maxlease(wp::well_problem) = maxlease(wp.endpts)
+
+# Information about a state
+_d1(s::state) = s.d1
+_Dgt0(s::state) = s.D > 0
+_sgnext(s::state) =  s.τ1 == 0 && s.τ0 > 0
+_τrem(s::state) = max(s.τ1,0) + max(s.τ0,0)
+@inline _τ11(s::state, wp::well_problem) = 2*_τrem(s)/maxlease(wp)-1
+@inline stateinfo(st::state, wp::well_problem) = (_d1(st), _Dgt0(st), _sgnext(st), _τ11(st, wp),)
 
 # size
 _nS(    p::well_problem) = length(p)

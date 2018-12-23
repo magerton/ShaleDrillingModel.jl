@@ -14,7 +14,7 @@ nplus1_impl(N::Integer) = :(Val{$(N+1)})
 
   # states we can iterate over
   s = state(prim.wp, s_idx)
-  sinfo =  stateinfo(s)
+  sinfo =  stateinfo(s, prim.wp)
   Dgt0 = sinfo[2]
 
   # information

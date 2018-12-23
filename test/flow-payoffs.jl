@@ -36,6 +36,9 @@
     p8i = dcdp_primitives( :cheb3_cost_restr, β, wp,  (logp_space, logc_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
     p10i = dcdp_primitives( :cheb3_cost      , β, wp, (logp_space, logc_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
 
+    p8j = dcdp_primitives( :ttbuild_cost_restr , β, wp, (logp_space, logc_space, ), Πpconly, ψspace)
+    p10j = dcdp_primitives( :ttbuild_cost      , β, wp, (logp_space, logc_space, ), Πpconly, ψspace)
+
     σ = 0.25
 
     a = STARTING_log_ogip # 0.561244
@@ -66,6 +69,10 @@
 
 
     println("Testing a bunch of small flow gradients now...")
+
+    @test check_flowgrad(v8i,  σ, p8j,  geoid, roy)
+    @test check_flowgrad(v10i, σ, p10j, geoid, roy)
+
     # @test check_flowgrad(v8i,  σ, p8i,  geoid, roy)
     # @test check_flowgrad(v10i, σ, p10i, geoid, roy)
     @test check_flowgrad(v7f, σ, p7h, geoid, roy)
