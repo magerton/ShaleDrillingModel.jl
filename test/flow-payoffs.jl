@@ -64,9 +64,10 @@
     roy = 0.225    # median royalty
     geoid = 4.706  # median geology
 
+
+    println("Testing a bunch of small flow gradients now...")
     # @test check_flowgrad(v8i,  σ, p8i,  geoid, roy)
     # @test check_flowgrad(v10i, σ, p10i, geoid, roy)
-
     @test check_flowgrad(v7f, σ, p7h, geoid, roy)
     @test check_flowgrad(v9f, σ, p9h, geoid, roy)
 

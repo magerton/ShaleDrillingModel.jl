@@ -6,7 +6,7 @@ function solve_vf_all!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θ::
     if dograd
         fillflows_grad!(t, p, θ, σ, itype...)
     else
-        fillflows!(t, p, θ, σ, itype...)
+        fillflows!(t, p, θ, σ, makepdct(p, Val{:u})..., itype...)
     end
     solve_vf_terminal!(evs,    p)
     solve_vf_infill!(  evs, t, p,    dograd; kwargs...)

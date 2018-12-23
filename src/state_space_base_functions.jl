@@ -32,9 +32,9 @@ exploratory_terminal(ep::NTuple{6,Int}) = ep[3]+1
 exploratory_learning(ep::NTuple{6,Int}) = ep[3]+2 : ep[4]
 
 # What is this for???
-dmx_exp(dmx::Integer, Dmx::Integer, τmx::Integer) = dmx
-dmx_lrn(dmx::Integer, Dmx::Integer, τmx::Integer) = dmx_exp(dmx,Dmx,τmx)
-dmx_inf(dmx::Integer, Dmx::Integer, τmx::Integer) = dmx
+# dmx_exp(dmx::Integer, Dmx::Integer, τmx::Integer) = dmx
+# dmx_lrn(dmx::Integer, Dmx::Integer, τmx::Integer) = dmx_exp(dmx,Dmx,τmx)
+# dmx_inf(dmx::Integer, Dmx::Integer, τmx::Integer) = dmx
 
 max_ext(endpts::NTuple{6,Int}) = endpts[3]-endpts[6]+1
 

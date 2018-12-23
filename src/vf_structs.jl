@@ -43,7 +43,6 @@ _nψ(    prim::dcdp_primitives) = length(prim.ψspace) # prim.nψ
 _nS(    prim::dcdp_primitives) = _nS(prim.wp)
 _nSexp( prim::dcdp_primitives) = _nSexp(prim.wp)
 _nd(    prim::dcdp_primitives) = dmax(prim.wp)+1
-_ndex(  prim::dcdp_primitives) = exploratory_dmax(prim.wp)+1
 
 _zspace(prim::dcdp_primitives) = prim.zspace
 
@@ -83,7 +82,7 @@ end
 function check_size(prim::dcdp_primitives, evs::dcdp_Emax)
     nz, nψ, nS = size(prim)
     nθ, nd = _nθt(prim), _nd(prim)
-    ndex, nSexp = _ndex(prim), _nSexp(prim)
+    nSexp = _nSexp(prim)
 
     prod(length.(_zspace(prim))) == nz ||  throw(error("Πz and zspace not compatible"))
     (nz,nψ,nS)      == size(evs.EV)    ||  throw(error("EV not conformable"))
@@ -98,12 +97,10 @@ end
 # --------------------- tmp vars --------------------------
 
 struct dcdp_tmpvars{T<:Float64,AM<:AbstractMatrix{Float64}}
-    uin::Array{T,4}
-    uex::Array{T,3}
+    u::Array{T,3}
 
-    duin::Array{T,5}
-    duex::Array{T,4}
-    duexσ::Array{T,3}
+    du::Array{T,4}
+    duσ::Array{T,3}
 
     ubVfull::Array{T,3}
     dubVfull::Array{T,4}
@@ -119,7 +116,7 @@ end
 function check_size(prim::dcdp_primitives, t::dcdp_tmpvars)
     nz, nψ, nS = size(prim)
     nθ, nd = _nθt(prim), _nd(prim)
-    ndex, nSexp = _ndex(prim), _nSexp(prim)
+    nSexp =_nSexp(prim)
 
     # TODO: allow dmaxp1 to vary with regime
 
@@ -136,21 +133,19 @@ function dcdp_tmpvars(prim::dcdp_primitives)
     nz, nψ, nS = size(prim)
     nd = _nd(prim)
     nθt = _nθt(prim)
-    ndex, nSexp = _ndex(prim), _nSexp(prim)
+    nSexp = _nSexp(prim)
 
     nθt > nψ &&  throw(error("Must have more length(ψspace) > length(θt)"))
 
     # flow payoffs + gradients
-    uin   = zeros(T,nz,nψ,nd,2)
-    uex   = zeros(T,nz,nψ,nd)
-    duin  = zeros(T,nz,nψ,nθt,nd,2)
-    duex  = zeros(T,nz,nψ,nθt,ndex)
-    duexσ = zeros(T,nz,nψ,ndex)
+    u   = zeros(T,nz,nψ,nd)
+    du  = zeros(T,nz,nψ,nθt,nd)
+    duσ = zeros(T,nz,nψ,nd)
 
     # choice-specific value functions
     ubVfull  = zeros(T,nz,nψ,nd)
     dubVfull = zeros(T,nz,nψ,nθt,nd)
-    dubV_σ   = zeros(T,nz,nψ,ndex)
+    dubV_σ   = zeros(T,nz,nψ,nd)
 
     # other tempvars
     q        = zeros(T,nz,nψ,nd)
@@ -161,16 +156,14 @@ function dcdp_tmpvars(prim::dcdp_primitives)
     Πψtmp = Matrix{T}(undef,nψ,nψ)
     IminusTEVp = ensure_diagonal(prim.Πz)
 
-    return dcdp_tmpvars(uin,uex,duin,duex,duexσ,ubVfull,dubVfull,dubV_σ,q,lse,tmp,Πψtmp,IminusTEVp)
+    return dcdp_tmpvars(u, du, duσ, ubVfull, dubVfull, dubV_σ, q, lse, tmp, Πψtmp, IminusTEVp)
 end
 
 
 function zero!(t::dcdp_tmpvars)
-    zero!(t.uin  )
-    zero!(t.uex  )
-    zero!(t.duin )
-    zero!(t.duex )
-    zero!(t.duexσ)
+    zero!(t.u  )
+    zero!(t.du )
+    zero!(t.duσ)
     zero!(t.ubVfull )
     zero!(t.dubVfull)
     zero!(t.dubV_σ  )
