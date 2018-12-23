@@ -56,7 +56,7 @@ sprime_idx(prim::dcdp_primitives, i::Integer) = sprime_idx(prim.wp, i)
 wp_info(prim::dcdp_primitives, i::Integer) = wp_info(prim.wp, i)
 state(prim::dcdp_primitives, i::Integer) = state(prim.wp, i)
 dmax( prim::dcdp_primitives, i::Integer) = dmax(prim.wp, i)
-
+dmax(prim::dcdp_primitives) = dmax(prim.wp)
 
 size(prim::dcdp_primitives) = _nz(prim), _nψ(prim), _nS(prim)
 

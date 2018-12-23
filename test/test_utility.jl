@@ -1,7 +1,7 @@
 @testset "Utility" begin
 
-   duex = similar(tmpv.duexσ)
-   fduex = similar(tmpv.uex)
+   duex = similar(tmpv.duσ)
+   fduex = similar(tmpv.u)
    roy = 0.2
    geoid = 2
    itype=(geoid, roy,)
@@ -10,15 +10,16 @@
    σ1 = σv - h
    σ2 = σv + h
    hh = σ2 - σ1
+   st = state(2,2,0,0)
 
    zpdct = Base.product(zspace...)
    stpdct = Base.product(ψspace, 0:dmax(wp), 0:0, false, true)
 
-   fillflows!(flow(p), flow,  duex, θt, σ1, zpdct, stpdct, itype...)
-   fillflows!(flow(p), flow, fduex, θt, σ2, zpdct, stpdct, itype...)
+   fillflows!(duex,  flow, p, θt, σ1, st, itype...)
+   fillflows!(fduex, flow, p, θt, σ2, st, itype...)
    fduex .-= duex
    fduex ./= hh
-   fillflows!(flow(p), flowdσ, duex, θt, σv, makepdct(p, Val{:u})..., itype...)
+   fillflows!(duex, flowdσ, p, θt, σv, st, itype...)
 
    @views maxv, idx = findmax(abs.(duex .- fduex))
    sub = CartesianIndices(duex)[idx]
