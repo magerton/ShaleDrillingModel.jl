@@ -78,8 +78,9 @@ check_flowgrad(θ::AbstractVector,          p::dcdp_primitives{FF}, itype::Real.
 
 function fillflows!(X::AbstractArray, f::Function, p::dcdp_primitives{FF}, θ::AbstractVector, σ::Real, st::state, itype::Real...) where {FF}
     zpdct = Base.product(p.zspace...)
-    pdct = Base.product(zpdct, p.ψspace, 0:dmax(p))
-    size(X) == size(pdct) || throw(DimensionMismatch())
+    idxd = 0:size(X, ndims(X))-1
+    pdct = Base.product(zpdct, p.ψspace, idxd)
+    length(X) == length(pdct) || throw(DimensionMismatch("state is $st. size(X) = $(size(X)) != size(pdct) = $(size(pdct))"))
     @inbounds for (i,z,) in enumerate(pdct)
         X[i] = f(FF, θ, σ, z..., stateinfo(st)..., itype...)
     end
@@ -87,8 +88,9 @@ end
 
 function fillflows_grad!(X::AbstractArray, f::Function, p::dcdp_primitives{FF}, θ::AbstractVector, σ::Real, st::state, itype::Real...) where {FF}
     zpdct = Base.product(p.zspace...)
-    pdct = Base.product(zpdct, p.ψspace, Base.OneTo(length(θ)), 0:dmax(p))
-    size(X) == size(pdct) || throw(DimensionMismatch())
+    idxd = 0:size(X, ndims(X))-1
+    pdct = Base.product(zpdct, p.ψspace, Base.OneTo(length(θ)), idxd)
+    length(X) == length(pdct) || throw(DimensionMismatch("state is $st. size(X) = $(size(X)) != size(pdct) = $(size(pdct))"))
     @inbounds for (i,z,) in enumerate(pdct)
         X[i] = f(FF, θ, σ, z..., stateinfo(st)..., itype...)
     end

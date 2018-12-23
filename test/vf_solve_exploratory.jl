@@ -1,4 +1,4 @@
-zero!(tmpv)
+# zero!(tmpv)
 
 @testset "Exploratory EV gradient" begin
     T = Float64

@@ -2,22 +2,20 @@
     EV = evs.EV
     dEV = evs.dEV
     dEVσ = evs.dEVσ
-    t = tmpv
-    p = prim
-
-    @test !all(t.uin .== 0.0)
-    @test !all(t.duin .== 0.0)
+    roy = 0.25
+    geoid = 4.7
+    itype = (geoid, roy,)
 
     # test that full VFI does something
     fill!(EV, 0.0)
     ShaleDrillingModel.solve_vf_terminal!(EV, dEV, dEVσ, wp)
-    solve_vf_infill!(evs, t, p, false)
+    solve_vf_infill!(evs, tmpv, prim, θt, σv, false, itype)
     @test !all(EV .== 0.0)
 
     # test that full VFI does something and gets gradient
     fill!(EV, 0.0)
     fill!(dEV, 0.0)
-    solve_vf_infill!(evs, t, p, true)
+    solve_vf_infill!(evs, tmpv, prim, θt, σv, true, itype)
     @test !all(EV .== 0.0)
     @test !all(dEV .== 0.0)
 end
@@ -29,9 +27,8 @@ end
     θ2 = similar(θt)
     fdEV = similar(evs.dEV)
     roy = 0.25
-    geoid = 2
+    geoid = 4.7
     itype = (geoid, roy,)
-    tmp = tmpv
 
     for k = 1:length(θt)
         h = peturb(θt[k])
@@ -41,20 +38,17 @@ end
         θ2[k] += h
         hh = θ2[k] - θ1[k]
 
-        fillflows_grad!(tmpv, prim, θ1, σv, itype...)
         solve_vf_terminal!(evs, prim)
-        solve_vf_infill!(evs, tmp, prim, false)
+        solve_vf_infill!(evs, tmpv, prim, θ1, σv, false, itype)
         fdEV[:,:,k,:] .= -evs.EV
 
-        fillflows_grad!(tmpv, prim, θ2, σv, itype...)
         solve_vf_terminal!(evs, prim)
-        solve_vf_infill!(evs, tmp, prim, false)
+        solve_vf_infill!(evs, tmpv, prim, θ2, σv, false, itype)
         fdEV[:,:,k,:] .+= evs.EV
         fdEV[:,:,k,:] ./= hh
     end
-    fillflows_grad!(tmpv, prim, θt, σv, itype...)
     solve_vf_terminal!(evs, prim)
-    solve_vf_infill!(evs, tmp, prim, true)
+    solve_vf_infill!(evs, tmpv, prim, θt, σv, true, itype)
 
     @views maxv, idx = findmax(abs.(fdEV[:,:,2:end,:].-evs.dEV[:,:,2:end,:]))
     @views sub = CartesianIndices(fdEV[:,:,2:end,:])[idx]

@@ -110,9 +110,10 @@ function _actionspace(s::Integer, dmx::Integer, Dmx::Integer, endpts::NTuple{6,I
     throw(DomainError())
 end
 
+@inline _actionspace(st::state , wp::well_problem) = 0 : min(wp.dmax, max(wp.Dmax - st.D, 0))
 @inline _actionspace(s::Integer, wp::well_problem) = _actionspace(s, wp.dmax, wp.Dmax, wp.endpts)
 
-
+@inline _dp1space(st::state, wp::well_problem) = _actionspace(st,wp) .+ 1
 @inline _dp1space(s::Integer, dmx::Integer, Dmx::Integer, endpts::NTuple{6,Int}) = _actionspace(s,dmx,Dmx,endpts) .+ 1
 
 function _first_action(s::Integer, dmx::Integer, Dmx::Integer, endpts::NTuple{6,Int})::Int

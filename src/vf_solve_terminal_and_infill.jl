@@ -26,19 +26,12 @@ solve_vf_terminal!(evs::dcdp_Emax, prim::dcdp_primitives) = solve_vf_terminal!(e
 
 # ---------------------------------------------
 
-function solve_vf_infill!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, dograd::Bool, itype::Tuple; maxit0::Integer=40, maxit1::Integer=20, vftol::Real=1e-9)
-
-    # EV::AbstractArray3     , dEV::AbstractArray4     , dEVσ::AbstractArray3 , # dEV_ψ::AbstractArray3 ,  # complete VF
-    # uex::AbstractArray3    , duex::AbstractArray4    , duexσ::AbstractArray3 , # duexψ::AbstractArray3 ,  # flow payoffs
-    # ubVfull::AbstractArray3, dubVfull::AbstractArray4, dubV_σ::AbstractArray3, # dubV_ψ::AbstractArray3,  # choice-specific VF
-    # q::AbstractArray3, lse::AbstractMatrix, tmp::AbstractMatrix,                                        # temp vars
-    # wp::well_problem, Πz::AbstractMatrix, β::Real,                                                      # transitions, etc
-    # )
+function solve_vf_infill!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θt::AbstractVector, σ::Real, dograd::Bool, itype::Tuple; maxit0::Integer=40, maxit1::Integer=20, vftol::Real=1e-9)
 
     EV         = evs.EV
     dEV        = evs.dEV
-    uin        = t.u
-    duin       = t.du
+    u          = t.u
+    du         = t.du
     ubVfull    = t.ubVfull
     dubVfull   = t.dubVfull
     lse        = t.lse
@@ -53,41 +46,33 @@ function solve_vf_infill!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, d
 
     # ------------------------ size checks ----------------------------------
 
-    (nz,nψ,dmaxp1,2) == size(uin)           || throw(DimensionMismatch())  # uin[z,ψ,d,d1]
+    (nz,nψ,dmaxp1) == size(u)               || throw(DimensionMismatch())
+    (nz,nψ,dmaxp1) == size(ubVfull)         || throw(DimensionMismatch())
     (nz,nz) == size(IminusTEVp) == size(Πz) || throw(DimensionMismatch())
     (nz,nψ) == size(tmp) == size(lse)       || throw(DimensionMismatch())
-    (nz,nψ,dmaxp1) == size(ubVfull)         || throw(DimensionMismatch())
 
     if dograd
         nθ = size(dEV,3)
-        (nz,nψ,nθ,nS)       == size(dEV)    || throw(DimensionMismatch())
-        (nz,nψ,nθ,dmaxp1,2) == size(duin)   || throw(DimensionMismatch())
+        (nz,nψ,nθ,nS)     == size(dEV)      || throw(DimensionMismatch())
+        (nz,nψ,nθ,dmaxp1) == size(du)       || throw(DimensionMismatch())
         (nz,nψ,nθ,dmaxp1) == size(dubVfull) || throw(DimensionMismatch())
     end
 
     # ------------------------ compute things ----------------------------------
 
-    @views fillflows!(FF, flow,   t.u,   θ, σ, makepdct(p, Val{:u})...,  itype...)
-    @views fillflows!(FF, flowdθ, t.du,  θ, σ, makepdct(p, Val{:du})..., itype...)
-    fillflows!(       FF, flowdσ, t.duσ, θ, σ, makepdct(p, Val{:u})...,  itype...)
-
-    updcts  = makepdct(p.zspace, p.ψspace, p.wp, length(θ), Val{:u})
-    dupdcts = makepdct(p.zspace, p.ψspace, p.wp, length(θ), Val{:du})
-
     for i in ind_inf(wp)
-        idxd, idxs, horzn, s = wp_info(wp, i)
+        idxd, idxs, horzn, st = wp_info(wp, i)
 
-        @views ubV  = ubVfull[:,:,idxd]
-        @views EV0  = EV[:,:,i]
+        @views ubV = ubVfull[:,:,idxd]
+        @views dubV = dubVfull[:,:,:,idxd]
+        @views EV0 = EV[:,:,i]
+        @views dEV0 = dEV[:,:,:,i]
 
-        fillflows!(flow(p), flow, ubV, θ, σ, updcts..., s.d1, true, false, 0, itype...)
+        fillflows!(ubV, flow, p, θt, σ, st, itype...)
         @views ubV .+= β .* EV[:,:,idxs]
 
         if dograd
-            @views dubV = dubVfull[:,:,:,idxd]
-            @views dEV0 = dEV[:,:,:,i]
-
-            fillflows!(flow(p), flowdθ, dubV, θ, σ, dupdcts..., s.d1, true, false, 0, itype...)
+            fillflows_grad!(dubV, flowdθ, p, θt, σ, st, itype...)
             fill!(dEV0, 0.0)
             @views dubV .+= β .* dEV[:,:,:,idxs]
         end

@@ -2,8 +2,17 @@
 
 @testset "testing logsumexp3" begin
 
-# test logsumexp
     i = 17
+
+    let geoid = 2,
+        roy = 0.25,
+        itype = (geoid, roy,),
+        st = state(wp,i)
+
+        fillflows!(     tmpv.u,  flow,   prim, θt, σv, st, itype...)
+        fillflows_grad!(tmpv.du, flowdθ, prim, θt, σv, st, itype...)
+    end
+
     dmaxp1 = ShaleDrillingModel._nd(prim)
     tst = zeros(size(tmpv.lse))
     lsetest = zeros(size(tmpv.lse))
@@ -20,12 +29,12 @@
     @test all(lse.==0.0)
     @test all(tmp.==0.0)
 
-    ubV .= @view(tmpv.uin[:,:,1:dmaxp1,2])
-    dubV .= @view(tmpv.duin[:,:,:,1:dmaxp1,2])
+    @views  ubV .= tmpv.u[:,:,1:dmaxp1]
+    @views dubV .= tmpv.du[:,:,:,1:dmaxp1]
 
     ShaleDrillingModel.logsumexp3!(lse,tmp,ubV)
     for CI in CartesianIndices(size(lsetest))
-        lsetest[CI] = logsumexp(@view(ubV[CI,:]))
+        @views lsetest[CI] = logsumexp(ubV[CI,:])
     end
     @show findmax(abs.(lsetest .- lse))
     @test lsetest ≈ lse

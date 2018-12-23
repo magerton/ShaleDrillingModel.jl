@@ -12,9 +12,6 @@
    hh = σ2 - σ1
    st = state(2,2,0,0)
 
-   zpdct = Base.product(zspace...)
-   stpdct = Base.product(ψspace, 0:dmax(wp), 0:0, false, true)
-
    fillflows!(duex,  flow, p, θt, σ1, st, itype...)
    fillflows!(fduex, flow, p, θt, σ2, st, itype...)
    fduex .-= duex

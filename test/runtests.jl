@@ -47,28 +47,21 @@ ShaleDrillingModel.check_size(prim, evs)
 
 # include("BSplineTestFuns_runtests.jl")
 # include("makeStateSpace.jl")
-include("flow-payoffs.jl")
+# include("flow-payoffs.jl")
 
-@testset  "testing flow gradients" begin
-    let geoid = 2, roy = 0.2
-        @test check_flowgrad(θt, σv, prim, geoid, roy)
-    end
-    @test check_dΠψ(σv, ψspace)
-end
+# @testset  "testing flow gradients" begin
+#     let geoid = 2, roy = 0.2
+#         @test check_flowgrad(θt, σv, prim, geoid, roy)
+#     end
+#     @test check_dΠψ(σv, ψspace)
+# end
+#
+# include("test_utility.jl")
+# include("test_transition.jl")
+#
+# include("logsumexp3.jl")
 
-include("test_utility.jl")
-include("test_transition.jl")
-
-println("filling per-period payoffs")
-
-let geoid = 2, roy = 0.25, itype = (geoid, roy,)
-    @views fillflows!(flow(prim), flow, tmpv.uin[:,:,:,   1], tmpv.uin[:,:,:,   2], tmpv.uex, θt, σv, makepdct(prim, Val{:u})..., itype...)
-    fillflows_grad!(tmpv, prim, θt, σv, itype...)
-end
-
-include("logsumexp3.jl")
-
-include("vf_solve_terminal_and_infill.jl")
+# include("vf_solve_terminal_and_infill.jl")
 include("vf_solve_exploratory.jl")
 
 zero!(tmpv)

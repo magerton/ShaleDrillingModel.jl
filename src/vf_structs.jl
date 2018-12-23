@@ -98,7 +98,6 @@ end
 
 struct dcdp_tmpvars{T<:Float64,AM<:AbstractMatrix{Float64}}
     u::Array{T,3}
-
     du::Array{T,4}
     duσ::Array{T,3}
 
