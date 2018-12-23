@@ -30,8 +30,6 @@ function solve_vf_infill!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, �
 
     EV         = evs.EV
     dEV        = evs.dEV
-    u          = t.u
-    du         = t.du
     ubVfull    = t.ubVfull
     dubVfull   = t.dubVfull
     lse        = t.lse
@@ -46,7 +44,6 @@ function solve_vf_infill!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, �
 
     # ------------------------ size checks ----------------------------------
 
-    (nz,nψ,dmaxp1) == size(u)               || throw(DimensionMismatch())
     (nz,nψ,dmaxp1) == size(ubVfull)         || throw(DimensionMismatch())
     (nz,nz) == size(IminusTEVp) == size(Πz) || throw(DimensionMismatch())
     (nz,nψ) == size(tmp) == size(lse)       || throw(DimensionMismatch())
@@ -54,7 +51,6 @@ function solve_vf_infill!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, �
     if dograd
         nθ = size(dEV,3)
         (nz,nψ,nθ,nS)     == size(dEV)      || throw(DimensionMismatch())
-        (nz,nψ,nθ,dmaxp1) == size(du)       || throw(DimensionMismatch())
         (nz,nψ,nθ,dmaxp1) == size(dubVfull) || throw(DimensionMismatch())
     end
 

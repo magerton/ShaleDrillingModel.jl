@@ -8,6 +8,7 @@ export flow, flowdθ, flowdσ, flowdψ, STARTING_σ_ψ, STARTING_log_ogip
 @inline flowdσ(FF::Type, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T,             d::Integer,                                                     geoid::Real, roy::T) where {N,T} = flowdσ(FF, θ, σ, z, ψ,    d,                    geoid, roy)
 
 @inline flowdψ(FF::Type, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T,             d::Integer,                          sgn_ext::Bool, τ::Integer, geoid::Real, roy::T) where {N,T} = flowdψ(FF, θ, σ, z, ψ,    d,           sgn_ext, geoid, roy)
+@inline flowdψ(FF::Type, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T,             d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, τ::Integer, geoid::Real, roy::T) where {N,T} = flowdψ(FF, θ, σ, z, ψ,    d,           sgn_ext, geoid, roy)
 
 # --------------------------- common revenue functions & derivatives  --------------------------------------
 

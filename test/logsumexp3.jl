@@ -9,8 +9,8 @@
         itype = (geoid, roy,),
         st = state(wp,i)
 
-        fillflows!(     tmpv.u,  flow,   prim, θt, σv, st, itype...)
-        fillflows_grad!(tmpv.du, flowdθ, prim, θt, σv, st, itype...)
+        fillflows!(     tmpv.ubVfull,  flow,   prim, θt, σv, st, itype...)
+        fillflows_grad!(tmpv.dubVfull, flowdθ, prim, θt, σv, st, itype...)
     end
 
     dmaxp1 = ShaleDrillingModel._nd(prim)
@@ -19,8 +19,8 @@
     qvw = @view(tmpv.q[:,:,1:dmaxp1])
     EV0  = @view(evs.EV[:,:,i])
     dEV0 = @view(evs.dEV[:,:,:,i])
-    ubV  = @view(tmpv.ubVfull[:,:,1:dmaxp1])
-    dubV = @view(tmpv.dubVfull[:,:,:,1:dmaxp1])
+    ubV  = tmpv.ubVfull
+    dubV = tmpv.dubVfull
     lse = tmpv.lse
     tmp = tmpv.tmp
 
@@ -28,9 +28,6 @@
     tmp .= 0.0
     @test all(lse.==0.0)
     @test all(tmp.==0.0)
-
-    @views  ubV .= tmpv.u[:,:,1:dmaxp1]
-    @views dubV .= tmpv.du[:,:,:,1:dmaxp1]
 
     ShaleDrillingModel.logsumexp3!(lse,tmp,ubV)
     for CI in CartesianIndices(size(lsetest))

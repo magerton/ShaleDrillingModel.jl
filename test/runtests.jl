@@ -45,23 +45,23 @@ evs = dcdp_Emax(prim)
 ## check sizes of models
 ShaleDrillingModel.check_size(prim, evs)
 
-# include("BSplineTestFuns_runtests.jl")
-# include("makeStateSpace.jl")
-# include("flow-payoffs.jl")
+include("BSplineTestFuns_runtests.jl")
+include("makeStateSpace.jl")
+include("flow-payoffs.jl")
 
-# @testset  "testing flow gradients" begin
-#     let geoid = 2, roy = 0.2
-#         @test check_flowgrad(θt, σv, prim, geoid, roy)
-#     end
-#     @test check_dΠψ(σv, ψspace)
-# end
-#
-# include("test_utility.jl")
-# include("test_transition.jl")
-#
-# include("logsumexp3.jl")
+@testset  "testing flow gradients" begin
+    let geoid = 2, roy = 0.2
+        @test check_flowgrad(θt, σv, prim, geoid, roy)
+    end
+    @test check_dΠψ(σv, ψspace)
+end
 
-# include("vf_solve_terminal_and_infill.jl")
+include("test_utility.jl")
+include("test_transition.jl")
+
+include("logsumexp3.jl")
+
+include("vf_solve_terminal_and_infill.jl")
 include("vf_solve_exploratory.jl")
 
 zero!(tmpv)

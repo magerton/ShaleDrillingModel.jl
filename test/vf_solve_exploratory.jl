@@ -31,20 +31,16 @@
         θ2[k] += h
         hh = θ2[k] - θ1[k]
 
-        fillflows_grad!(tmpv, prim, θ1, σv, itype...)
-        @test !all(t.uex .== 0.0)
-        @test !all(t.duex .== 0.0)
         solve_vf_terminal!(evs, prim)
-        solve_vf_infill!(evs, tmpv, prim, false)
-        learningUpdate!(evs, tmpv, prim, σv, false)
-        solve_vf_explore!(evs, tmpv, prim, false)
+        solve_vf_infill!( evs, tmpv, prim, θ1, σv, false, itype)
+        learningUpdate!(  evs, tmpv, prim,     σv, false)
+        solve_vf_explore!(evs, tmpv, prim, θ1, σv, false, itype)
         fdEV[:,:,k,:] .= -evs.EV
 
-        fillflows_grad!(tmpv, prim, θ2, σv, itype...)
         solve_vf_terminal!(evs, prim)
-        solve_vf_infill!(evs, tmpv, prim, false)
-        learningUpdate!(evs, tmpv, prim, σv, false)
-        solve_vf_explore!(evs, tmpv, prim, false)
+        solve_vf_infill!( evs, tmpv, prim, θ2, σv, false, itype)
+        learningUpdate!(  evs, tmpv, prim,     σv, false)
+        solve_vf_explore!(evs, tmpv, prim, θ2, σv, false, itype)
 
         fdEV[:,:,k,:] .+= evs.EV
         fdEV[:,:,k,:] ./= hh
@@ -52,11 +48,10 @@
 
     # ----------------- analytic -----------------
 
-    fillflows_grad!(tmpv, prim, θt, σv, itype...)
     solve_vf_terminal!(evs, prim)
-    solve_vf_infill!(evs, tmpv, prim, true)
-    learningUpdate!(evs, tmpv, prim, σv)
-    solve_vf_explore!(evs, tmpv, prim, true)
+    solve_vf_infill!( evs, tmpv, prim, θt, σv, true, itype)
+    learningUpdate!(  evs, tmpv, prim,     σv, true)
+    solve_vf_explore!(evs, tmpv, prim, θt, σv, true, itype)
 
     # check infill + learning portion gradient
     @views maxv, idx = findmax(abs.(fdEV[:,:,:,_nSexp(wp)+1:end].-evs.dEV[:,:,:,_nSexp(wp)+1:end]))
@@ -105,42 +100,38 @@ end
         hh = σ2 - σ1
 
         zero!(tmpv)
-        fillflows_grad!(tmpv, prim, θt, σ1, itype...)
         solve_vf_terminal!(evs, prim)
-        solve_vf_infill!(evs, tmpv, prim, false)
-        learningUpdate!(evs, tmpv, prim, σ1)
-        fdubv .= -tmpv.ubVfull
-        solve_vf_explore!(evs, tmpv, prim, false)
+        solve_vf_infill!( evs, tmpv, prim, θt, σ1, false, itype)
+        learningUpdate!(  evs, tmpv, prim,     σ1, false)
+        # fdubv .= -tmpv.ubVfull
+        solve_vf_explore!(evs, tmpv, prim, θt, σ1, false, itype)
         fdEVσ .= -evs.EV
 
         zero!(tmpv)
-        fillflows_grad!(tmpv, prim, θt, σ2, itype...)
         solve_vf_terminal!(evs, prim)
-        solve_vf_infill!(evs, tmpv, prim, false)
-        learningUpdate!(evs, tmpv, prim, σ2)
-        fdubv .+= tmpv.ubVfull
-        fdubv ./= hh
-        solve_vf_explore!(evs, tmpv, prim, false)
+        solve_vf_infill!( evs, tmpv, prim, θt, σ2, false, itype)
+        learningUpdate!(  evs, tmpv, prim,     σ2, false)
+        # fdubv .+= tmpv.ubVfull
+        # fdubv ./= hh
+        solve_vf_explore!(evs, tmpv, prim, θt, σ2, false, itype)
         fdEVσ .+= evs.EV
         fdEVσ ./= hh
 
         # ----------------- analytic -----------------
 
         zero!(tmpv)
-        fillflows_grad!(tmpv, prim, θt, σv, itype...)
-        solve_vf_terminal!(evs, prim)
-        solve_vf_infill!(evs, tmpv, prim, true)
-        learningUpdate!(evs, tmpv, prim, σv, Val{true})
+        solve_vf_infill!( evs, tmpv, prim, θt, σv, true, itype)
+        learningUpdate!(  evs, tmpv, prim,     σv, true)
 
-        # test dubV_σ
-        maxv, idx = findmax(abs.(fdubv.-tmpv.dubV_σ))
-        @test fdubv ≈ tmpv.dubV_σ || maxv < 6.0e-7
-        println("worst value is $maxv at $(CartesianIndices(fdubv)[idx]) for dubV_σ")
-        @show extrema(fdubv)
-        @show extrema(tmpv.dubV_σ)
+        # # test dubV_σ
+        # maxv, idx = findmax(abs.(fdubv.-tmpv.dubV_σ))
+        # @test fdubv ≈ tmpv.dubV_σ || maxv < 6.0e-7
+        # println("worst value is $maxv at $(CartesianIndices(fdubv)[idx]) for dubV_σ")
+        # @show extrema(fdubv)
+        # @show extrema(tmpv.dubV_σ)
 
         # now test dσ
-        solve_vf_explore!(evs, tmpv, prim, true)
+        solve_vf_explore!(evs, tmpv, prim, θt, σv, true, itype)
         fdEVσvw = @view(fdEVσ[:,:,1:nsexp1])
         @test size(fdEVσvw) == size(evs.dEVσ)
         maxv, idx = findmax(abs.(fdEVσvw.-evs.dEVσ))

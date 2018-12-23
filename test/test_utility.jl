@@ -1,7 +1,7 @@
 @testset "Utility" begin
 
-   duex = similar(tmpv.duσ)
-   fduex = similar(tmpv.u)
+   duex = similar(tmpv.dubV_σ)
+   fduex = similar(tmpv.ubVfull)
    roy = 0.2
    geoid = 2
    itype=(geoid, roy,)

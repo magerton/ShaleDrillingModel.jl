@@ -97,10 +97,6 @@ end
 # --------------------- tmp vars --------------------------
 
 struct dcdp_tmpvars{T<:Float64,AM<:AbstractMatrix{Float64}}
-    u::Array{T,3}
-    du::Array{T,4}
-    duσ::Array{T,3}
-
     ubVfull::Array{T,3}
     dubVfull::Array{T,4}
     dubV_σ::Array{T,3}
@@ -119,7 +115,6 @@ function check_size(prim::dcdp_primitives, t::dcdp_tmpvars)
 
     # TODO: allow dmaxp1 to vary with regime
 
-    (nz,nψ,nθ,nd) == size(t.duex)     || throw(DimensionMismatch())
     (nz,nψ,nd)    == size(t.q)        || throw(DimensionMismatch())
     (nz,nψ,nθ,nd) == size(t.dubVfull) || throw(DimensionMismatch())
     (nz,nψ,nd)    == size(t.dubV_σ)   || throw(DimensionMismatch())
@@ -136,11 +131,6 @@ function dcdp_tmpvars(prim::dcdp_primitives)
 
     nθt > nψ &&  throw(error("Must have more length(ψspace) > length(θt)"))
 
-    # flow payoffs + gradients
-    u   = zeros(T,nz,nψ,nd)
-    du  = zeros(T,nz,nψ,nθt,nd)
-    duσ = zeros(T,nz,nψ,nd)
-
     # choice-specific value functions
     ubVfull  = zeros(T,nz,nψ,nd)
     dubVfull = zeros(T,nz,nψ,nθt,nd)
@@ -155,14 +145,11 @@ function dcdp_tmpvars(prim::dcdp_primitives)
     Πψtmp = Matrix{T}(undef,nψ,nψ)
     IminusTEVp = ensure_diagonal(prim.Πz)
 
-    return dcdp_tmpvars(u, du, duσ, ubVfull, dubVfull, dubV_σ, q, lse, tmp, Πψtmp, IminusTEVp)
+    return dcdp_tmpvars(ubVfull, dubVfull, dubV_σ, q, lse, tmp, Πψtmp, IminusTEVp)
 end
 
 
 function zero!(t::dcdp_tmpvars)
-    zero!(t.u  )
-    zero!(t.du )
-    zero!(t.duσ)
     zero!(t.ubVfull )
     zero!(t.dubVfull)
     zero!(t.dubV_σ  )

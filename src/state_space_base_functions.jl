@@ -31,7 +31,7 @@ inf_fm_lrn(dmx::Int, ep::NTuple{6,Int})::StepRange{Int} = (ep[4]+1) .+ 2*(0:dmx-
 exploratory_terminal(ep::NTuple{6,Int}) = ep[3]+1
 exploratory_learning(ep::NTuple{6,Int}) = ep[3]+2 : ep[4]
 
-# What is this for???
+# This is in case we want different action spaces for well 1 vs wells 2+
 # dmx_exp(dmx::Integer, Dmx::Integer, τmx::Integer) = dmx
 # dmx_lrn(dmx::Integer, Dmx::Integer, τmx::Integer) = dmx_exp(dmx,Dmx,τmx)
 # dmx_inf(dmx::Integer, Dmx::Integer, τmx::Integer) = dmx
