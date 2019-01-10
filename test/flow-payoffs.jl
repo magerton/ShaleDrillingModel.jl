@@ -36,6 +36,9 @@
     p8i = dcdp_primitives( :cheb3_cost_restr, β, wp,  (logp_space, logc_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
     p10i = dcdp_primitives( :cheb3_cost      , β, wp, (logp_space, logc_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
 
+    p9h  = dcdp_primitives( :cheb3_cost_tech_restr, β, wp, (logp_space, logc_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
+    p11h = dcdp_primitives( :cheb3_cost_tech      , β, wp, (logp_space, logc_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
+
     p8j = dcdp_primitives( :ttbuild_cost_restr , β, wp, (logp_space, logc_space, ), Πpconly, ψspace)
     p10j = dcdp_primitives( :ttbuild_cost      , β, wp, (logp_space, logc_space, ), Πpconly, ψspace)
 
@@ -63,12 +66,17 @@
 
     v8i  = [-3.58283,                     -13.9518*0.2, -12.5996*0.2, 11.6749*0.2, -6.40167*0.2, 2.0126*0.2, -0.2, -1.17545, ]
     v10i = [-3.58283, 0.710067, 0.442882, -13.9518*0.2, -12.5996*0.2, 11.6749*0.2, -6.40167*0.2, 2.0126*0.2, -0.2, -1.17545, ]
+    v11h = [-3.58283, 0.710067, 0.442882, 0.0032, -13.9518*0.2, -12.5996*0.2, 11.6749*0.2, -6.40167*0.2, 2.0126*0.2, -0.2, -1.17545, ]
 
     roy = 0.225    # median royalty
     geoid = 4.706  # median geology
 
 
     println("Testing a bunch of small flow gradients now...")
+
+    @test check_flowgrad(v8i,  σ, p8j,  geoid, roy)
+    @test check_flowgrad(v10i, σ, p10j, geoid, roy)
+
 
     @test check_flowgrad(v8i,  σ, p8j,  geoid, roy)
     @test check_flowgrad(v10i, σ, p10j, geoid, roy)
