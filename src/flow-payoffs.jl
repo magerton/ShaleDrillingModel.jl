@@ -183,7 +183,7 @@ end
 end
 
 
-@inline function flowdψ(::FF, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, sgn_ext::Bool, geoid::Real, roy::T) where {FF <: Union{ Type{Val{:cheb3_cost_tech}} }, N, T}
+@inline function flowdψ(::FF, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, sgn_ext::Bool, geoid::Real, roy::T) where {FF <: Union{ Type{Val{:cheb3_cost_tech_restr}} }, N, T}
     d == 0  && return zero(T) # sgn_ext ? θ[10] : zero(T)
     return (d * drevdψ_exp_restricted(θ[1],σ,first(z),last(z),ψ,geoid,roy))::T
 end
