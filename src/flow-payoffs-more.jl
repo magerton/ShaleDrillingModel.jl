@@ -8,6 +8,8 @@ function Eexpψ(θ4::T, σ::T, ψ::T, Dgt0::Bool) where {T<:Real}
     return out::T
 end
 
+# ------------------------
+
 @inline function rev_exp(θ0::Real, θ1::T, θ2::Real, θ3::T, θ4::T, σ::T, logp::Real, ψ::Real, Dgt0::Bool, geoid::Real, roy::Real) where {T<:Real}
     r = (one(T)-θ0*roy) * exp(θ1 + θ2*logp + θ3*geoid + Eexpψ(θ4, σ, ψ, Dgt0))
     return r::T
@@ -21,6 +23,7 @@ end
     rev_exp(θ0,θ1,θ2,θ3,θ4,σ,logp,ψ,false,geoid, roy) * θ4 * _ρ(σ)
 end
 
+# ------------------------
 
 # add capability for a time trend
 @inline function rev_exp(θ0::Real, θ1::T, θ2::Real, θ3::T, θ4::T, θ5::T, σ::T, logp::Real, t::Real, ψ::Real, Dgt0::Bool, geoid::Real, roy::Real) where {T<:Real}
@@ -28,7 +31,7 @@ end
     return r::T
 end
 
-@inline function drevdσ_exp(θ0::Real, θ1::T, θ2::Real, θ3::T, θ4::T, θ5::T, σ::T, logp::Real, t::Real, ψ::Real, Dgt0::Bool, geoid::Real, roy::Real) where {T<:Real}
+@inline function drevdσ_exp(θ0::Real, θ1::T, θ2::Real, θ3::T, θ4::T, θ5::T, σ::T, logp::Real, t::Real, ψ::Real, geoid::Real, roy::Real) where {T<:Real}
     return rev_exp(θ0,θ1,θ2,θ3,θ4,θ5,σ,logp,t,ψ,false,geoid, roy) * (ψ*θ4 - θ4^2*_ρ(σ)) * _dρdσ(σ)
 end
 

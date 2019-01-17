@@ -148,7 +148,6 @@ end
 end
 
 
-
 @inline function flowdσ(::FF, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, geoid::Real, roy::T)::T where {FF <: Union{ Type{Val{:cheb3_cost_tech}} }, N, T}
     d == 0 && return zero(T)
     return d * drevdσ_exp(1,θ[1],1,θ[2],θ[3],θ[4],σ,first(z),last(z),ψ,geoid,roy)

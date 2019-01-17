@@ -74,45 +74,44 @@
 
     println("Testing a bunch of small flow gradients now...")
 
-    @test check_flowgrad(v8i,  σ, p8j,  geoid, roy)
-    @test check_flowgrad(v10i, σ, p10j, geoid, roy)
+    @test check_flowgrad(v8f,  σ, p9h,  geoid, roy)
+    @test check_flowgrad(v11h, σ, p11h, geoid, roy)
 
-
-    @test check_flowgrad(v8i,  σ, p8j,  geoid, roy)
-    @test check_flowgrad(v10i, σ, p10j, geoid, roy)
-
-    @test check_flowgrad(v8i,  σ, p8i,  geoid, roy)
-    @test check_flowgrad(v10i, σ, p10i, geoid, roy)
-    @test check_flowgrad(v7f, σ, p7h, geoid, roy)
-    @test check_flowgrad(v9f, σ, p9h, geoid, roy)
-
-    @test check_flowgrad(v5a, σ, p5g, geoid, roy)
-    @test check_flowgrad(v7f, σ, p7g, geoid, roy)
-    @test check_flowgrad(v6f, σ, p6g, geoid, roy)
-    @test check_flowgrad(v8f, σ, p8g, geoid, roy)
-
-    @test check_flowgrad(v7f, σ, p7f, geoid, roy)
-    @test check_flowgrad(v9f, σ, p9f, geoid, roy)
-
-    @test check_flowgrad(v6f, σ, p6f, geoid, roy)
-    @test check_flowgrad(v8f, σ, p8f, geoid, roy)
-
-    @test check_flowgrad(v6e, σ, p6e, geoid, roy)
-    @test check_flowgrad(v8e, σ, p8e, geoid, roy)
-
-    @test check_flowgrad(v5a, σ, p5d, geoid, roy)
-    @test check_flowgrad(v7a, σ, p7d, geoid, roy)
-
-    @test check_flowgrad(v5a, σ, p5c, geoid, roy)
-    @test check_flowgrad(v7a, σ, p7c, geoid, roy)
-
-    @test check_flowgrad(v5a, σ, p5a, geoid, roy)
-    @test check_flowgrad(v7a, σ, p7a, geoid, roy)
-
-    @test check_flowgrad(v3, σ, p3 , geoid, roy)
-    @test check_flowgrad(v4, σ, p4a, geoid, roy)
-    @test check_flowgrad(v4, σ, p4b, geoid, roy)
-    @test check_flowgrad(v5, σ, p5 , geoid, roy)
-    @test check_flowgrad(v6, σ, p6a, geoid, roy)
-    @test check_flowgrad(v6, σ, p6b, geoid, roy)
+    # @test check_flowgrad(v8i,  σ, p8j,  geoid, roy)
+    # @test check_flowgrad(v10i, σ, p10j, geoid, roy)
+    #
+    # @test check_flowgrad(v8i,  σ, p8i,  geoid, roy)
+    # @test check_flowgrad(v10i, σ, p10i, geoid, roy)
+    # @test check_flowgrad(v7f, σ, p7h, geoid, roy)
+    # @test check_flowgrad(v9f, σ, p9h, geoid, roy)
+    #
+    # @test check_flowgrad(v5a, σ, p5g, geoid, roy)
+    # @test check_flowgrad(v7f, σ, p7g, geoid, roy)
+    # @test check_flowgrad(v6f, σ, p6g, geoid, roy)
+    # @test check_flowgrad(v8f, σ, p8g, geoid, roy)
+    #
+    # @test check_flowgrad(v7f, σ, p7f, geoid, roy)
+    # @test check_flowgrad(v9f, σ, p9f, geoid, roy)
+    #
+    # @test check_flowgrad(v6f, σ, p6f, geoid, roy)
+    # @test check_flowgrad(v8f, σ, p8f, geoid, roy)
+    #
+    # @test check_flowgrad(v6e, σ, p6e, geoid, roy)
+    # @test check_flowgrad(v8e, σ, p8e, geoid, roy)
+    #
+    # @test check_flowgrad(v5a, σ, p5d, geoid, roy)
+    # @test check_flowgrad(v7a, σ, p7d, geoid, roy)
+    #
+    # @test check_flowgrad(v5a, σ, p5c, geoid, roy)
+    # @test check_flowgrad(v7a, σ, p7c, geoid, roy)
+    #
+    # @test check_flowgrad(v5a, σ, p5a, geoid, roy)
+    # @test check_flowgrad(v7a, σ, p7a, geoid, roy)
+    #
+    # @test check_flowgrad(v3, σ, p3 , geoid, roy)
+    # @test check_flowgrad(v4, σ, p4a, geoid, roy)
+    # @test check_flowgrad(v4, σ, p4b, geoid, roy)
+    # @test check_flowgrad(v5, σ, p5 , geoid, roy)
+    # @test check_flowgrad(v6, σ, p6a, geoid, roy)
+    # @test check_flowgrad(v6, σ, p6b, geoid, roy)
 end
