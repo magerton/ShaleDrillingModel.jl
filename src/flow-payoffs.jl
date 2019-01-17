@@ -1,8 +1,8 @@
-export flow, flowdθ, flowdσ, flowdψ, STARTING_σ_ψ, STARTING_log_ogip
+export flow, flowdθ, flowdσ, flowdψ, STARTING_σ_ψ, STARTING_log_ogip, STARTING_t
 
 const STARTING_σ_ψ      = 0x1.baddbb87af68ap-2 # = 0.432
 const STARTING_log_ogip = 0x1.670bf3d5b282dp-1 # = 0.701
-const STARTING_t = 0.042/(2016-2003)
+const STARTING_t = 2*0.042/(2016-2003)
 
 # functions in case we have months to expiration
 @inline flow(  FF::Type, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T,             d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, τ::Real, geoid::Real, roy::T) where {N,T} = flow(  FF, θ, σ, z, ψ,    d, d1, Dgt0, sgn_ext, geoid, roy)
