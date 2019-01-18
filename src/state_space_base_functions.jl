@@ -10,6 +10,7 @@
 @inline end_lrn(d::Integer, D::Integer, t0::Integer, t1::Integer, e::Integer)::Int = end_ex0(d,D,t0,t1,e) + (d+1)
 @inline end_inf(d::Integer, D::Integer, t0::Integer, t1::Integer, e::Integer)::Int = end_lrn(d,D,t0,t1,e) + 2*(D-1)+ 1
 @inline strt_ex(d::Integer, D::Integer, t0::Integer, t1::Integer, e::Integer)::Int = end_ex0(d,D,t0,t1,e) - (e-1)     # t+d+2(D)+1 = (t+1) + (d+1) + 2*(D-1) + 1
+@inline end_pts(d,D,t0,t1,e)::NTuple{6,Int} = (0, end_ex1(d,D,t0,t1,e), end_ex0(d,D,t0,t1,e), end_lrn(d,D,t0,t1,e), end_inf(d,D,t0,t1,e), strt_ex(d,D,t0,t1,e),)
 
 # Assuming we have no lease extensions
 @inline end_ex0(d::Integer, D::Integer, t0::Integer) = end_ex0(d,D,t0,-1,0)
@@ -17,7 +18,6 @@
 @inline end_inf(d::Integer, D::Integer, t0::Integer) = end_inf(d,D,t0,-1,0)
 
 # Create tuple of values that define state space
-@inline end_pts(d,D,t0,t1,e)::NTuple{6,Int} = (0, end_ex1(d,D,t0,t1,e), end_ex0(d,D,t0,t1,e), end_lrn(d,D,t0,t1,e), end_inf(d,D,t0,t1,e), strt_ex(d,D,t0,t1,e),)
 @inline end_pts(d,D,t0) = end_pts(d,D,t0,-1,0)
 
 ind_ex1(ep::NTuple{6,Int}) = ep[2]   : -1 : ep[1]+1
