@@ -54,7 +54,7 @@
             θtvw = _θt(θfull, prim)
             σ0 = _σv(θfull)
 
-            if d ∈ ShaleDrillingModel._actionspace(prim.wp, s) # && !(s ∈ ShaleDrillingModel.ind_lrn(prim.wp.endpts))
+            if d ∈ ShaleDrillingModel.actionspace(prim.wp, s) # && !(s ∈ ShaleDrillingModel.ind_lrn(prim.wp.endpts))
                 @views lp = logP!(grad[:,CI], tmp, θtvw, σ0, prim, isev,  (u,v), (zp,zv,), d, s, (gi, ri,), dograd)
             end
         end
@@ -79,7 +79,7 @@
                 zpi, zvi, ui, vi, di, si, gi, ri = CI.I
                 zp , zv , u , v , d , s , g , r  = getindex.(rngs, CI.I)
                 θtvw1 = _θt(θ1, prim)
-                if d ∈ ShaleDrillingModel._actionspace(prim.wp, s) # && !(s ∈ ShaleDrillingModel.ind_lrn(prim.wp.endpts))
+                if d ∈ ShaleDrillingModel.actionspace(prim.wp, s) # && !(s ∈ ShaleDrillingModel.ind_lrn(prim.wp.endpts))
                     fdgrad[k,CI] -= logP!(Vector{T}(), tmp, θtvw1, σ1, prim, isev, (u,v), (zp,zv,), d, s, (gi,ri), dograd)
                 end
             end
@@ -91,7 +91,7 @@
                 zpi, zvi, ui, vi, di, si, gi, ri = CI.I
                 zp , zv , u , v , d , s , g , r  = getindex.(rngs, CI.I)
                 θtvw2 = _θt(θ2, prim)
-                if d ∈ ShaleDrillingModel._actionspace(prim.wp, s) # && !(s ∈ ShaleDrillingModel.ind_lrn(prim.wp.endpts))
+                if d ∈ ShaleDrillingModel.actionspace(prim.wp, s) # && !(s ∈ ShaleDrillingModel.ind_lrn(prim.wp.endpts))
                     fdgrad[k,CI] += logP!(Vector{T}(), tmp, θtvw2, σ2, prim, isev, (u,v), (zp,zv,), d, s, (gi,ri,), dograd)
                     fdgrad[k,CI] /= hh
                 end

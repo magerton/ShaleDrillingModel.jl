@@ -13,6 +13,7 @@
     EV1 = similar(evs.EV)
     EV2 = similar(evs.EV)
     fdEV = similar(evs.dEV)
+    nsexp = ShaleDrillingModel._nSexp(wp)
 
     zero!(evs.EV)
     zero!(evs.dEV)
@@ -54,11 +55,11 @@
     solve_vf_explore!(evs, tmpv, prim, θt, σv, true, itype)
 
     # check infill + learning portion gradient
-    @views maxv, idx = findmax(abs.(fdEV[:,:,:,_nSexp(wp)+1:end].-evs.dEV[:,:,:,_nSexp(wp)+1:end]))
+    @views maxv, idx = findmax(abs.(fdEV[:,:,:,nsexp+1:end].-evs.dEV[:,:,:,nsexp+1:end]))
     println("worst value is $maxv at $(CartesianIndices(fdEV)[idx]) for infill")
 
     # check exploration portion of gradient
-    @views maxv, idx = findmax(abs.(fdEV[:,:,:,1:_nSexp(wp)].-evs.dEV[:,:,:,1:_nSexp(wp)]))
+    @views maxv, idx = findmax(abs.(fdEV[:,:,:,1:nsexp].-evs.dEV[:,:,:,1:nsexp]))
     println("worst value is $maxv at $(CartesianIndices(fdEV)[idx]) for exploratory")
 
     @test 0.0 < maxv < 0.1
@@ -79,7 +80,7 @@ end
         EV2 = zeros(T, size(evs.EV)),
         t = tmpv,
         p = prim,
-        nsexp1 = _nSexp(wp),
+        nsexp1 = ShaleDrillingModel._nSexp(wp),
         σ = σv,
         roy = 0.2,
         geoid = 2,

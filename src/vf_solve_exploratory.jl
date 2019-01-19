@@ -20,7 +20,7 @@ function solve_vf_explore!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, 
     β        = p.β
 
     nz,nψ,nS = size(EV)
-    nSexp, dmaxp1, nd = _nSexp(wp), dmax(wp)+1, dmax(wp)+1
+    nSexp, dmaxp1, nd = _nSexp(wp), _dmax(wp)+1, _dmax(wp)+1
 
     (nz,nψ,nd) == size(ubVfull)       || throw(DimensionMismatch())
     (nz,nz) == size(Πz)               || throw(DimensionMismatch())
@@ -50,21 +50,21 @@ function solve_vf_explore!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, 
     @views βdEV1  = dEV[ :,:,:,exp2lrn]
     @views βdEVσ1 = dEVσ[:,:,  exp2lrn]
 
-    for i in explore_state_inds(wp)
+    for i in ind_exp(wp)
         ip = action0(wp,i)
-        st = state(wp,i)
+        # st = state(wp,i)
 
         @views EV0 = EV[:,:,ip]
 
-        fillflows!(ubVfull, flow, p, θt, σ, st, itype...)
+        fillflows!(ubVfull, flow, p, θt, σ, i, itype...)
         ubV0 .+= β .* EV0
         ubV1 .+= βEV1 # β already baked in
 
         if dograd
             @views dEV0 = dEV[:,:,:,ip]
             @views dEVσ1 = dEVσ[ :,:,ip]
-            fillflows_grad!(dubVfull, flowdθ, p, θt, σ, st, itype...)
-            fillflows!(       dubV_σ, flowdσ, p, θt, σ, st, itype...)
+            fillflows_grad!(dubVfull, flowdθ, p, θt, σ, i, itype...)
+            fillflows!(       dubV_σ, flowdσ, p, θt, σ, i, itype...)
             dubV0   .+= β .* dEV0
             dubV1   .+= βdEV1  # β already baked in
             dubV_σ0 .+= β .* dEVσ1

@@ -2,15 +2,17 @@
 
 @testset "testing logsumexp3" begin
 
-    i = 17
+    i = 16
 
     let geoid = 2,
         roy = 0.25,
         itype = (geoid, roy,),
-        st = state(wp,i)
+        stidx = i,
+        st = state(prim.wp,i),
+        tmpv = dcdp_tmpvars(prim)
 
-        fillflows!(     tmpv.ubVfull,  flow,   prim, θt, σv, st, itype...)
-        fillflows_grad!(tmpv.dubVfull, flowdθ, prim, θt, σv, st, itype...)
+        fillflows!(     tmpv.ubVfull,  flow,   prim, θt, σv, stidx, itype...)
+        fillflows_grad!(tmpv.dubVfull, flowdθ, prim, θt, σv, stidx, itype...)
     end
 
     dmaxp1 = ShaleDrillingModel._nd(prim)

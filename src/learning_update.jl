@@ -5,7 +5,7 @@ function learningUpdate!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, σ
     Πψtmp  = t.Πψtmp
     ψspace = _ψspace(p)
 
-    d2plus = 2:dmax(p.wp)+1  # TODO: would be good to make this more general.
+    d2plus = 2:_dmax(p.wp)+1  # TODO: would be good to make this more general.
     lrn2inf = inf_fm_lrn(p.wp)
     exp2lrn = exploratory_learning(p.wp)
 

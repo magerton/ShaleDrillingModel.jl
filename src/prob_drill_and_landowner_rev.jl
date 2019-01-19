@@ -45,13 +45,13 @@ function prDrill_infill!(
 
     lse::AbstractMatrix, tmp::AbstractMatrix, IminusTEVp::AbstractMatrix,
 
-    wp::well_problem, Πz::AbstractMatrix,
+    wp::AbstractUnitProblem, Πz::AbstractMatrix,
 
     Πψtmp::AbstractMatrix, ψspace::AbstractVector, σ::Real, β::Real
     )
 
     nz,nψ,nS = size(EV)
-    dmaxp1 = dmax(wp)+1
+    dmaxp1 = _dmax(wp)+1
 
     # ------------------------ size checks ----------------------------------
 
@@ -103,7 +103,7 @@ function prDrill_infill!(
     end
 
     # ----------- Learning integration ----------------
-    d2plus  = 2:dmax(wp)+1  # TODO: would be good to make this more general.
+    d2plus  = 2:_dmax(wp)+1  # TODO: would be good to make this more general.
     lrn2inf = inf_fm_lrn(wp)
     exp2lrn = exploratory_learning(wp)
 

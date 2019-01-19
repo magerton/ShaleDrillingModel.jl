@@ -13,17 +13,17 @@ export dcdp_primitives,
     _θt,
     _σv
 
-struct dcdp_primitives{FF,T<:Real,AM<:AbstractMatrix{T},TT<:Tuple,AV<:AbstractVector{T}}
+struct dcdp_primitives{FF,UP<:AbstractUnitProblem,T<:Real,AM<:AbstractMatrix{T},TT<:Tuple,AV<:AbstractVector{T}}
     β::T
-    wp::well_problem  # structure of endogenous choice vars
+    wp::UP            # structure of endogenous choice vars
     zspace::TT        # z-space (tuple)
     Πz::AM            # transition for z
     ψspace::AV        # ψspace = u + σv*v
     nθt::Int          # Num parameters in flow payoffs MINUS 1 for σv
 end
 
-function dcdp_primitives(FF::Symbol, β::T, wp::well_problem, zspace::TT, Πz::AM, ψspace::AV) where {T,TT,AM,AV}
-    dcdp_primitives{Val{FF},T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, number_of_model_parms(FF))
+function dcdp_primitives(FF::Symbol, β::T, wp::UP, zspace::TT, Πz::AM, ψspace::AV) where {T,TT,AM,AV,UP<:AbstractUnitProblem}
+    dcdp_primitives{Val{FF},UP,T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, number_of_model_parms(FF))
 end
 
 flow(prim::dcdp_primitives{FF}) where {FF} = FF
@@ -42,7 +42,7 @@ _nz(    prim::dcdp_primitives) = size(prim.Πz,1)
 _nψ(    prim::dcdp_primitives) = length(prim.ψspace) # prim.nψ
 _nS(    prim::dcdp_primitives) = _nS(prim.wp)
 _nSexp( prim::dcdp_primitives) = _nSexp(prim.wp)
-_nd(    prim::dcdp_primitives) = dmax(prim.wp)+1
+_nd(    prim::dcdp_primitives) = _dmax(prim.wp)+1
 
 _zspace(prim::dcdp_primitives) = prim.zspace
 
@@ -55,8 +55,8 @@ _ψspace(prim::dcdp_primitives) = prim.ψspace
 sprime_idx(prim::dcdp_primitives, i::Integer) = sprime_idx(prim.wp, i)
 wp_info(prim::dcdp_primitives, i::Integer) = wp_info(prim.wp, i)
 state(prim::dcdp_primitives, i::Integer) = state(prim.wp, i)
-dmax( prim::dcdp_primitives, i::Integer) = dmax(prim.wp, i)
-dmax(prim::dcdp_primitives) = dmax(prim.wp)
+_dmax(prim::dcdp_primitives, i::Integer) = _dmax(prim.wp, i)
+_dmax(prim::dcdp_primitives) = _dmax(prim.wp)
 
 size(prim::dcdp_primitives) = _nz(prim), _nψ(prim), _nS(prim)
 
@@ -70,7 +70,7 @@ end
 
 dcdp_Emax(EV::AbstractArray3{T}, dEV::AbstractArray4{T}, dEVσ::AbstractArray3{T}) where {T} =  dcdp_Emax{T,typeof(EV),typeof(dEV)}(EV,dEV,dEVσ)
 
-function dcdp_Emax(p::dcdp_primitives{FF,T}) where {FF,T}
+function dcdp_Emax(p::dcdp_primitives{FF,UP,T}) where {FF,UP,T}
     EV   = zeros(T, _nz(p), _nψ(p),          _nS(p))
     dEV  = zeros(T, _nz(p), _nψ(p), _nθt(p), _nS(p))
     dEVσ = zeros(T, _nz(p), _nψ(p),          _nSexp(p))

@@ -112,6 +112,6 @@
     # @test check_flowgrad(v4, σ, p4a, geoid, roy)
     # @test check_flowgrad(v4, σ, p4b, geoid, roy)
     # @test check_flowgrad(v5, σ, p5 , geoid, roy)
-    # @test check_flowgrad(v6, σ, p6a, geoid, roy)
-    # @test check_flowgrad(v6, σ, p6b, geoid, roy)
+    @test check_flowgrad(v6, σ, p6a, geoid, roy)
+    @test check_flowgrad(v6, σ, p6b, geoid, roy)
 end

@@ -22,7 +22,7 @@ nplus1_impl(N::Integer) = :(Val{$(N+1)})
   ψ = Dgt0 ? _ψ2(uv...,ρ) : _ψ1clamp(uv..., ρ, prim) # _ψ1(uv...,ρ) # NOTE: truncation of ψ1 can lead to errors in gradient!!!!!!
 
   # containers
-  drng = action_iter(prim.wp, s_idx)
+  drng = actionspace(prim.wp, s_idx)
   ubV = view(tmp, drng.+1)
 
   @inbounds for d in drng

@@ -5,7 +5,7 @@ using Distributed
 IN_SLURM && using ClusterManagers
 
 using ShaleDrillingModel
-using ShaleDrillingData
+# using ShaleDrillingData
 using Test
 using StatsFuns
 using JLD2
@@ -16,7 +16,8 @@ using SparseArrays
 using Calculus
 
 # jldpath = Base.joinpath(Pkg.dir("ShaleDrillingData"), "data/price-transitions.jld")
-jldpath = joinpath(dirname(pathof(ShaleDrillingData)), "..", "data/price-vol-transitions.jld")
+# jldpath = joinpath(dirname(pathof(ShaleDrillingData)), "..", "data/price-vol-transitions.jld")
+jldpath = "D:/libraries/julia/dev/ShaleDrillingData/data/price-vol-transitions.jld"
 @load jldpath logp_space logc_space logσ_space Πp Πpc Πpconly
 
 # some primitives
@@ -34,7 +35,7 @@ flowfuncname = :one_restr
 
 # problem sizes
 nψ, dmx, nz, nv =  51, 3, size(Πp,1), 51
-wp = well_problem(dmx,4,5,3,2)
+wp = LeasedProblemContsDrill(dmx,4,5,3,2)
 
 zspace, ψspace, dspace, d1space, vspace = (logp_space, logσ_space,), range(-4.5, stop=4.5, length=nψ), 0:dmx, 0:1, range(-3.0, stop=3.0, length=nv)
 
@@ -45,21 +46,21 @@ evs = dcdp_Emax(prim)
 ## check sizes of models
 ShaleDrillingModel.check_size(prim, evs)
 
-include("BSplineTestFuns_runtests.jl")
-include("makeStateSpace.jl")
-include("flow-payoffs.jl")
+# include("BSplineTestFuns_runtests.jl")
+# include("state-space.jl")
+# # include("flow-payoffs.jl")
+#
+# @testset  "testing flow gradients" begin
+#     let geoid = 2, roy = 0.2
+#         @test check_flowgrad(θt, σv, prim, geoid, roy)
+#     end
+#     @test check_dΠψ(σv, ψspace)
+# end
+#
+# include("test_utility.jl")
+# include("test_transition.jl")
 
-@testset  "testing flow gradients" begin
-    let geoid = 2, roy = 0.2
-        @test check_flowgrad(θt, σv, prim, geoid, roy)
-    end
-    @test check_dΠψ(σv, ψspace)
-end
-
-include("test_utility.jl")
-include("test_transition.jl")
-
-include("logsumexp3.jl")
+# include("logsumexp3.jl")
 
 include("vf_solve_terminal_and_infill.jl")
 include("vf_solve_exploratory.jl")

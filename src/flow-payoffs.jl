@@ -8,10 +8,19 @@ const STARTING_t = 2*0.042/(2016-2003)
 @inline flow(  FF::Type, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T,             d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, τ::Real, geoid::Real, roy::T) where {N,T} = flow(  FF, θ, σ, z, ψ,    d, d1, Dgt0, sgn_ext, geoid, roy)
 @inline flowdθ(FF::Type, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, k::Integer, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, τ::Real, geoid::Real, roy::T) where {N,T} = flowdθ(FF, θ, σ, z, ψ, k, d, d1, Dgt0, sgn_ext, geoid, roy)
 @inline flowdσ(FF::Type, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T,             d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, τ::Real, geoid::Real, roy::T) where {N,T} = flowdσ(FF, θ, σ, z, ψ,    d,                    geoid, roy)
-@inline flowdσ(FF::Type, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T,             d::Integer,                                                     geoid::Real, roy::T) where {N,T} = flowdσ(FF, θ, σ, z, ψ,    d,                    geoid, roy)
-
 @inline flowdψ(FF::Type, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T,             d::Integer,                          sgn_ext::Bool, τ::Real, geoid::Real, roy::T) where {N,T} = flowdψ(FF, θ, σ, z, ψ,    d,           sgn_ext, geoid, roy)
 @inline flowdψ(FF::Type, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T,             d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, τ::Real, geoid::Real, roy::T) where {N,T} = flowdψ(FF, θ, σ, z, ψ,    d,           sgn_ext, geoid, roy)
+
+@inline flowdσ(FF::Type, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T,             d::Integer,                                                  geoid::Real, roy::T) where {N,T} = flowdσ(FF, θ, σ, z, ψ,    d,                    geoid, roy)
+
+
+# functions in case we have months to expiration
+@inline flow(  FF::Type, wp::AbstractUnitProblem, i::Integer, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T,             d::Integer, geoid::Real, roy::T) where {N,T} = flow(  FF, θ, σ, z, ψ,    d, _d1(wp,i), _Dgt0(wp,i), _sgnext(wp,i), geoid, roy)
+@inline flowdθ(FF::Type, wp::AbstractUnitProblem, i::Integer, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, k::Integer, d::Integer, geoid::Real, roy::T) where {N,T} = flowdθ(FF, θ, σ, z, ψ, k, d, _d1(wp,i), _Dgt0(wp,i), _sgnext(wp,i), geoid, roy)
+@inline flowdσ(FF::Type, wp::AbstractUnitProblem, i::Integer, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T,             d::Integer, geoid::Real, roy::T) where {N,T} = flowdσ(FF, θ, σ, z, ψ,    d,                                        geoid, roy)
+@inline flowdψ(FF::Type, wp::AbstractUnitProblem, i::Integer, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T,             d::Integer, geoid::Real, roy::T) where {N,T} = flowdψ(FF, θ, σ, z, ψ,    d,                         _sgnext(wp,i), geoid, roy)
+
+# @inline function flowdθ(::Type, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, k::Integer, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {N,T}
 
 # --------------------------- common revenue functions & derivatives  --------------------------------------
 
@@ -39,13 +48,14 @@ const STARTING_t = 2*0.042/(2016-2003)
 
 include("flow-payoffs-more.jl")
 
-@inline function flow(::Type{Val{:cheb3_cost_tech}}, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {N,T}
+@inline function flow(::Type{Val{:cheb3_cost_tech}}, wp::AbstractUnitProblem, i::Integer, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, geoid::Real, roy::T) where {N,T}
+# @inline function flow(::Type{Val{:cheb3_cost_tech}}, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {N,T}
     if d == 0
-        sgn_ext && return θ[11]
+        _sgnext(wp,i) && return θ[11]
         return zero(T)
     end
     logp, logc, t = z
-    u = rev_exp(1,θ[1],1,θ[2],θ[3],θ[4],σ,logp,t,ψ,Dgt0,geoid, roy) + (d==1 ? θ[5] : θ[6] )*cheb0(t) + θ[7]*cheb1(t) + θ[8]*cheb2(t) + θ[9]*cheb3(t) + θ[10]*exp(logc)
+    u = rev_exp(1,θ[1],1,θ[2],θ[3],θ[4],σ, logp, t, ψ, _Dgt0(wp,i), geoid,roy) + (d==1 ? θ[5] : θ[6] )*cheb0(t) + θ[7]*cheb1(t) + θ[8]*cheb2(t) + θ[9]*cheb3(t) + θ[10]*exp(logc)
     d>1 && (u *= d)
     return u::T
 end
@@ -83,9 +93,10 @@ end
 # dθ
 # -----------------------------------------
 
-@inline function flowdθ(::Type{Val{:cheb3_cost_tech}}, θ::AbstractVector{T}, σ::T,     z::NTuple{N,T}, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {N,T}
-    d == 0 && !sgn_ext && return zero(T)
-
+@inline function flowdθ(::Type{Val{:cheb3_cost_tech}}, wp::AbstractUnitProblem, i::Integer, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, k::Integer, d::Integer, geoid::Real, roy::T) where {N,T}
+# @inline function flowdθ(::Type{Val{:cheb3_cost_tech}}, θ::AbstractVector{T}, σ::T,     z::NTuple{N,T}, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {N,T}
+    d == 0 && !_sgnext(wp,i) && return zero(T)
+    Dgt0 = _Dgt0(wp,i)
     logp, logc, t = z
 
     # revenue
@@ -95,15 +106,15 @@ end
     k == 4  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],θ[4],σ,logp,t,ψ,Dgt0,geoid,roy) * t
 
     # drilling cost
-    k == 5  && return d != 1 ? zero(T) : T(   cheb0(t) )
-    k == 6  && return d <= 1 ? zero(T) : T( d*cheb0(t) )
-    k == 7  && return d == 0 ? zero(T) : T( d*cheb1(t) )
-    k == 8  && return d == 0 ? zero(T) : T( d*cheb2(t) )
-    k == 9  && return d == 0 ? zero(T) : T( d*cheb3(t) )
+    k == 5   && return d != 1 ? zero(T) : T(   cheb0(t) )
+    k == 6   && return d <= 1 ? zero(T) : T( d*cheb0(t) )
+    k == 7   && return d == 0 ? zero(T) : T( d*cheb1(t) )
+    k == 8   && return d == 0 ? zero(T) : T( d*cheb2(t) )
+    k == 9   && return d == 0 ? zero(T) : T( d*cheb3(t) )
     k == 10  && return d == 0 ? zero(T) : T( d*exp(logc) )
 
     # extension cost
-    k == 11  && return d == 0 && sgn_ext ? one(T) : zero(T)
+    k == 11  && return d == 0 && _sgnext(wp,i) ? one(T) : zero(T)
 
     throw(error("$k out of bounds"))
 end
@@ -148,7 +159,7 @@ end
 end
 
 
-@inline function flowdσ(::FF, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, geoid::Real, roy::T)::T where {FF <: Union{ Type{Val{:cheb3_cost_tech}} }, N, T}
+@inline function flowdσ(::FF, wp::AbstractUnitProblem, i::Integer, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, geoid::Real, roy::T)::T where {FF <: Union{ Type{Val{:cheb3_cost_tech}} }, N, T}
     d == 0 && return zero(T)
     return d * drevdσ_exp(1,θ[1],1,θ[2],θ[3],θ[4],σ,first(z),last(z),ψ,geoid,roy)
 end
@@ -175,9 +186,14 @@ end
     return (d * drevdψ_exp_restricted(θ[1],σ,z[1],ψ,geoid,roy))::T
 end
 
+# @inline function flow(  FF::Type, wp::AbstractUnitProblem, i::Integer, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T,             d::Integer, geoid::Real, roy::T)
+# @inline function flowdθ(FF::Type, wp::AbstractUnitProblem, i::Integer, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, k::Integer, d::Integer, geoid::Real, roy::T)
+# @inline function flowdσ(FF::Type, wp::AbstractUnitProblem, i::Integer, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T,             d::Integer, geoid::Real, roy::T)
+# @inline function flowdψ(FF::Type, wp::AbstractUnitProblem, i::Integer, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T,             d::Integer, geoid::Real, roy::T)
 
-@inline function flowdψ(::FF, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, sgn_ext::Bool, geoid::Real, roy::T) where {FF <: Union{ Type{Val{:cheb3_cost_tech}} }, N, T}
-    d == 0  && return zero(T) # sgn_ext ? θ[10] : zero(T)
+
+@inline function flowdψ(::FF, wp::AbstractUnitProblem, i::Integer, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, geoid::Real, roy::T) where {FF <: Union{ Type{Val{:cheb3_cost_tech}} }, N, T}
+    d == 0  && return zero(T) # _sgnext(wp,i) ? θ[10] : zero(T)
     return (d * drevdψ_exp(1,θ[1],1,θ[2],θ[3],θ[4],σ,first(z),last(z),ψ,geoid,roy))::T
 end
 

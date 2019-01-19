@@ -9,7 +9,7 @@ function solve_vf_terminal!(EV::AbstractArray3)
 end
 
 
-function solve_vf_terminal!(EV::AbstractArray3, dEV::AbstractArray4, dEVσ::AbstractArray3, wp::well_problem)
+function solve_vf_terminal!(EV::AbstractArray3, dEV::AbstractArray4, dEVσ::AbstractArray3, wp::AbstractUnitProblem)
     @views zero!(EV[:,:,end])
     @views zero!(dEV[:,:,:,end])
     @views zero!(dEVσ[:,:,end])
@@ -21,7 +21,7 @@ function solve_vf_terminal!(EV::AbstractArray3, dEV::AbstractArray4, dEVσ::Abst
     # @views zero!(dEV_ψ[:,:,  exp_trm])
 end
 
-solve_vf_terminal!(evs::dcdp_Emax, wp::well_problem) = solve_vf_terminal!(evs.EV, evs.dEV, evs.dEVσ, wp)
+solve_vf_terminal!(evs::dcdp_Emax, wp::AbstractUnitProblem) = solve_vf_terminal!(evs.EV, evs.dEV, evs.dEVσ, wp)
 solve_vf_terminal!(evs::dcdp_Emax, prim::dcdp_primitives) = solve_vf_terminal!(evs.EV, evs.dEV, evs.dEVσ, prim.wp)
 
 # ---------------------------------------------
@@ -40,7 +40,7 @@ function solve_vf_infill!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, �
     β          = p.β
 
     nz,nψ,nS = size(EV)
-    dmaxp1 = dmax(wp)+1
+    dmaxp1 = _dmax(wp)+1
 
     # ------------------------ size checks ----------------------------------
 
@@ -57,18 +57,19 @@ function solve_vf_infill!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, �
     # ------------------------ compute things ----------------------------------
 
     for i in ind_inf(wp)
-        idxd, idxs, horzn, st = wp_info(wp, i)
+        idxd, idxs, horzn = dp1space(wp,i), collect(sprimes(wp,i)), _horizon(wp,i)
+        # idxd, idxs, horzn, st = wp_info(wp, i)
 
         @views ubV = ubVfull[:,:,idxd]
         @views dubV = dubVfull[:,:,:,idxd]
         @views EV0 = EV[:,:,i]
         @views dEV0 = dEV[:,:,:,i]
 
-        fillflows!(ubV, flow, p, θt, σ, st, itype...)
+        fillflows!(ubV, flow, p, θt, σ, i, itype...)
         @views ubV .+= β .* EV[:,:,idxs]
 
         if dograd
-            fillflows_grad!(dubV, flowdθ, p, θt, σ, st, itype...)
+            fillflows_grad!(dubV, flowdθ, p, θt, σ, i, itype...)
             fill!(dEV0, 0.0)
             @views dubV .+= β .* dEV[:,:,:,idxs]
         end
