@@ -117,8 +117,19 @@ function sumprod!(red::AbstractArray3{T}, big::AbstractArray4, small::AbstractAr
     (nz,nψ,nd,) == size(small) || throw(DimensionMismatch())
     (nz,nψ,nv,) == size(red)   || throw(DimensionMismatch())
 
-    fill!(red, zero(T))
-    @inbounds for d in 1:nd, v in 1:nv
+    # can't do this b/c of src/vfit.jl#13-14 above where red = big[:,:,:,1]
+    # fill!(red, zero(T))
+    # @inbounds for d in 1:nd, v in 1:nv
+    #     @views red[:,:,v] .+= small[:,:,d] .* big[:,:,v,d]
+    # end
+
+    # first loop w/ equals
+    @inbounds for v in 1:nv
+        @views red[:,:,v] .= small[:,:,1] .* big[:,:,v,1]
+    end
+
+    # second set w/ plus equals
+    @inbounds for d in 2:nd, v in 1:nv
         @views red[:,:,v] .+= small[:,:,d] .* big[:,:,v,d]
     end
 end
