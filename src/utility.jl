@@ -11,20 +11,6 @@ function duθ!(du::AbstractVector{T}, FF::Type, wp::AbstractUnitProblem, θ::Abs
     end
 end
 
-# ------------------------ tweak the state for finite differences --------------
-
-tweak(k::Integer, h::Real) = k
-tweak(ψ::Real   , h::Real) = ψ + h
-
-function tweakstate(stinfo::Tuple,  h::Real)
-    h == zero(h) && return st
-    return tweak(stinfo[end-1],h), stinfo[end]
-end
-
-function flowfdψ(FF::Type, wp::AbstractUnitProblem, sidx::Integer, θ::AbstractVector, σ::Real, h::Real, z::Tuple, ψ::T, d::Integer, itype::Real...) where {T}
-    flow(FF, wp, sidx, θ, σ, z, ψ+h, d, itype...)
-end
-
 # ------------------------ check flow grad --------------
 
 function check_flowgrad(FF::Type, θ::AbstractVector{T}, σ::T, zspace::Tuple, ψspace::AbstractRange, wp::AbstractUnitProblem, itype::Real...) where {T}
@@ -35,38 +21,38 @@ function check_flowgrad(FF::Type, θ::AbstractVector{T}, σ::T, zspace::Tuple, �
     zpdct = Base.product(zspace...)
     pdct = Base.product(zpdct, ψspace, 0:_dmax(wp))
 
-    statelist = state_space_vector(wp)
-
     for zψd in pdct
-        # Loop over deterministic states... (d1::Integer, Dgt0::Bool, sgn_ext::Bool, τ::Integer, )
+        z, ψ, d = zψd
+
         for sidx ∈ 1:ShaleDrillingModel._nS(wp)
-            u(θ) = flow(FF, wp, sidx, θ, σ, zψd..., itype...)
+            u(θ) = flow(FF, wp, sidx, θ, σ, z, ψ, d, itype...)
             Calculus.finite_difference!(u, θ, fdx, :central)
             @inbounds for k ∈ 1:K
-                dx[k] = flowdθ(FF, wp, sidx, θ, σ, zψd[1], zψd[2], k, zψd[3], itype...)
+                dx[k] = flowdθ(FF, wp, sidx, θ, σ, z, ψ, k, d, itype...)
             end
             if !(fdx ≈ dx)
-                @warn "FF = $FF. Bad θ diff at $yy, $st. du=$dx and fd = $dxfd"
+                @warn "FF = $FF. Bad θ diff at sidx=$sidx, (z,ψ,d)=$zψd. du=$dx and fd = $dxfd"
                 return false
             end
         end
 
         # check σ
-        for sidx ∈ 1:2
-            dσ = flowdσ(FF, wp, sidx, θ, σ, zψd..., itype...)
-            fdσ = Calculus.derivative((σh::Real) -> flow(FF, wp, sidx, θ, σh, zψd..., itype...), σ, :central)
+        for sidx ∈ 1:min(2,end_ex0(wp))
+            dσ = flowdσ(FF, wp, sidx, θ, σ, z, ψ, d, itype...)
+            fdσ = Calculus.derivative((σh::Real) -> flow(FF, wp, sidx, θ, σh, z, ψ, d, itype...), σ, :central)
             if !(dσ ≈ fdσ) && !isapprox(dσ, fdσ, atol= 1e-7)
-                @warn "Bad σ diff at zψd = $(zψd). duσ = $dσ and fd = $fdσ"
+                @warn "Bad σ diff at sidx=$sidx with (z,ψ,d)=$zψd. duσ = $dσ and fd = $fdσ"
                 return false
             end
         end
 
         # check ψ
-        for sidx in 1:4
-            dψ = flowdψ(FF, wp, sidx, θ, σ, zψd..., itype...)
-            fdψ = Calculus.derivative((h::Real) -> flowfdψ(FF, wp, sidx, θ, σ, h, zψd..., itype...), 0.0, :central)
+        for sidx in 1:min(4,end_ex0(wp))
+            z,ψ,d = zψd
+            dψ = flowdψ(FF, wp, sidx, θ, σ, z, ψ, d, itype...)
+            fdψ = Calculus.derivative((h::Real) -> flow(FF, wp, sidx, θ, σ, z, ψ+h, d, itype...), 0.0, :central)
             if !(dψ ≈ fdψ) && !isapprox(dψ, fdψ, atol=1e-7)
-                @warn "Bad ψ diff at (z,st,) = $((z,st,)). duψ = $dψ and fdψ = $fdψ"
+                @warn "Bad ψ diff at sidx=$sidx with (z,ψ,d)=$(zψd). duψ = $dψ and fdψ = $fdψ"
                 return false
             end
         end
