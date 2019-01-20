@@ -37,7 +37,6 @@ flowfuncname = :one_restr
 nψ, dmx, nz, nv =  51, 3, size(Πp,1), 51
 # wp = LeasedProblemContsDrill(dmx,4,5,3,2)
 wp = LeasedProblem(dmx,4,5,3,2)
-# wp = PerpetualProblem(dmx,4,5,3,2)
 
 zspace, ψspace, dspace, d1space, vspace = (logp_space, logσ_space,), range(-4.5, stop=4.5, length=nψ), 0:dmx, 0:1, range(-3.0, stop=3.0, length=nv)
 

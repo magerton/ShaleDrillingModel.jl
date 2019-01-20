@@ -16,9 +16,7 @@ function vfit!(EV0::AbstractMatrix, dEV0::AbstractArray3, ubV::AbstractArray3, d
 end
 
 # destroys ubV and updates derivatives
-function vfit!(EV0::AbstractMatrix, dEV0::AbstractArray3, ubV::AbstractArray3, dubV::AbstractArray4,                    lse::AbstractMatrix, tmp::AbstractMatrix, Πz::AbstractMatrix)
-    vfit!(EV0, dEV0, ubV, dubV, ubV, lse, tmp, Πz)
-end
+vfit!(EV0::AbstractMatrix, dEV0::AbstractArray3, ubV::AbstractArray3, dubV::AbstractArray4, lse::AbstractMatrix, tmp::AbstractMatrix, Πz::AbstractMatrix) = vfit!(EV0, dEV0, ubV, dubV, ubV, lse, tmp, Πz)
 
 # --------------------------- VFIT until conv ----------------------------
 
@@ -112,25 +110,45 @@ end
 # --------------------------- helper function  ----------------------------
 
 
-function sumprod!(red::AbstractArray3{T}, big::AbstractArray4, small::AbstractArray3) where {T}
+function sumprod!(red::AbstractArray3, big::AbstractArray4, small::AbstractArray3)
     nz,nψ,nv,nd = size(big)
     (nz,nψ,nd,) == size(small) || throw(DimensionMismatch())
     (nz,nψ,nv,) == size(red)   || throw(DimensionMismatch())
 
-    fill!(red, zero(T))
-    @inbounds for d in 1:nd, v in 1:nv
-        @views red[:,:,v] .+= small[:,:,d] .* big[:,:,v,d]
+    # first loop w/ equals
+    @inbounds for v in 1:nv, ψ in 1:nψ
+        @simd for z in 1:nz
+            red[z,ψ,v] = small[z,ψ,1] * big[z,ψ,v,1]
+        end
+    end
+
+    # second set w/ plus equals
+    @inbounds for d in 2:nd, v in 1:nv, ψ in 1:nψ
+        @simd for z in 1:nz
+            red[z,ψ,v] += small[z,ψ,d] * big[z,ψ,v,d]
+        end
     end
 end
 
 
-function sumprod!(red::AbstractMatrix{T}, big::AbstractArray3, small::AbstractArray3) where {T}
-    nz,nψ,nd = size(big)
-    (nz,nψ,nd) == size(small) || throw(DimensionMismatch())
-    (nz,nψ) == size(red) || throw(DimensionMismatch())
 
-    fill!(red, zero(T))
-    @inbounds for d in 1:nd
-        @views red .+= small[:,:,d] .* big[:,:,d]
+
+function sumprod!(red::AbstractMatrix, big::AbstractArray3, small::AbstractArray3)
+    nz,nψ,nd = size(big)
+    (nz,nψ) == size(red) || throw(DimensionMismatch())
+    (nz,nψ,nd) == size(small) || throw(DimensionMismatch())
+
+    # first loop w/ equals
+    @inbounds for d in 1:nd, ψ in 1:nψ
+        @simd for z in 1:nz
+            red[z,ψ] = small[z,ψ,1] * big[z,ψ,1]
+        end
+    end
+
+    # second set w/ plus equals
+    @inbounds for d in 2:nd, ψ in 1:nψ
+        @simd for z in 1:nz
+            red[z,ψ] += small[z,ψ,d] * big[z,ψ,d]
+        end
     end
 end

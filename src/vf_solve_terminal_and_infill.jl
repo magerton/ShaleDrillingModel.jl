@@ -13,11 +13,12 @@ function solve_vf_terminal!(EV::AbstractArray3, dEV::AbstractArray4, dEVσ::Abst
     @views zero!(EV[:,:,end])
     @views zero!(dEV[:,:,:,end])
     @views zero!(dEVσ[:,:,end])
-
+    # @views zero!(dEV_ψ[:,:,end])
     exp_trm = exploratory_terminal(wp)
-    @views zero!(EV[  :,:,  exp_trm])
-    @views zero!(dEV[ :,:,:,exp_trm])
+    @views zero!(EV[   :,:,  exp_trm])
+    @views zero!(dEV[  :,:,:,exp_trm])
     @views zero!(dEVσ[:,:,  exp_trm])
+    # @views zero!(dEV_ψ[:,:,  exp_trm])
 end
 
 solve_vf_terminal!(evs::dcdp_Emax, wp::AbstractUnitProblem) = solve_vf_terminal!(evs.EV, evs.dEV, evs.dEVσ, wp)

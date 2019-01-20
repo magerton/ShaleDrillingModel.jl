@@ -135,19 +135,16 @@ end
         solve_vf_explore!(evs, tmpv, prim, θt, σv, true, itype)
         fdEVσvw = @view(fdEVσ[:,:,1:nsexp1])
         @test size(fdEVσvw) == size(evs.dEVσ)
-        @test all(isfinite.(evs.dEVσ))
-        @test all(isfinite.(fdEVσvw))
+        maxv, idx = findmax(abs.(fdEVσvw.-evs.dEVσ))
+        println("worst value is $maxv at $(CartesianIndices(fdEVσvw)[idx]) for dσ")
         @show extrema(fdEVσvw)
         @show extrema(evs.dEVσ)
 
-        println("Testing evs.dEVσ[:,:,2:end] .- fdEVσvw[:,:,2:end]")
-        @show maximum(abs.((evs.dEVσ .- fdEVσvw)[:,:,2:end]))
-        @test @views fdEVσvw[:,:,2:end] ≈ evs.dEVσ[:,:,2:end]
+        @show maximum(abs.((evs.dEVσ .- fdEVσvw)[:,:,2:end-1]))
 
-        maxv, idx = findmax(abs.(fdEVσvw.-evs.dEVσ))
-        println("worst value is $maxv at $(CartesianIndices(fdEVσvw)[idx]) for dσ")
+        @test all(isfinite.(evs.dEVσ))
+        @test all(isfinite.(fdEVσvw))
         @test 0.0 < maxv < 0.1
-        @test @views fdEVσvw[:,:,1] ≈ evs.dEVσ[:,:,1]
 
         @test fdEVσvw ≈ evs.dEVσ # || maxv < 1.5e-6
         println("dEV/dσ looks ok! :)")

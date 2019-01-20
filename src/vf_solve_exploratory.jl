@@ -52,10 +52,10 @@ function solve_vf_explore!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, 
 
     for i in ind_exp(wp)
         ip = sprime(wp,i,0)
+        # st = state(wp,i)
 
         @views EV0 = EV[:,:,ip]
 
-        # compute u + βEV(d) ∀ d ∈ actionspace(wp,i)
         fillflows!(ubVfull, flow, p, θt, σ, i, itype...)
         ubV0 .+= β .* EV0
         ubV1 .+= βEV1 # β already baked in
