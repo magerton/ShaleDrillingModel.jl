@@ -13,7 +13,7 @@ export dcdp_primitives,
     _θt,
     _σv
 
-struct dcdp_primitives{FF,UP<:AbstractUnitProblem,T<:Real,AM<:AbstractMatrix{T},TT<:Tuple,AV<:AbstractVector{T}}
+struct dcdp_primitives{FF,T<:Real,UP<:AbstractUnitProblem,AM<:AbstractMatrix{T},TT<:Tuple,AV<:AbstractVector{T}}
     β::T
     wp::UP            # structure of endogenous choice vars
     zspace::TT        # z-space (tuple)
@@ -23,7 +23,7 @@ struct dcdp_primitives{FF,UP<:AbstractUnitProblem,T<:Real,AM<:AbstractMatrix{T},
 end
 
 function dcdp_primitives(FF::Symbol, β::T, wp::UP, zspace::TT, Πz::AM, ψspace::AV) where {T,TT,AM,AV,UP<:AbstractUnitProblem}
-    dcdp_primitives{Val{FF},UP,T,AM,TT,AV}(β, wp, zspace, Πz, ψspace, number_of_model_parms(FF))
+    dcdp_primitives{Val{FF},T,UP,AM,TT,AV}(β, wp, zspace, Πz, ψspace, number_of_model_parms(FF))
 end
 
 flow(prim::dcdp_primitives{FF}) where {FF} = FF
@@ -70,7 +70,7 @@ end
 
 dcdp_Emax(EV::AbstractArray3{T}, dEV::AbstractArray4{T}, dEVσ::AbstractArray3{T}) where {T} =  dcdp_Emax{T,typeof(EV),typeof(dEV)}(EV,dEV,dEVσ)
 
-function dcdp_Emax(p::dcdp_primitives{FF,UP,T}) where {FF,UP,T}
+function dcdp_Emax(p::dcdp_primitives{FF,T}) where {FF,T}
     EV   = zeros(T, _nz(p), _nψ(p),          _nS(p))
     dEV  = zeros(T, _nz(p), _nψ(p), _nθt(p), _nS(p))
     dEVσ = zeros(T, _nz(p), _nψ(p),          _nSexp(p))

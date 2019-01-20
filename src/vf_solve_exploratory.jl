@@ -51,7 +51,7 @@ function solve_vf_explore!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, 
     @views βdEVσ1 = dEVσ[:,:,  exp2lrn]
 
     for i in ind_exp(wp)
-        ip = action0(wp,i)
+        ip = sprime(wp,i,0)
         # st = state(wp,i)
 
         @views EV0 = EV[:,:,ip]

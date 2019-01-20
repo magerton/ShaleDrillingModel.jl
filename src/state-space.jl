@@ -12,46 +12,6 @@ export AbstractUnitProblem,
     end_lrn,
     end_inf
 
-    # _dmax,
-    # _Dmax,
-    # _τ0max,
-    # _τ1max,
-    # _ext,
-    # strt_ex,
-    # end_pts,
-    # _nS,
-    # _nSexp,
-    # _nSint,
-    # exploratory_terminal,
-    # exploratory_learning,
-    # ind_ex1,
-    # ind_ex0,
-    # ind_exp,
-    # ind_lrn,
-    # ind_inf,
-    # inf_fm_lrn,
-    # infill_state_inds,
-    # explore_state_inds,
-    # _horizon,
-    # _D,
-    # _d1,
-    # _τ1,
-    # _τ0,
-    # state,
-    # _Dgt0,
-    # _sgnext,
-    # _sign_lease_extension,
-    # _τrem,
-    # maxlease,
-    # _τ11,
-    # stateinfo,
-    # max_action,
-    # actionspace,
-    # dp1space,
-    # state_space_vector,
-    # wp_info,
-    # action0
-
 abstract type AbstractUnitProblem end
 
 struct LeasedProblem <: AbstractUnitProblem
@@ -99,25 +59,23 @@ _ext(   wp::PerpetualProblem) = 0
 #   end_inf - Terminal state -- we've drilled everything
 #   strt_ex - State where extension starts
 # ----------------------------------
-end_ex1(wp::LeasedProblemContsDrill) = _τ1max(wp)+1
-end_ex0(wp::LeasedProblemContsDrill) = end_ex1(wp) + max(_τ0max(wp),_ext(wp))+1
-end_lrn(wp::LeasedProblemContsDrill) = end_ex0(wp) + _dmax(wp)+1
-end_inf(wp::LeasedProblemContsDrill) = end_lrn(wp) + 2*(_Dmax(wp)-1)+ 1
-strt_ex(wp::LeasedProblemContsDrill) = end_ex0(wp) - (_ext(wp)-1)     # t+d+2(D)+1 = (t+1) + (d+1) + 2*(D-1) + 1
+@inline end_ex1(wp::LeasedProblemContsDrill) = _τ1max(wp)+1
+@inline end_ex0(wp::LeasedProblemContsDrill) = end_ex1(wp) + max(_τ0max(wp),_ext(wp))+1
+@inline end_lrn(wp::LeasedProblemContsDrill) = end_ex0(wp) + _dmax(wp)+1
+@inline end_inf(wp::LeasedProblemContsDrill) = end_lrn(wp) + 2*(_Dmax(wp)-1)+ 1
+@inline strt_ex(wp::LeasedProblemContsDrill) = end_ex0(wp) - (_ext(wp)-1)     # t+d+2(D)+1 = (t+1) + (d+1) + 2*(D-1) + 1
 
-end_ex1(wp::LeasedProblem) = _τ1max(wp)+1
-end_ex0(wp::LeasedProblem) = end_ex1(wp) + max(_τ0max(wp),_ext(wp))+1
-end_lrn(wp::LeasedProblem) = end_ex0(wp) + _dmax(wp)+1
-end_inf(wp::LeasedProblem) = end_lrn(wp) + _Dmax(wp)
-strt_ex(wp::LeasedProblem) = end_ex0(wp) - (_ext(wp)-1)     # t+d+2(D)+1 = (t+1) + (d+1) + 2*(D-1) + 1
+@inline end_ex1(wp::LeasedProblem) = _τ1max(wp)+1
+@inline end_ex0(wp::LeasedProblem) = end_ex1(wp) + max(_τ0max(wp),_ext(wp))+1
+@inline end_lrn(wp::LeasedProblem) = end_ex0(wp) + _dmax(wp)+1
+@inline end_inf(wp::LeasedProblem) = end_lrn(wp) + _Dmax(wp)
+@inline strt_ex(wp::LeasedProblem) = end_ex0(wp) - (_ext(wp)-1)     # t+d+2(D)+1 = (t+1) + (d+1) + 2*(D-1) + 1
 
-end_ex1(wp::PerpetualProblem) = 0
-end_ex0(wp::PerpetualProblem) = 1
-end_lrn(wp::PerpetualProblem) = end_ex0(wp) + _dmax(wp)
-end_inf(wp::PerpetualProblem) = end_lrn(wp) + _Dmax(wp)
-strt_ex(wp::PerpetualProblem) = 1
-
-end_pts(wp::AbstractUnitProblem) = (0, end_ex1(wp), end_ex0(wp), end_lrn(wp), end_inf(wp), strt_ex(wp),)
+@inline end_ex1(wp::PerpetualProblem) = 0
+@inline end_ex0(wp::PerpetualProblem) = 1
+@inline end_lrn(wp::PerpetualProblem) = end_ex0(wp) + _dmax(wp)
+@inline end_inf(wp::PerpetualProblem) = end_lrn(wp) + _Dmax(wp)
+@inline strt_ex(wp::PerpetualProblem) = 1
 
 # ----------------------------------
 # length of states
@@ -126,7 +84,6 @@ end_pts(wp::AbstractUnitProblem) = (0, end_ex1(wp), end_ex0(wp), end_lrn(wp), en
 Base.length(wp::AbstractUnitProblem) = end_inf(wp)
 _nS(    wp::AbstractUnitProblem) = length(wp)
 _nSexp( wp::AbstractUnitProblem) = end_lrn(wp)
-_nSint( wp::AbstractUnitProblem) = end_lrn(wp) - end_ex0(wp)
 
 # ----------------------------------
 # regions of state space where we have learning
@@ -142,16 +99,13 @@ exploratory_learning(wp::PerpetualProblem) = end_ex0(wp)+1 : end_lrn(wp)
 # indices of where we are in things
 # ----------------------------------
 
-ind_ex1(wp::AbstractUnitProblem) = end_ex1(wp)   : -1 : 1
-ind_ex0(wp::AbstractUnitProblem) = end_ex0(wp)   : -1 : end_ex1(wp)+1
-ind_exp(wp::AbstractUnitProblem) = end_ex0(wp)   : -1 : 1
-ind_lrn(wp::AbstractUnitProblem) = end_lrn(wp)   : -1 : end_ex0(wp)+1
-ind_inf(wp::AbstractUnitProblem) = end_inf(wp)-1 : -1 : end_lrn(wp)+1
+@inline ind_ex1(wp::AbstractUnitProblem) = end_ex1(wp)   : -1 : 1
+@inline ind_ex0(wp::AbstractUnitProblem) = end_ex0(wp)   : -1 : end_ex1(wp)+1
+@inline ind_exp(wp::AbstractUnitProblem) = end_ex0(wp)   : -1 : 1
+@inline ind_lrn(wp::AbstractUnitProblem) = end_lrn(wp)   : -1 : end_ex0(wp)+1
+@inline ind_inf(wp::AbstractUnitProblem) = end_inf(wp)-1 : -1 : end_lrn(wp)+1
 
-inf_fm_lrn(wp::AbstractUnitProblem) = (end_lrn(wp)+1) .+ _nstates_per_D(wp)*(0:_dmax(wp)-1)
-
-# infill_state_inds( wp::AbstractUnitProblem) = ind_inf(wp)
-# explore_state_inds(wp::AbstractUnitProblem) = ind_exp(wp)
+@inline inf_fm_lrn(wp::AbstractUnitProblem) = (end_lrn(wp)+1) .+ _nstates_per_D(wp)*(0:_dmax(wp)-1)
 
 # ----------------------------------
 # which state are we in?
@@ -335,14 +289,11 @@ maxlease(wp::AbstractUnitProblem) = max( end_ex1(wp)+max_ext(wp), end_ex0(wp)-en
 _τ11(wp::AbstractUnitProblem, sidx::Integer) = 2*_τrem(wp,sidx)/maxlease(wp)-1
 
 
-stateinfo(wp::AbstractUnitProblem, s::Integer) = (_d1(wp,s), _Dgt0(wp,s), _sgnext(wp,s), _τ11(wp,s),)
-stateinfo(s::state) = (_d1(s), _Dgt0(s), _sgnext(s), _τ11(s),)
-
 # ----------------------------------
 # actions
 # ----------------------------------
 
-function max_action(wp::AbstractUnitProblem, sidx::Integer)
+function _dmax(wp::AbstractUnitProblem, sidx::Integer)
     sidx <= 0 && throw(DomainError(sidx, "s <= 0"))
     sidx <= end_ex0(wp) && return _dmax(wp)
     sidx <= end_lrn(wp) && return 0
@@ -351,20 +302,9 @@ function max_action(wp::AbstractUnitProblem, sidx::Integer)
     throw(DomainError())
 end
 
-function _max_action(wp::AbstractUnitProblem, sidx::Integer)
-    @warn "deprecated. use `max_action(wp,sidx)`"
-    max_action(wp,sidx)
-end
+@inline actionspace(wp::AbstractUnitProblem, sidx::Integer) = 0:_dmax(wp,sidx)
+@inline dp1space(   wp::AbstractUnitProblem, sidx::Integer) = actionspace(wp,sidx) .+ 1
 
-actionspace(wp::AbstractUnitProblem, sidx::Integer) = 0:max_action(wp,sidx)
-dp1space(wp::AbstractUnitProblem, sidx::Integer) = actionspace(wp,sidx) .+ 1
-
-function action_iter(wp::AbstractUnitProblem, sidx::Integer)
-    @warn "deprecated. use `actionspace(wp,sidx)`"
-    actionspace(wp,sidx)
-end
-
-actionspace(wp,sidx) = action_iter(wp,sidx)
 
 # ----------------------------------
 # states
@@ -414,8 +354,6 @@ end
 # ----------------------------------
 # sprime
 # ----------------------------------
-
-# end_pts(wp::AbstractUnitProblem) = (0, end_ex1(wp), end_ex0(wp), end_lrn(wp), end_inf(wp), strt_ex(wp),)
 
 @inline function sprime(wp::LeasedProblemContsDrill, s::Integer, d::Integer)::Int
     if s <= 0
@@ -485,6 +423,52 @@ end
 # other functions
 # ----------------------------------
 
-wp_info(wp::AbstractUnitProblem, s::Integer) = (dp1space(wp,s), sprimes(wp,s), _horizon(wp,s), state(wp,s), )
+# wp_info(wp::AbstractUnitProblem, s::Integer) = (dp1space(wp,s), sprimes(wp,s), _horizon(wp,s), state(wp,s), )
+# action0(wp::AbstractUnitProblem,s::Integer) = sprime(wp, s, 0)
+# stateinfo(wp::AbstractUnitProblem, s::Integer) = (_d1(wp,s), _Dgt0(wp,s), _sgnext(wp,s), _τ11(wp,s),)
+# stateinfo(s::state) = (_d1(s), _Dgt0(s), _sgnext(s), _τ11(s),)
 
-action0(wp::AbstractUnitProblem,s::Integer) = sprime(wp, s, 0)
+# infill_state_inds( wp::AbstractUnitProblem) = ind_inf(wp)
+# explore_state_inds(wp::AbstractUnitProblem) = ind_exp(wp)
+
+
+# end_pts(wp::AbstractUnitProblem) = (0, end_ex1(wp), end_ex0(wp), end_lrn(wp), end_inf(wp), strt_ex(wp),)
+# _nSint( wp::AbstractUnitProblem) = end_lrn(wp) - end_ex0(wp)
+
+
+
+
+
+# export
+# ------------
+# _dmax,
+# _Dmax,
+# _τ0max,
+# _τ1max,
+# _ext,
+# strt_ex,
+# _nS,
+# _nSexp,
+# ind_ex1,
+# ind_ex0,
+# ind_exp,
+# ind_lrn,
+# ind_inf,
+# inf_fm_lrn,
+# _horizon,
+# _D,
+# _d1,
+# _τ1,
+# _τ0,
+# _Dgt0,
+# _sgnext,
+# _sign_lease_extension,
+# _τrem,
+# maxlease,
+# _τ11,
+# _dmax,
+# actionspace,
+# dp1space,
+# state_space_vector,
+# wp_info,
+# action0

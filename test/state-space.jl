@@ -21,7 +21,7 @@ end
         if isa(wp,LeasedProblemContsDrill)
             for i = end_lrn(wp)+1 : 2 : nS-2
                 @test sprime(wp,i,0) == i+1
-                for d in 1:ShaleDrillingModel.max_action(wp,i)
+                for d in 1:ShaleDrillingModel._dmax(wp,i)
                     @test sprime(wp,i,d) == i+2*d
                 end
             end

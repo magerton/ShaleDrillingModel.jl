@@ -7,15 +7,16 @@
         geoid = geology_types[1],
         itype = (geoid, roy,),
         pids = [1,],
-        rngs = (zspace...,                                        vspace, vspace, 0:dmax(wp), 1:length(wp), geology_types, royalty_rates,),
-        idxs = (2:2:length(zspace[1])-1, 2:3:length(zspace[2])-1, 1:5:nv, 1:5:nv, 0:dmax(wp), 1:length(wp), 1:ngeo,        1:nroy,),
+        dmax = ShaleDrillingModel._dmax(wp),
+        rngs = (zspace...,                                        vspace, vspace, 0:dmax, 1:length(wp), geology_types, royalty_rates,),
+        idxs = (2:2:length(zspace[1])-1, 2:3:length(zspace[2])-1, 1:5:nv, 1:5:nv, 0:dmax, 1:length(wp), 1:ngeo,        1:nroy,),
         idx_sz = length.((θfull, idxs...)),
         prim = dcdp_primitives(flowfuncname, β, wp, zspace, Πp, ψspace),
         tmpv = dcdp_tmpvars(prim),
         sev = SharedEV(pids, prim, rngs[end-1:end]...),
         isev = ItpSharedEV(sev, prim, σv),
         T = eltype(θfull),
-        tmp = Vector{T}(undef, dmax(wp)+1),
+        tmp = Vector{T}(undef, dmax+1),
         θ1 = similar(θfull),
         θ2 = similar(θfull),
         θttmp = Vector{Float64}(undef, prim.nθt),
@@ -71,7 +72,6 @@
 
             σ1 = _σv(θ1)
             σ2 = _σv(θ2)
-
 
             serial_solve_vf_all!(sev, tmpv, prim, θ1, dograd; maxit0=40, maxit1=20, vftol=1e-10)
             print("logp: θ[$k]-h\t")

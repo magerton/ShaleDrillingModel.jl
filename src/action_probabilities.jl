@@ -10,23 +10,22 @@ nplus1_impl(N::Integer) = :(Val{$(N+1)})
   end
 
   # unpack information about current state
-  geo, roy = getitype.(isev.itypes, itypidx)
-
-  # states we can iterate over
-  s = state(prim.wp, s_idx)
-  sinfo =  stateinfo(s, prim.wp)
-  Dgt0 = sinfo[2]
+  itype = getitype.(isev.itypes, itypidx)
+  wp = prim.wp
+  drng = actionspace(wp, s_idx)
+  Dgt0 = _Dgt0(wp, s_idx)
 
   # information
+  # NOTE: truncation of ψ1 can lead to errors in gradient!!!!!!
   ρ = _ρ(σ)
-  ψ = Dgt0 ? _ψ2(uv...,ρ) : _ψ1clamp(uv..., ρ, prim) # _ψ1(uv...,ρ) # NOTE: truncation of ψ1 can lead to errors in gradient!!!!!!
+  ψ = Dgt0 ? _ψ2(uv...,ρ) : _ψ1clamp(uv..., ρ, prim)
 
-  # containers
-  drng = actionspace(prim.wp, s_idx)
+  # we'll reuse this
   ubV = view(tmp, drng.+1)
 
   @inbounds for d in drng
-    ubV[d+1] = flow(FF, θt, σ, z, ψ, d, sinfo..., geo, roy) + prim.β * isev.EV[z..., ψ, _sprime(prim.wp, s_idx, d), itypidx...]
+    sp_idx = sprime(wp, s_idx, d)
+    ubV[d+1] = flow(FF, wp, s_idx, θt, σ, z, ψ, d, itype...) + prim.β * isev.EV[z..., ψ, sp_idx, itypidx...]
   end
 
   dograd ||  return ubV[d_obs+1] - logsumexp(ubV)
@@ -35,19 +34,17 @@ nplus1_impl(N::Integer) = :(Val{$(N+1)})
   logp = ubV[d_obs+1]
   logp -= logsumexp_and_softmax!(ubV)
 
-  nSexp1 = _nSexp(prim)+1
-
   @inbounds for d in drng
     wt = d==d_obs ? one(T) - ubV[d+1] : -ubV[d+1]
-    sp_idx = _sprime(prim.wp, s_idx, d)
+    sp_idx = sprime(wp, s_idx, d)
 
     @inbounds for k in eachindex(θt) # NOTE: assumes 1-based linear indexing!!
-      grad[k] += wt * (flowdθ(FF, θt, σ, z, ψ, k, d, sinfo..., geo, roy) + prim.β * isev.dEV[z..., ψ, k, sp_idx, itypidx...] )
+      grad[k] += wt * (flowdθ(FF, wp, s_idx, θt, σ, z, ψ, k, d, itype...) + prim.β * isev.dEV[z..., ψ, k, sp_idx, itypidx...] )
     end
 
     if !Dgt0
-      dpsi = flowdψ(FF, θt, σ, z, ψ, d, sinfo..., geo, roy) + prim.β * gradient_d(nplus1(Val{NZ}), isev.EV, z..., ψ, sp_idx, itypidx...)::T
-      dsig = flowdσ(FF, θt, σ, z, ψ, d, sinfo..., geo, roy) + prim.β * isev.dEVσ[z..., ψ, sp_idx, itypidx...]
+      dpsi = flowdψ(FF, wp, s_idx, θt, σ, z, ψ, d, itype...) + prim.β * gradient_d(nplus1(Val{NZ}), isev.EV, z..., ψ, sp_idx, itypidx...)::T
+      dsig = flowdσ(FF, wp, s_idx, θt, σ, z, ψ, d, itype...) + prim.β * isev.dEVσ[z..., ψ, sp_idx, itypidx...]
       grad[end] += wt * (dpsi*_dψ1dθρ(uv..., ρ, σ) + dsig)
     end
   end
