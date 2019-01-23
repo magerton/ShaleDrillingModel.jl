@@ -37,34 +37,8 @@ flowfuncname = :one_restr
 nψ, dmx, nz, nv =  51, 3, size(Πp,1), 51
 # wp = LeasedProblemContsDrill(dmx,4,5,3,2)
 # wp = LeasedProblem(dmx,4,5,3,2)
-# wp = PerpetualProblem(dmx,4,5,3,2)
-wp = LeasedProblem(dmx,4,1,-1,0)
-
-
-# pp = PerpetualProblem(dmx,4,5,3,2)
-# lp = LeasedProblem(dmx,4,5,3,2)
-# sspp = ShaleDrillingModel.state_space_vector(pp)
-# sslp = ShaleDrillingModel.state_space_vector(lp)
-#
-# ShaleDrillingModel.exploratory_learning(pp)
-# ShaleDrillingModel.exploratory_learning(lp)
-#
-# sspp[ShaleDrillingModel.exploratory_learning(pp)]
-# sslp[ShaleDrillingModel.exploratory_learning(lp)]
-#
-# ShaleDrillingModel.ind_exp(pp)
-# ShaleDrillingModel.ind_exp(lp)
-#
-# sprime(pp,first(ShaleDrillingModel.ind_exp(pp)),0)
-# sprime(lp,first(ShaleDrillingModel.ind_exp(lp)),0)
-#
-#
-# wp = LeasedProblem(dmx,4,5,3,2)
-# end_ex0(wp)
-
-
-
-
+wp = PerpetualProblem(dmx,4,5,3,2)
+lp = LeasedProblem(dmx,4,1,-1,0)
 
 zspace, ψspace, dspace, d1space, vspace = (logp_space, logσ_space,), range(-4.5, stop=4.5, length=nψ), 0:dmx, 0:1, range(-3.0, stop=3.0, length=nv)
 
