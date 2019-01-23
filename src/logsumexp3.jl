@@ -62,7 +62,7 @@ function softmax3!(q::AbstractMatrix, lse::AbstractMatrix, tmp::AbstractMatrix, 
 
     maximum!(reshape(tmp, nz,nψ,1), x)
     @views lse .= (q .= exp.(x[:,:,1] .- tmp))
-    @inbounds for k in 2:size(x,3)
+    @inbounds for k in 2:nd
         @views lse .+= exp.(x[:,:,k] .- tmp)
     end
     q ./= lse

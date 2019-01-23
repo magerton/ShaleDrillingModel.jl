@@ -56,6 +56,8 @@ end
             wp = unitprob(dmx, 4, 5, 3, 2)
             SS = ShaleDrillingModel.state_space_vector(wp)
 
+            @test length(ShaleDrillingModel.inf_fm_lrn(wp)) == length(ShaleDrillingModel.exploratory_learning(wp))
+
             for (i,s) in enumerate(SS)
                 for d in  ShaleDrillingModel.actionspace(wp,i)
                     sp = sprime(wp,i,d)

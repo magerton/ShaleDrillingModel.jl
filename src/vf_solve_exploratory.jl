@@ -76,7 +76,6 @@ function solve_vf_explore!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, 
             # ∂EV/∂σ = I ⊗ Πz * ∑( Pr(d) * ∂ubV/∂σ[zspace, ψspace, d]  )
             sumprod!(tmp, dubV_σ, q)
             @views A_mul_B_md!(dEVσ[:,:,i], Πz, tmp, 1)
-
         else
             @views vfit!(EV[:,:,i], ubVfull, lse, tmp, Πz)
         end
