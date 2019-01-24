@@ -36,9 +36,9 @@ flowfuncname = :one_restr
 # problem sizes
 nψ, dmx, nz, nv =  51, 3, size(Πp,1), 51
 # wp = LeasedProblemContsDrill(dmx,4,5,3,2)
-# wp = LeasedProblem(dmx,4,5,3,2)
-wp = PerpetualProblem(dmx,4,5,3,2)
-lp = LeasedProblem(dmx,4,1,-1,0)
+wp = LeasedProblem(dmx,4,5,3,2)
+# wp = PerpetualProblem(dmx,4,5,3,2)
+# lp = LeasedProblem(dmx,4,1,-1,0)
 
 zspace, ψspace, dspace, d1space, vspace = (logp_space, logσ_space,), range(-4.5, stop=4.5, length=nψ), 0:dmx, 0:1, range(-3.0, stop=3.0, length=nv)
 
@@ -49,7 +49,7 @@ evs = dcdp_Emax(prim)
 ## check sizes of models
 ShaleDrillingModel.check_size(prim, evs)
 
-# include("BSplineTestFuns_runtests.jl")
+include("BSplineTestFuns_runtests.jl")
 include("state-space.jl")
 # include("flow-payoffs.jl")
 
@@ -60,7 +60,7 @@ include("state-space.jl")
     @test check_dΠψ(σv, ψspace)
 end
 
-# include("test_utility.jl")
+include("test_utility.jl")
 include("test_transition.jl")
 
 include("logsumexp3.jl")

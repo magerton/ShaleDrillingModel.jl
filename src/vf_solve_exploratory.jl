@@ -4,20 +4,21 @@ export solve_vf_explore!
 # learningUpdate!(ubV, dubV, dubV_σ, uex, duex, duexσ, EV, dEV, s2idx, βΠψ, βdΠψ, ψspace, vspace, σ, β)
 # learningUpdate!(ubV, uex, EV, s2idx, βΠψ, ψspace, σ, β, v, h)
 
-function solve_vf_explore!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θt::AbstractVector, σ::Real, dograd::Bool, itype::Tuple)
+function solve_vf_explore!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θt::AbstractVector, σ::Real, dograd::Bool, itype::Tuple; maxit0::Integer=40, maxit1::Integer=20, vftol::Real=1e-9)
 
-    EV       = evs.EV
-    dEV      = evs.dEV
-    dEVσ     = evs.dEVσ
-    ubVfull  = t.ubVfull
-    dubVfull = t.dubVfull
-    dubV_σ   = t.dubV_σ
-    q        = t.q
-    lse      = t.lse
-    tmp      = t.tmp
-    wp       = p.wp
-    Πz       = p.Πz
-    β        = p.β
+    EV         = evs.EV
+    dEV        = evs.dEV
+    dEVσ       = evs.dEVσ
+    ubVfull    = t.ubVfull
+    dubVfull   = t.dubVfull
+    dubV_σ     = t.dubV_σ
+    q          = t.q
+    lse        = t.lse
+    tmp        = t.tmp
+    IminusTEVp = t.IminusTEVp
+    wp         = p.wp
+    Πz         = p.Πz
+    β          = p.β
 
     nz,nψ,nS = size(EV)
     nSexp, dmaxp1, nd = _nSexp(wp), _dmax(wp)+1, _dmax(wp)+1
@@ -38,10 +39,14 @@ function solve_vf_explore!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, 
     # --------- VFIt --------------
 
     # Views of ubV so we can efficiently access them
-    @views ubV0    =  ubVfull[:,:,  1]
-    @views ubV1    =  ubVfull[:,:,  2:dmaxp1]
+    @views ubV0    = ubVfull[:,:,  1]
+    @views ubV1    = ubVfull[:,:,  2:dmaxp1]
+    @views ubV     = ubVfull[:,:,  1:dmaxp1]
+
     @views dubV0   = dubVfull[:,:,:,1]
     @views dubV1   = dubVfull[:,:,:,2:dmaxp1]
+    @views dubV    = dubVfull[:,:,:,1:dmaxp1]
+
     @views dubV_σ0 = dubV_σ[  :,:,  1]
     @views dubV_σ1 = dubV_σ[  :,:,  2:dmaxp1]
 
@@ -52,8 +57,11 @@ function solve_vf_explore!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, 
 
     for i in ind_exp(wp)
         ip = sprime(wp,i,0)
+        horzn = _horizon(wp,i)
 
         @views EV0 = EV[:,:,ip]
+        @views dEV0 = dEV[:,:,:,ip]
+        @views dEVσ1 = dEVσ[ :,:,ip]
 
         # compute u + βEV(d) ∀ d ∈ actionspace(wp,i)
         fillflows!(ubVfull, flow, p, θt, σ, i, itype...)
@@ -61,23 +69,35 @@ function solve_vf_explore!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, 
         ubV1 .+= βEV1 # β already baked in
 
         if dograd
-            @views dEV0 = dEV[:,:,:,ip]
-            @views dEVσ1 = dEVσ[ :,:,ip]
             fillflows_grad!(dubVfull, flowdθ, p, θt, σ, i, itype...)
             fillflows!(       dubV_σ, flowdσ, p, θt, σ, i, itype...)
             dubV0   .+= β .* dEV0
             dubV1   .+= βdEV1  # β already baked in
             dubV_σ0 .+= β .* dEVσ1
             dubV_σ1 .+= βdEVσ1 # β already baked in
+        end
 
-            # this does EV0 & ∇EV0
-            @views vfit!(EV[:,:,i], dEV[:,:,:,i], ubVfull, dubVfull, q, lse, tmp, Πz)
+        if horzn == :Finite
+            if dograd
+                # this does EV0 & ∇EV0
+                @views vfit!(EV[:,:,i], dEV[:,:,:,i], ubVfull, dubVfull, q, lse, tmp, Πz)
 
-            # ∂EV/∂σ = I ⊗ Πz * ∑( Pr(d) * ∂ubV/∂σ[zspace, ψspace, d]  )
-            sumprod!(tmp, dubV_σ, q)
-            @views A_mul_B_md!(dEVσ[:,:,i], Πz, tmp, 1)
+                # ∂EV/∂σ = I ⊗ Πz * ∑( Pr(d) * ∂ubV/∂σ[zspace, ψspace, d]  )
+                sumprod!(tmp, dubV_σ, q)
+                @views A_mul_B_md!(dEVσ[:,:,i], Πz, tmp, 1)
+            else
+                @views vfit!(EV[:,:,i], ubVfull, lse, tmp, Πz)
+            end
+
+        elseif horzn == :Infinite
+            solve_inf_vfit_pfit!(EV0, ubV, lse, tmp, IminusTEVp, Πz, β; vftol=vftol, maxit0=maxit0, maxit1=maxit1)
+            if dograd
+                # TODO: only allows 0-payoff if no action
+                ubV[:,:,1] .= β .* EV0
+                gradinf!(dEV0, dEVσ1, ubV, dubV, dubV_σ, lse, tmp, IminusTEVp, Πz, β, true)
+            end
         else
-            @views vfit!(EV[:,:,i], ubVfull, lse, tmp, Πz)
+            throw(error("i = $i, horzn = $horzn but must be :Finite or :Infinite"))
         end
     end
 end

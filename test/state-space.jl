@@ -1,8 +1,13 @@
 @testset "Maxlease" begin
     for unitprob ∈ (LeasedProblem, LeasedProblemContsDrill,)
-        for wpp in (unitprob(3,4, 5,3,2), unitprob(3,4, 2,3,2), unitprob(3,4, 1,3,5), unitprob(3,16, 5,10,3))
+        for wpp in (unitprob(3,4, 5,3,2), unitprob(3,4, 2,3,2), unitprob(3,4, 1,3,5), unitprob(3,16, 5,10,3), unitprob(3,4,1,-1,0))
             SS = ShaleDrillingModel.state_space_vector(wpp)
             @test maximum(ShaleDrillingModel._τrem(s) for s in SS) == ShaleDrillingModel.maxlease(wpp)
+            for sidx ∈ 1:length(wpp)
+                for d in ShaleDrillingModel.actionspace(wpp,sidx)
+                    @test sprime(wpp,sidx,d) ∈ 1:length(wpp)
+                end
+            end
         end
     end
 end
@@ -153,6 +158,22 @@ end
 
             for s in ShaleDrillingModel.ind_lrn(wp)
                 @test ShaleDrillingModel._horizon(wp,s) ∈ (:Terminal, :Learning)
+            end
+        end
+    end
+end
+
+
+@testset "Checking on dims of dEVσ" begin
+    for unitprob ∈ (LeasedProblem, LeasedProblemContsDrill,)
+        for wpp in (unitprob(3,4, 5,3,2), unitprob(3,4, 2,3,2), unitprob(3,4, 1,3,5), unitprob(3,16, 5,10,3), unitprob(3,4,1,-1,0))
+            nsexp = ShaleDrillingModel._nSexp(wpp)
+            for sidx ∈ 1:length(wpp)
+                if sidx <= end_ex0(wpp)
+                    for d in ShaleDrillingModel.actionspace(wpp,sidx)
+                        @test sprime(wpp,sidx,d) ∈ 1:nsexp
+                    end
+                end
             end
         end
     end

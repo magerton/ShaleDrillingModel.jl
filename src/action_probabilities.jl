@@ -13,12 +13,11 @@ nplus1_impl(N::Integer) = :(Val{$(N+1)})
   itype = getitype.(isev.itypes, itypidx)
   wp = prim.wp
   drng = actionspace(wp, s_idx)
-  Dgt0 = _Dgt0(wp, s_idx)
 
   # information
   # NOTE: truncation of ψ1 can lead to errors in gradient!!!!!!
   ρ = _ρ(σ)
-  ψ = Dgt0 ? _ψ2(uv...,ρ) : _ψ1clamp(uv..., ρ, prim)
+  ψ = s_idx <= end_ex0(wp) ? _ψ1clamp(uv..., ρ, prim) : _ψ2(uv...,ρ)
 
   # we'll reuse this
   ubV = view(tmp, drng.+1)
@@ -42,7 +41,7 @@ nplus1_impl(N::Integer) = :(Val{$(N+1)})
       grad[k] += wt * (flowdθ(FF, wp, s_idx, θt, σ, z, ψ, k, d, itype...) + prim.β * isev.dEV[z..., ψ, k, sp_idx, itypidx...] )
     end
 
-    if !Dgt0
+    if s_idx <= end_ex0(wp)
       dpsi = flowdψ(FF, wp, s_idx, θt, σ, z, ψ, d, itype...) + prim.β * gradient_d(nplus1(Val{NZ}), isev.EV, z..., ψ, sp_idx, itypidx...)::T
       dsig = flowdσ(FF, wp, s_idx, θt, σ, z, ψ, d, itype...) + prim.β * isev.dEVσ[z..., ψ, sp_idx, itypidx...]
       grad[end] += wt * (dpsi*_dψ1dθρ(uv..., ρ, σ) + dsig)

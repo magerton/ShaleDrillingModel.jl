@@ -88,11 +88,10 @@ end
         θ1 = similar(θt),
         θ2 = similar(θt),
         fdEVσ = zeros(T, size(evs.EV)),
-        fdubv = zeros(T,size(tmpv.ubVfull))
+        fdubv = zeros(T,size(tmpv.ubVfull)),
+        fdEVσvw = @view(fdEVσ[:,:,1:nsexp1])
 
         println("testing dEV/dσ")
-
-        zero!(evs)
 
         # now do σ
         h = peturb(σv)
@@ -100,40 +99,41 @@ end
         σ2 = σv + h
         hh = σ2 - σ1
 
+        dograd = false
+
+        zero!(evs)
         zero!(tmpv)
-        solve_vf_terminal!(evs, prim)
-        solve_vf_infill!( evs, tmpv, prim, θt, σ1, false, itype)
-        learningUpdate!(  evs, tmpv, prim,     σ1, false)
-        # fdubv .= -tmpv.ubVfull
-        solve_vf_explore!(evs, tmpv, prim, θt, σ1, false, itype)
+        solve_vf_all!(evs, tmpv, prim, θt, σ1, itype, dograd)
+        # solve_vf_terminal!(evs, prim)
+        # solve_vf_infill!( evs, tmpv, prim, θt, σ1, dograd, itype)
+        # learningUpdate!(  evs, tmpv, prim,     σ1, dograd)
+        # solve_vf_explore!(evs, tmpv, prim, θt, σ1, dograd, itype)
+
         fdEVσ .= -evs.EV
 
+        zero!(evs)
         zero!(tmpv)
-        solve_vf_terminal!(evs, prim)
-        solve_vf_infill!( evs, tmpv, prim, θt, σ2, false, itype)
-        learningUpdate!(  evs, tmpv, prim,     σ2, false)
-        # fdubv .+= tmpv.ubVfull
-        # fdubv ./= hh
-        solve_vf_explore!(evs, tmpv, prim, θt, σ2, false, itype)
+        solve_vf_all!(evs, tmpv, prim, θt, σ2, itype, dograd)
+        # solve_vf_terminal!(evs, prim)
+        # solve_vf_infill!( evs, tmpv, prim, θt, σ2, dograd, itype)
+        # learningUpdate!(  evs, tmpv, prim,     σ2, dograd)
+        # solve_vf_explore!(evs, tmpv, prim, θt, σ2, dograd, itype)
+
         fdEVσ .+= evs.EV
         fdEVσ ./= hh
 
         # ----------------- analytic -----------------
 
+        dograd = true
+
+        zero!(evs)
         zero!(tmpv)
-        solve_vf_infill!( evs, tmpv, prim, θt, σv, true, itype)
-        learningUpdate!(  evs, tmpv, prim,     σv, true)
+        solve_vf_all!(evs, tmpv, prim, θt, σv, itype, dograd)
+        # solve_vf_terminal!(evs, prim)
+        # solve_vf_infill!(  evs, tmpv, prim, θt, σv, dograd, itype)
+        # learningUpdate!(   evs, tmpv, prim,     σv, dograd)
+        # solve_vf_explore!( evs, tmpv, prim, θt, σv, dograd, itype)
 
-        # # test dubV_σ
-        # maxv, idx = findmax(abs.(fdubv.-tmpv.dubV_σ))
-        # @test fdubv ≈ tmpv.dubV_σ || maxv < 6.0e-7
-        # println("worst value is $maxv at $(CartesianIndices(fdubv)[idx]) for dubV_σ")
-        # @show extrema(fdubv)
-        # @show extrema(tmpv.dubV_σ)
-
-        # now test dσ
-        solve_vf_explore!(evs, tmpv, prim, θt, σv, true, itype)
-        fdEVσvw = @view(fdEVσ[:,:,1:nsexp1])
         @test size(fdEVσvw) == size(evs.dEVσ)
         @test all(isfinite.(evs.dEVσ))
         @test all(isfinite.(fdEVσvw))
