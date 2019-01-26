@@ -5,6 +5,7 @@ export AbstractUnitProblem,
     LeasedProblemContsDrill,
     PerpetualProblem,
     sprime,
+    ssprime,
     state,
     state_idx,
     end_ex1,
@@ -418,6 +419,20 @@ end
 end
 
 @inline sprimes(wp::AbstractUnitProblem, sidx::Integer) = (sprime(wp,sidx,d) for d in actionspace(wp,sidx))
+
+"retrieve next state, skipping through learning if necessary."
+function ssprime(wp::AbstractUnitProblem, s::Integer, d::Integer)::Int
+    if s <= 0
+        throw(DomainError(s, "s <= 0"))
+    elseif s <= end_ex0(wp)
+        return d == 0 ? sprime(wp,s,d) : sprime(wp, sprime(wp,s,d), d)  # because of LEARNING transition
+    elseif s <= end_inf(wp)
+        return sprime(wp,s,d)
+    else
+        throw(DomainError(s, "s > end_inf(wp)"))
+    end
+end
+
 
 # ----------------------------------
 # other functions

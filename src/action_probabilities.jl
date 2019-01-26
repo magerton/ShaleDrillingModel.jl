@@ -17,7 +17,7 @@ nplus1_impl(N::Integer) = :(Val{$(N+1)})
   # information
   # NOTE: truncation of ψ1 can lead to errors in gradient!!!!!!
   ρ = _ρ(σ)
-  ψ = s_idx <= end_ex0(wp) ? _ψ1clamp(uv..., ρ, prim) : _ψ2(uv...,ρ)
+  ψ = s_idx <= end_ex0(wp) ? _ψ1clamp(uv..., ρ, prim) : _ψ2(uv...)
 
   # we'll reuse this
   ubV = view(tmp, drng.+1)
