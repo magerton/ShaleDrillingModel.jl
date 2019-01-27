@@ -108,6 +108,36 @@ exploratory_learning(wp::PerpetualProblem) = end_ex0(wp)+1 : end_lrn(wp)
 
 @inline inf_fm_lrn(wp::AbstractUnitProblem) = (end_lrn(wp)+1) .+ _nstates_per_D(wp)*(0:_dmax(wp)-1)
 
+# -------------------------------------------------------------------
+
+
+function state_if_never_drilled(wp::AbstractUnitProblem, state0::Integer, t::Integer)
+
+    if state0 <= end_ex1(wp)
+        if state0 + t <= end_ex1(wp)
+            return state0 + t
+        elseif state0 + t <= end_ex1(wp) + _ext(wp)
+            return (state0 + t) - (end_ex1(wp) - strt_ex(wp)) - 1
+        else
+            return end_ex0(wp)+1
+        end
+
+    elseif state0 <= end_ex0(wp)
+        if state0 + t <= end_ex0(wp)
+            return state0 + t
+        else
+            return end_ex0(wp)+1
+        end
+
+    else
+        return end_ex0(wp)+1
+    end
+end
+
+function state_if_never_drilled(wp::PerpetualProblem, state0::Integer, i::Integer)
+    return 1
+end
+
 # ----------------------------------
 # which state are we in?
 # ----------------------------------
@@ -178,6 +208,24 @@ function _horizon(wp::LeasedProblemContsDrill, sidx::Integer)::Symbol
     sidx <  end_inf(wp)   && return isodd(end_inf(wp)-sidx) ? :Infinite : :Finite
     sidx == end_inf(wp)   && return :Terminal
     throw(DomainError())
+end
+
+function s_of_D(wp::PerpetualProblem, D::Integer)
+    D ∉ 0:_Dmax(wp) && throw(DomainError())
+    D == 0          && return 1:end_ex0(wp)
+    D <= _Dmax(wp)  && return end_lrn(wp) .+ (D:D)
+end
+
+function s_of_D(wp::LeasedProblem, D::Integer)
+    D ∉ 0:_Dmax(wp) && throw(DomainError())
+    D == 0          && return 1:end_ex0(wp)+1
+    D <= _Dmax(wp)  && return end_lrn(wp) .+ (D:D)
+end
+
+function s_of_D(wp::LeasedProblemContsDrill, D::Integer)
+    D ∉ 0:_Dmax(wp) && throw(DomainError())
+    D == 0          && return 1:end_ex0(wp)+1
+    D <= _Dmax(wp)  && return end_lrn(wp) .+ ((2*D-1):2*D)
 end
 
 

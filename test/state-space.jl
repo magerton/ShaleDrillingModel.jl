@@ -1,4 +1,4 @@
-@testset "Maxlease" begin
+@testset "Maxlease and state_if_never_drilled" begin
     for unitprob ∈ (LeasedProblem, LeasedProblemContsDrill,)
         for wpp in (unitprob(3,4, 5,3,2), unitprob(3,4, 2,3,2), unitprob(3,4, 1,3,5), unitprob(3,16, 5,10,3), unitprob(3,4,1,-1,0))
             SS = ShaleDrillingModel.state_space_vector(wpp)
@@ -8,6 +8,18 @@
                     @test sprime(wpp,sidx,d) ∈ 1:length(wpp)
                 end
             end
+
+            # test state if never drilled...
+            for state0 = 1:ShaleDrillingModel.end_ex0(wpp)
+                statet = state0
+                for t = 1:ShaleDrillingModel.end_ex0(wpp)
+                    statet = sprime(wpp,statet,0)
+                    ifno_drill = ShaleDrillingModel.state_if_never_drilled(wpp,state0,t)
+                    @test statet == ifno_drill
+                    # println("t,state0 = ($t,$state0): recursive sprime = $statet, state_if_never_drilled = $ifno_drill")
+                end
+            end
+
         end
     end
 end
@@ -142,6 +154,7 @@ end
                 st = SS[i]
                 i_of_st = state_idx(wp, st.τ1, st.τ0, st.D, st.d1)
                 @test i_of_st == i
+                @test i ∈ ShaleDrillingModel.s_of_D(wp, st.D)
             end
 
             for s in ShaleDrillingModel.ind_inf(wp)
