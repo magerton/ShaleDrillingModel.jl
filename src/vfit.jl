@@ -145,8 +145,7 @@ function solve_inf_vfit_pfit!(EV0::AbstractMatrix, ubV::AbstractArray3, lse::Abs
         @warn "pfit threw error. trying vfit."
         solve_inf_vfit!(EV0, ubV, lse, tmp, Πz, β; maxit=5000, vftol=vftol)
     end
-
-    converged || @warn "Did not converge at state $i after $iter pfit. McQueen-Porteus bnds: $bnds"
+    return converged, iter, bnds
 end
 
 # --------------------------- helper function  ----------------------------

@@ -90,7 +90,9 @@ function solve_vf_explore!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, 
             end
 
         elseif horzn == :Infinite
-            solve_inf_vfit_pfit!(EV0, ubV, lse, tmp, IminusTEVp, Πz, β; vftol=vftol, maxit0=maxit0, maxit1=maxit1)
+            converged, iter, bnds =  solve_inf_vfit_pfit!(EV0, ubV, lse, tmp, IminusTEVp, Πz, β; vftol=vftol, maxit0=maxit0, maxit1=maxit1)
+            converged || @warn "Did not converge at state $i after $iter pfit. McQueen-Porteus bnds: $bnds. θt = $θt, σ = $σ"
+
             if dograd
                 # TODO: only allows 0-payoff if no action
                 ubV[:,:,1] .= β .* EV0
