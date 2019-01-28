@@ -105,7 +105,7 @@ function serial_solve_vf_all!(sev::SharedEV, tmpv::dcdp_tmpvars, prim::dcdp_prim
     end
 end
 
-function solve_vf_all!(θ::AbstractVector, dograd::Bool, typidx::Integer...; kwargs...)
+@noinline function solve_vf_all!(θ::AbstractVector, dograd::Bool, typidx::Integer...; kwargs...)
     global g_SharedEV
     global g_dcdp_tmpvars
     global g_dcdp_primitives
