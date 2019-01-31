@@ -2,16 +2,16 @@
 
 # simple Vfit
 function vfit!(EV0::AbstractMatrix, ubV::AbstractArray, lse::AbstractMatrix, tmp::AbstractMatrix, Πz::AbstractMatrix)
-    logsumexp3!(lse,tmp,ubV)
+    logsumexp3!(lse,tmp,ubV)  # alternatively, maximum!(reshape(lse,m,n,1), ubV)
     A_mul_B_md!(EV0,Πz,lse,1)
 end
 
 # preserves ubV & updates derivatives
 function vfit!(EV0::AbstractMatrix, dEV0::AbstractArray3, ubV::AbstractArray3, dubV::AbstractArray4, q::AbstractArray3, lse::AbstractMatrix, tmp::AbstractMatrix, Πz::AbstractMatrix)
-    logsumexp_and_softmax3!(lse,q,tmp,ubV)
+    logsumexp_and_softmax3!(lse,q,tmp,ubV)  # alternatively, findmax!(rval, rind, A) -> (maxval, index)
     A_mul_B_md!(EV0,Πz,lse,1)
     sumdubV = @view(dubV[:,:,:,1])
-    sumprod!(sumdubV,dubV,q)
+    sumprod!(sumdubV,dubV,q)                # maybe use rind in a SparseMatrixCSC{Bool} for nzvals and then multiply?
     A_mul_B_md!(dEV0,Πz,sumdubV,1)
 end
 
