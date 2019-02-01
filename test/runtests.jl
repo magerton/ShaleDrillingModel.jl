@@ -5,20 +5,70 @@ using Distributed
 IN_SLURM && using ClusterManagers
 
 using ShaleDrillingModel
-# using ShaleDrillingData
 using Test
 using StatsFuns
-using JLD2
-using FileIO
 using Interpolations
-using Statistics
 using SparseArrays
 using Calculus
+using MarkovTransitionMatrices
 
-# jldpath = Base.joinpath(Pkg.dir("ShaleDrillingData"), "data/price-transitions.jld")
-# jldpath = joinpath(dirname(pathof(ShaleDrillingData)), "..", "data/price-vol-transitions.jld")
-jldpath = "D:/libraries/julia/dev/ShaleDrillingData/data/price-vol-transitions.jld"
-@load jldpath logp_space logc_space logσ_space Πp Πpc Πpconly
+# -------------------------------------------------
+# price transition matrices
+# -------------------------------------------------
+
+nlogp = 15
+nlogc = 11
+nlogσ = 9
+
+extrema_logp = [0.8510954,  2.405270]
+extrema_logc = [5.0805023,  5.318393]
+extrema_logσ = [-2.9558226, -1.542508]
+sdlogσ = 0.18667531
+
+Σpc = [0x1.4a1ecb9bcddfep-7  0x1.94e52859805cap-10;
+       0x1.94e52859805cap-10 0x1.4cf39bf87b735p-9]
+
+# make range for coefs
+logp_space = range(extrema_logp[1] - log(2.0), stop=extrema_logp[2] + log(2.0), length=nlogp)
+logc_space = range(extrema_logc[1] - log(2.0), stop=extrema_logc[2] + log(2.0), length=nlogc)
+logσ_space = range(extrema_logσ[1] - 2*sdlogσ, stop=extrema_logσ[2] + 2*sdlogσ, length=nlogσ)
+
+P_σ() = tauchen_1d(logσ_space, (x) -> x, sdlogσ)
+P_pricecost() = tauchen_2d(Base.Iterators.product(logp_space, logc_space), (x) -> x, Σpc)
+P_price() = tauchen_1d(logp_space, (x) -> x, Σpc[1,1])
+
+# range for i,j block in matrix where block is n x n
+blockrange(i,j,n) = ((i-1)*n+1):(i*n),  ((j-1)*n+1):(j*n)
+
+function P_pricevol()
+    Pσ = P_σ()
+    P  = Matrix{eltype(logp_space)}(undef, nlogp*nlogσ, nlogp*nlogσ)
+    for (j, logσj) in enumerate(logσ_space)
+      for (i, logσi) in enumerate(logσ_space)
+        P[blockrange(i,j,nlogp)...]        .= Pσ[i, j] .* tauchen_1d(logp_space, (x) -> x, exp(logσi)^2)
+      end
+    end
+    return P
+end
+function P_pricecostvol()
+    Pσ = P_σ()
+    P = Matrix{eltype(logp_space)}(undef, nlogp*nlogc*nlogσ, nlogp*nlogc*nlogσ)
+    for (j, logσj) in enumerate(logσ_space)
+      for (i, logσi) in enumerate(logσ_space)
+        P[blockrange(i,j,nlogp*nlogc)...] .= Pσ[i, j] .* tauchen_2d(Base.Iterators.product(logp_space, logc_space), (x) -> x, Σpc*exp(logσi))
+      end
+    end
+    return P
+end
+
+minp = 1e-4
+Πp      = MarkovTransitionMatrices.sparsify!(P_pricevol(),     minp)
+Πpc     = MarkovTransitionMatrices.sparsify!(P_pricecostvol(), minp)
+Πpconly = MarkovTransitionMatrices.sparsify!(P_pricecost(),    minp)
+
+# -------------------------------------------------
+# price transition matrices
+# -------------------------------------------------
 
 # some primitives
 β = (1.02 / 1.125) ^ (1.0/4.0)  # real discount rate

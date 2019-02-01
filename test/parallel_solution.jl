@@ -55,16 +55,3 @@
         rmprocs(workers())
     end
 end
-
-
-# rmprocs(workers())
-# pids = IN_SLURM ? addprocs_slurm(parse(Int, ENV["SLURM_NTASKS"])) : addprocs()
-# @everywhere @show pwd()
-# @everywhere using ShaleDrillingModel
-# @eval @everywhere begin
-#     set_g_dcdp_primitives($prim)
-#     set_g_dcdp_tmpvars($tmpv)
-#     set_g_SharedEV($sev)
-# end
-# parallel_solve_vf_all!(sev, θfull, Val{dograd})
-# parallel_solve_vf_all!(sev, θfull, Val{false}; maxit0=12, maxit1=20, vftol=1e-10)
