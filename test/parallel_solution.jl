@@ -7,7 +7,7 @@
         itype = (geoid, roy,)
 
         rmprocs(workers())
-        pids = IN_SLURM ? addprocs_slurm(parse(Int, ENV["SLURM_TASKS_PER_NODE"])) : addprocs()
+        pids = IN_SLURM ? addprocs_slurm(parse(Int, ENV["SLURM_CPUS_PER_TASK"])) : addprocs()
 
         @everywhere @show pwd()
         @everywhere using ShaleDrillingModel

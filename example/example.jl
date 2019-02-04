@@ -62,7 +62,7 @@ check_EVjac(evs, tmpv, prim, θt, σv, 0.2)
 # ----------- how we do this in parallel ------------
 
 # set up workers
-pids = IN_SLURM ? addprocs_slurm(parse(Int, ENV["SLURM_TASKS_PER_NODE"])) : addprocs()
+pids = IN_SLURM ? addprocs_slurm(parse(Int, ENV["SLURM_CPUS_PER_TASK"])) : addprocs()
 
 # tell workers about the pkg
 @everywhere @show pwd()
