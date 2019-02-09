@@ -1,4 +1,4 @@
-import Base: ==, string, length, show
+import Base: ==, string, length, show, convert
 
 export AbstractUnitProblem,
     LeasedProblem,
@@ -37,6 +37,16 @@ struct PerpetualProblem <: AbstractUnitProblem
 end
 
 PerpetualProblem(dmax,Dmax,τ0max,τ1max,ext) = PerpetualProblem(dmax,Dmax)
+
+# see https://stackoverflow.com/questions/40160120/generic-constructors-for-subtypes-of-an-abstract-type
+(::Type{T})(wp::AbstractUnitProblem) where {T<:AbstractUnitProblem} = T(_dmax(wp), _Dmax(wp), _τ0max(wp), _τ1max(wp), _ext(wp))
+function (::Type{T})(wp::PerpetualProblem) where {T<:Union{LeasedProblem,LeasedProblemContsDrill}}
+    @warn("PerpetualProblem does not have τ0max, τ1max, or ext information!!")
+    T(_dmax(wp), _Dmax(wp), _τ0max(wp), _τ1max(wp), _ext(wp))
+end
+
+convert(::Type{T}, wp::AbstractUnitProblem) where {T<:AbstractUnitProblem} = T(wp)
+
 
 _nstates_per_D(wp::AbstractUnitProblem) = 1
 _nstates_per_D(wp::LeasedProblemContsDrill) = 2
