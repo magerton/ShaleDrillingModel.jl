@@ -37,7 +37,7 @@ function check_EVjac(e::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θ::Abst
         solve_vf_all!(e, t, p, θ1, σ, roy, Val{false})
         EVfd .-= e.EV
         EVfd ./= hh
-        @views isapprox(EVfd, dEV[:,:,k,:], atol=1e-7)  ||  warn("Bad grad for θ[$k]")
+        @views isapprox(EVfd, dEV[:,:,k,:], atol=1e-7)  ||  @warn "Bad grad for θ[$k]"
         @views absd = maximum( absdiff.(EVfd, dEV[:,:,k,:] ) )
         @views reld = maximum( reldiff.(EVfd, dEV[:,:,k,:] ) )
         # println("In dimension $k, abs diff is $absd. max rel diff is $reld")
@@ -62,7 +62,7 @@ function check_EVjac(e::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, θ::Abst
         dEVvw = @view(dEVσ[:,:,k,1:end-1])
         all(isfinite.(fdvw)) || throw(error("finite diff check not finite for v[$k] = v"))
 
-        @views fdvw ≈ dEVvw  ||  warn("Bad grad for  v[$k] = $v")
+        @views fdvw ≈ dEVvw  ||  @warn "Bad grad for  v[$k] = $v"
         @views absd = maximum( absdiff.(fdvw, dEVvw ) )
         @views reld = maximum( reldiff.(fdvw, dEVvw ) )
         # println("For v[$k] = $v, abs diff is $absd. max rel diff is $reld")

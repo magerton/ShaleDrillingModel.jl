@@ -29,6 +29,7 @@ function ItpSharedEV(sev::SharedEV{T,N,N2,TT}, p::dcdp_primitives, σ::Real=1.0;
     # form spline specifications
     splinetype(r::Union{StepRange{<:AbstractFloat},StepRangeLen{<:AbstractFloat}}) = BSpline(Quadratic(InPlace()))
     splinetype(r::AbstractVector) = NoInterp()
+    splinetype(r::LinRange{<:AbstractFloat}) = BSpline(Constant())
 
     it_z     = splinetype.(p.zspace)
     it_itype = splinetype.(sev.itypes)
@@ -45,7 +46,7 @@ function ItpSharedEV(sev::SharedEV{T,N,N2,TT}, p::dcdp_primitives, σ::Real=1.0;
     itp_dEVσ  = BSplineInterpolation(tweight(sev.dEVσ), sev.dEVσ, it_dEVσ, OnCell(), Val{0}())
 
     # information for how to scale the interpolation object
-    scalegrid(x::AbstractRange{S}) where {S<:AbstractFloat} = x
+    scalegrid(x::AbstractRange{S}) where {S<:AbstractFloat} = StepRangeLen(x)
     scalegrid(x::Integer) = Base.OneTo(x)
     scalegrid(x::AbstractVector) = Base.OneTo(length(x))
 

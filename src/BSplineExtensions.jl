@@ -171,7 +171,7 @@ struct BSplineInterpolation{T,N,TCoefs<:AbstractArray,IT<:DimSpec{BSpline},GT<:D
 end
 function BSplineInterpolation(::Type{TWeights}, A::AbstractArray{Tel,N}, ::IT, ::GT, ::Val{pad}) where {N,Tel,TWeights<:Real,IT<:DimSpec{BSpline},GT<:DimSpec{GridType},pad}
     isleaftype(IT) || error("The b-spline type must be a leaf type (was $IT)")
-    isleaftype(typeof(A)) || warn("For performance reasons, consider using an array of a concrete type (typeof(A) == $(typeof(A)))")
+    isleaftype(typeof(A)) || @warn "For performance reasons, consider using an array of a concrete type (typeof(A) == $(typeof(A)))"
 
     c = zero(TWeights)
     for _ in 2:N

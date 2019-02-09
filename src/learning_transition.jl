@@ -1,21 +1,9 @@
 export check_dΠψ, _dψ1dθρ, _ρ, _ψ2, _ψ1
 
-
-# FIXME: Δ is a function of σ because step(ψspace) = 2*numsd*(1+σ^2)/(numpts-1).
-#        This, however, means we have to comptue dψ/dσ ∀ ψ
-# if false
-#     _hΔ(σ::Real, nsd::Real, n::Int) = 0.5 * _ψstep(σ, nsd, n)
-#     _dhΔdσ(σ::Real, nsd::Real, n::Int) = 0.5 * _dψstepdσv(σ, nsd, n)
-#     _hΔ(σ::Real, nsd::Real, n::Int, h::Real) = _hΔ(σ+h, nsd, n)
-# end
-
-# levels versions
-@inline _ρ(θρ::Real) = 2 * logistic(θρ) - 1
+@inline _ρ(θρ::Real) = logistic(θρ)
+@inline _dρdθρ(θρ::Real) = (z = logistic(θρ); z*(1-z) )
 
 @inline _ρ2(θρ::Real) = _ρ(θρ)^2
-
-@inline _dρdθρ(θρ::Real) = (ex = exp(-θρ); 2 * ex / (1+ex)^2)
-
 _dρdσ = _dρdθρ # alias
 
 @inline _ψ1(u::Real,v::Real,ρ::Real) = ρ*u + sqrt(1-ρ^2)*v
@@ -75,8 +63,9 @@ function _βΠψ!(P::AbstractMatrix, y1::StepRangeLen, y2::StepRangeLen, θp::Re
 end
 
 _βΠψ!(P::AbstractMatrix, y1::StepRangeLen, θp::Real, β::Real) = _βΠψ!(P, y1, y1, θp, β)
-function _βΠψ!(y1::StepRangeLen{T}, θp::Real, β::Real) where {T}
-    P = Matrix{T}(length(y1),length(y1))
+
+function _βΠψ(y1::StepRangeLen{T}, θp::Real, β::Real) where {T}
+    P = Matrix{T}(undef, length(y1), length(y1))
     _βΠψ!(P, y1, y1, θp, β)
     return P
 end

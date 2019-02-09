@@ -93,19 +93,19 @@ end
 
 @GenGlobal g_SharedEV g_dcdp_primitives g_dcdp_Emax g_dcdp_tmpvars
 
-function solve_vf_all!(sev::SharedEV, tmpv::dcdp_tmpvars, prim::dcdp_primitives, θ::AbstractVector, dograd::Type, typidx::Integer...; kwargs...)
+function solve_vf_all!(sev::SharedEV, tmpv::dcdp_tmpvars, prim::dcdp_primitives, θ::AbstractVector, dograd::Bool, typidx::Integer...; kwargs...)
     evs, typs = dcdp_Emax(sev, typidx...)
     solve_vf_all!(evs, tmpv, prim, θ, typs, dograd; kwargs...)
 end
 
-function serial_solve_vf_all!(sev::SharedEV, tmpv::dcdp_tmpvars, prim::dcdp_primitives, θ::AbstractVector, dograd::Type; kwargs...)
+function serial_solve_vf_all!(sev::SharedEV, tmpv::dcdp_tmpvars, prim::dcdp_primitives, θ::AbstractVector, dograd::Bool; kwargs...)
     CR = CartesianIndices( length.(sev.itypes) )
     for Idx in collect(CR)
         solve_vf_all!(sev, tmpv, prim, θ, dograd, Idx.I...; kwargs...)
     end
 end
 
-function solve_vf_all!(θ::AbstractVector, dograd::Type, typidx::Integer...; kwargs...)
+@noinline function solve_vf_all!(θ::AbstractVector, dograd::Bool, typidx::Integer...; kwargs...)
     global g_SharedEV
     global g_dcdp_tmpvars
     global g_dcdp_primitives
@@ -113,22 +113,10 @@ function solve_vf_all!(θ::AbstractVector, dograd::Type, typidx::Integer...; kwa
 end
 
 
-function parallel_solve_vf_all!(sev::SharedEV, θ::AbstractVector, dograd::Type; kwargs...)
+function parallel_solve_vf_all!(sev::SharedEV, θ::AbstractVector, dograd::Bool; kwargs...)
     CR = CartesianIndices( length.(sev.itypes) )
     s = @sync @distributed for Idx in collect(CR)
         solve_vf_all!(θ, dograd, Idx.I...; kwargs...)
     end
     return fetch(s)
 end
-
-parallel_solve_vf_all!(sev::SharedEV, θ::AbstractVector, dograd::Bool; kwargs...) = parallel_solve_vf_all!(sev, θ, Val{dograd}; kwargs...)
-
-
-
-
-
-
-
-
-
-#
