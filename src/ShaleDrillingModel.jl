@@ -1,6 +1,8 @@
 __precompile__()
+
 module ShaleDrillingModel
 
+using Distributed
 using StatsFuns
 using StatsBase
 using AxisAlgorithms
@@ -8,6 +10,9 @@ using Calculus
 using GenGlobal
 using Interpolations
 
+using SharedArrays
+using SparseArrays
+using LinearAlgebra
 
 const AbstractArray3{T} = AbstractArray{T,3}
 const AbstractArray4{T} = AbstractArray{T,4}

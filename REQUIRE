@@ -1,10 +1,11 @@
-julia 0.6
+julia 0.7
 
 StatsFuns
 AxisAlgorithms
 Calculus
 StatsBase
 Interpolations
+Ratios
 
 MarkovTransitionMatrices  # to make transition matrices
 

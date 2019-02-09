@@ -1,4 +1,4 @@
-export parallel_solve_vf_all!, SharedEV, serial_solve_vf_all!, set_up_dcdp_workers
+export parallel_solve_vf_all!, SharedEV, serial_solve_vf_all!
 
 
 struct SharedEV{T,N,N2,TT<:Tuple}
@@ -25,16 +25,24 @@ function SharedEV(pids::AbstractVector{<:Integer}, prim::dcdp_primitives{FF,T}, 
     nSexp1 = _nSexp(prim)
 
     # initialize SharedArrays and start them at 0 (super-important for infinite horizon problems)
-    EV   = SharedArray{T}( (zdims..., nψ,     nS,     typedims...), init = S -> S[Base.localindexes(S)] = zero(T), pids=[1,pids...])
-    dEV  = SharedArray{T}( (zdims..., nψ, nθ, nS,     typedims...), init = S -> S[Base.localindexes(S)] = zero(T), pids=[1,pids...])
-    dEVσ = SharedArray{T}( (zdims..., nψ,     nSexp1, typedims...), init = S -> S[Base.localindexes(S)] = zero(T), pids=[1,pids...])
-    dEVψ = SharedArray{T}( (zdims..., nψ,     nSexp1, typedims...), init = S -> S[Base.localindexes(S)] = zero(T), pids=[1,pids...])
+    EV   = SharedArray{T}( (zdims..., nψ,     nS,     typedims...), pids=[1,pids...])
+    dEV  = SharedArray{T}( (zdims..., nψ, nθ, nS,     typedims...), pids=[1,pids...])
+    dEVσ = SharedArray{T}( (zdims..., nψ,     nSexp1, typedims...), pids=[1,pids...])
+    dEVψ = SharedArray{T}( (zdims..., nψ,     nSexp1, typedims...), pids=[1,pids...])
+
+    zero!(EV)
+    zero!(dEV)
+    zero!(dEVσ)
+    zero!(dEVψ)
 
     return SharedEV{T,N,N+1,typeof(itypes)}(EV,dEV,dEVσ,dEVψ,itypes)
 end
 
 SharedEV(prim::dcdp_primitives, itypes::AbstractVector...) = SharedEV(workers(), prim, itypes...)
 
+function zero!(x::AbstractArray{T}) where {T<:Number}
+    fill!(x, zero(T))
+end
 
 function zero!(sev::SharedEV{T}) where {T}
     fill!(sev.EV, zero(T))
@@ -91,7 +99,7 @@ function solve_vf_all!(sev::SharedEV, tmpv::dcdp_tmpvars, prim::dcdp_primitives,
 end
 
 function serial_solve_vf_all!(sev::SharedEV, tmpv::dcdp_tmpvars, prim::dcdp_primitives, θ::AbstractVector, dograd::Type; kwargs...)
-    CR = CartesianRange( length.(sev.itypes) )
+    CR = CartesianIndices( length.(sev.itypes) )
     for Idx in collect(CR)
         solve_vf_all!(sev, tmpv, prim, θ, dograd, Idx.I...; kwargs...)
     end
@@ -106,11 +114,11 @@ end
 
 
 function parallel_solve_vf_all!(sev::SharedEV, θ::AbstractVector, dograd::Type; kwargs...)
-    CR = CartesianRange( length.(sev.itypes) )
-    s = @sync @parallel for Idx in collect(CR)
+    CR = CartesianIndices( length.(sev.itypes) )
+    s = @sync @distributed for Idx in collect(CR)
         solve_vf_all!(θ, dograd, Idx.I...; kwargs...)
     end
-    return fetch.(s)
+    return fetch(s)
 end
 
 parallel_solve_vf_all!(sev::SharedEV, θ::AbstractVector, dograd::Bool; kwargs...) = parallel_solve_vf_all!(sev, θ, Val{dograd}; kwargs...)

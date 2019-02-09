@@ -25,9 +25,9 @@ royalty_types = 1:length(royalty_rates)
 
 # problem sizes
 Πz = Πp
-nψ, nz, ngeo =  51, size(Πz,1), 1
+nψ, nz =  51, size(Πz,1)
 wp = well_problem(3,4,10)
-zspace, ψspace = (pspace,1:2,), linspace(-4.0, 4.0, nψ)
+zspace, ψspace = (pspace,1:2,), range(-4.0, stop=4.0, length=nψ)
 prim = dcdp_primitives(:exp, β, wp, zspace, Πp, ψspace)
 tmpv = dcdp_tmpvars(prim)
 evs = dcdp_Emax(prim)
@@ -77,7 +77,7 @@ plot(ψspace, prdrill[17,:,:])
 
 # let prim = dcdp_primitives(:exp, β, wp, zspace, Πz, ψspace),
 #     tmpv = dcdp_tmpvars(prim),
-#     sev = SharedEV([1,], prim, [1./8.], 1:1),
+#     sev = SharedEV([1,], prim, [1.0/8.0], 1:1),
 #     zdims = length.(prim.zspace),
 #     nψ = _nψ(prim),
 #     nd = _nd(prim),
@@ -92,7 +92,8 @@ plot(ψspace, prdrill[17,:,:])
 
 
 # rmprocs(workers())
-# pids = addprocs()
+# pids = IN_SLURM ? addprocs_slurm(parse(Int, ENV["SLURM_NTASKS"])) : addprocs()
+
 # @everywhere @show pwd()
 # @everywhere using ShaleDrillingModel
 #

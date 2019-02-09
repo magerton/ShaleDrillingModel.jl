@@ -70,8 +70,8 @@ end
 
 
 function solve_vf_explore!(EV::AbstractArray3{T}, uex::AbstractArray3, ubVfull::AbstractArray3, lse::AbstractMatrix, tmp::AbstractMatrix, wp::well_problem, Πz::AbstractMatrix, β::Real) where {T}
-    zeros4 = Array{T}(0,0,0,0)
-    zeros3 = Array{T}(0,0,0)
+    zeros4 = Array{T}(undef, 0,0,0,0)
+    zeros3 = Array{T}(undef, 0,0,0)
     solve_vf_explore!(EV,     zeros4, zeros3, # zeros3,
                      uex,     zeros4, zeros3, # zeros3,
                      ubVfull, zeros4, zeros3, # zeros3,

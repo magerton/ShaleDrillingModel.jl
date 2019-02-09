@@ -39,11 +39,11 @@ let θ1 = similar(θt), θ2 = similar(θt), fdEV = similar(evs.dEV), itype = (0.
     solve_vf_infill!(evs, tmp, prim, true)
 
     @views maxv, idx = findmax(abs.(fdEV[:,:,2:end,:].-evs.dEV[:,:,2:end,:]))
-    @views sub = ind2sub(fdEV[:,:,2:end,:], idx)
+    @views sub = CartesianIndices(fdEV[:,:,2:end,:])[idx]
     @show "worst value is $maxv at $sub for dθ[2:end]"
 
     maxv, idx = findmax(abs.(fdEV.-evs.dEV))
-    sub = ind2sub(fdEV, idx)
+    sub = CartesianIndices(fdEV)[idx]
     @show "worst value is $maxv at $sub"
     # @test fdEV ≈ evs.dEV
     @test 0.0 < maxv < 1.0
