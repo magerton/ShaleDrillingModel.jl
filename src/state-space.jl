@@ -144,7 +144,7 @@ function state_if_never_drilled(wp::AbstractUnitProblem, state0::Integer, t::Int
     end
 end
 
-function state_if_never_drilled(wp::PerpetualProblem, state0::Integer, i::Integer)
+function state_if_never_drilled(wp::PerpetualProblem, state0::Integer, t::Integer)
     return 1
 end
 
