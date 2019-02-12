@@ -2,13 +2,23 @@
 
 # simple Vfit
 function vfit!(EV0::AbstractMatrix, ubV::AbstractArray, lse::AbstractMatrix, tmp::AbstractMatrix, Πz::AbstractMatrix)
-    logsumexp3!(lse,tmp,ubV)  # alternatively, maximum!(reshape(lse,m,n,1), ubV)
+    # logsumexp3!(lse,tmp,ubV)
+    maximum!(reshape(lse,size(lse)...,1), ubV)
     A_mul_B_md!(EV0,Πz,lse,1)
 end
 
 # preserves ubV & updates derivatives
 function vfit!(EV0::AbstractMatrix, dEV0::AbstractArray3, ubV::AbstractArray3, dubV::AbstractArray4, q::AbstractArray3, lse::AbstractMatrix, tmp::AbstractMatrix, Πz::AbstractMatrix)
-    logsumexp_and_softmax3!(lse,q,tmp,ubV)  # alternatively, findmax!(rval, rind, A) -> (maxval, index)
+    # logsumexp_and_softmax3!(lse,q,tmp,ubV)  # alternatively, findmax!(rval, rind, A) -> (maxval, index)
+    tmp_cart = Array{CartesianIndex{3}}(undef,size(lse))
+    lse1 = reshape(lse, size(lse)..., 1)
+    tmp_cart1 = reshape(tmp_cart1, size(tmp_cart1)..., 1)
+
+    findmax!(lse1, tmp_cart1, ubV)
+    fill!(q, zero(eltype(q)))
+    for i in tmp_cart
+        q[i] = one(eltype(q))
+    end
     A_mul_B_md!(EV0,Πz,lse,1)
     sumdubV = @view(dubV[:,:,:,1])
     sumprod!(sumdubV,dubV,q)                # maybe use rind in a SparseMatrixCSC{Bool} for nzvals and then multiply?
@@ -39,6 +49,18 @@ end
 # --------------------------- basic pfit ----------------------------
 
 function pfit!(EV0::AbstractMatrix, ubV::AbstractArray3, ΔEV::AbstractMatrix, tmp::AbstractMatrix, IminusTEVp::AbstractMatrix, Πz::AbstractMatrix, β::Real; vftol::Real=1e-11)
+
+    tmp_cart = Array{CartesianIndex{3}}(undef,size(lse))
+    lse1 = reshape(lse, size(lse)..., 1)
+    tmp_cart1 = reshape(tmp_cart1, size(tmp_cart1)..., 1)
+
+    findmax!(lse1, tmp_cart1, ubV)
+    fill!(q, zero(eltype(q)))
+    for i in tmp_cart
+        q[i] = one(eltype(q))
+    end
+
+
     # initial vfit
     q0 = @view(ubV[:,:,1])
     logsumexp_and_softmax3!(ΔEV,q0,tmp,ubV)

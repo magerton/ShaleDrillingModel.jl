@@ -114,7 +114,7 @@ include("test_utility.jl")
 include("test_transition.jl")
 
 include("logsumexp3.jl")
-
+include("vfit.jl")
 include("vf_solve_terminal_and_infill.jl")
 include("vf_solve_exploratory.jl")
 
