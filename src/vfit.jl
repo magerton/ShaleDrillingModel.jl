@@ -10,9 +10,9 @@ end
 # preserves ubV & updates derivatives
 function vfit!(EV0::AbstractMatrix, dEV0::AbstractArray3, ubV::AbstractArray3, dubV::AbstractArray4, q::AbstractArray3, lse::AbstractMatrix, tmp::AbstractMatrix, Πz::AbstractMatrix)
     # logsumexp_and_softmax3!(lse,q,tmp,ubV)  # alternatively, findmax!(rval, rind, A) -> (maxval, index)
-    tmp_cart = Array{CartesianIndex{3}}(undef,size(lse))
+    tmp_cart = Array{CartesianIndex{3}}(undef,size(lse)) # FIXME - PREALLOCATE!
     lse1 = reshape(lse, size(lse)..., 1)
-    tmp_cart1 = reshape(tmp_cart1, size(tmp_cart1)..., 1)
+    tmp_cart1 = reshape(tmp_cart, size(tmp_cart)..., 1)
 
     findmax!(lse1, tmp_cart1, ubV)
     fill!(q, zero(eltype(q)))
@@ -32,7 +32,7 @@ end
 
 # --------------------------- VFIT until conv ----------------------------
 
-function solve_inf_vfit!(EV0::AbstractMatrix, ubV::AbstractArray3, lse::AbstractMatrix, tmp::AbstractMatrix, Πz::AbstractMatrix, β::Real; maxit::Integer=6, vftol::Real=1e-11)
+function solve_inf_vfit!(EV0::AbstractMatrix, ubV::AbstractArray3, lse::AbstractMatrix, tmp::AbstractMatrix, Πz::AbstractMatrix, β::Real; maxit::Integer=60, vftol::Real=1e-11)
     iter = zero(maxit)
     while true
         vfit!(tmp, ubV, lse, tmp, Πz)
@@ -50,20 +50,17 @@ end
 
 function pfit!(EV0::AbstractMatrix, ubV::AbstractArray3, ΔEV::AbstractMatrix, tmp::AbstractMatrix, IminusTEVp::AbstractMatrix, Πz::AbstractMatrix, β::Real; vftol::Real=1e-11)
 
-    tmp_cart = Array{CartesianIndex{3}}(undef,size(lse))
+    lse = ΔEV
     lse1 = reshape(lse, size(lse)..., 1)
-    tmp_cart1 = reshape(tmp_cart1, size(tmp_cart1)..., 1)
-
-    findmax!(lse1, tmp_cart1, ubV)
-    fill!(q, zero(eltype(q)))
-    for i in tmp_cart
-        q[i] = one(eltype(q))
-    end
+    tmp_cart = Array{CartesianIndex{3}}(undef,size(lse))  # FIXME - PREALLOCATE!
+    tmp_cart1 = reshape(tmp_cart, size(tmp_cart)..., 1)
 
 
     # initial vfit
-    q0 = @view(ubV[:,:,1])
-    logsumexp_and_softmax3!(ΔEV,q0,tmp,ubV)
+    @views q0 = ubV[:,:,1]
+    # logsumexp_and_softmax3!(ΔEV,q0,tmp,ubV)
+    findmax!(lse1, tmp_cart1, ubV)
+    q0 .= last.(getfield.(tmp_cart, :I)) .== 1
     A_mul_B_md!(tmp, Πz, ΔEV, 1)
 
     # compute difference & check bnds
@@ -115,9 +112,13 @@ function gradinf!(dEV0::AbstractArray3{T}, dEV0σ::AbstractMatrix{T}, ubV::Abstr
     @views ΠsumdubVj = lse[:,1:nθ] # Array{T}(nz,nθ)
     @views dev0tmpj  = tmp[:,1:nθ] # Array{T}(nz,nθ)
 
+    tmp_cart = argmax(ubV; dims=3)  # FIXME - PREALLOCATE!
     q = ubV
-
-    softmax3!(q, lse, tmp )
+    fill!(q,0.0)
+    for i in tmp_cart
+        q[i] = one(eltype(q))
+    end
+    # softmax3!(q, lse, tmp )
 
     # for dubV/dθt
     sumprod!(sumdubV, dubV, q)
