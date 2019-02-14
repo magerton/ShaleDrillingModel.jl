@@ -26,7 +26,9 @@ Create price/cost transition matrices using [MarkovTransitionMatrices.jl](https:
 Also, we need to use `Interpolations@0.8.0`, which requires `ShowItLikeYouBuildIt`. To obtain this package, modify `.julia/registries/General/S/ShowItLikeYouBuildIt/Compat.toml` to allow `julia = "0.6-1.1"`. If one creates a new branch, it can be rebased back on to master: `git rebase origin/master`.
 
 ```julia
-]add AxisAlgorithms BenchmarkTools Calculus CategoricalArrays DataFrames Distributions FileIO Formatting GLM GR Gadfly IndirectArrays Interpolations@0.8.0 JLD2 MixedModels NLSolversBase NLopt Optim Plots Primes Profile ProgressMeter PyPlot RData Ratios StatsBase StatsFuns StatsModels Feather
+]add AxisAlgorithms BenchmarkTools Calculus CategoricalArrays DataFrames Distributions FileIO Formatting GLM GR Gadfly IndirectArrays Interpolations JLD2 MixedModels NLSolversBase NLopt Optim Plots Primes Profile ProgressMeter PyPlot RData Ratios StatsBase StatsFuns StatsModels Feather RCall TimeZones ClusterManagers
+
+]add Interpolations@0.8.0
 
 dev ssh://git@github.com/magerton/CountPlus.git
 dev ssh://git@github.com/magerton/Halton.git

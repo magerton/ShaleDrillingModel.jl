@@ -79,7 +79,7 @@ geology_types = 1.3430409262656042:0.1925954901417719:5.194950729101042
 # initial parameters
 flowfuncname = :one_restr
 θt = [-4.28566, -5.45746, -0.3, ] # ShaleDrillingModel.STARTING_log_ogip, ShaleDrillingModel.STARTING_σ_ψ,
-σv = 0.1
+σv = 1.0
 
 θfull = vcat(θt, σv)
 
