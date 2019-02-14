@@ -9,13 +9,6 @@ function solve_vf_explore!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, 
     EV         = evs.EV
     dEV        = evs.dEV
     dEVσ       = evs.dEVσ
-    ubVfull    = t.ubVfull
-    dubVfull   = t.dubVfull
-    dubV_σ     = t.dubV_σ
-    q          = t.q
-    lse        = t.lse
-    tmp        = t.tmp
-    IminusTEVp = t.IminusTEVp
     wp         = p.wp
     Πz         = p.Πz
     β          = p.β
@@ -23,32 +16,33 @@ function solve_vf_explore!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, 
     nz,nψ,nS = size(EV)
     nSexp, dmaxp1, nd = _nSexp(wp), _dmax(wp)+1, _dmax(wp)+1
 
-    (nz,nψ,nd) == size(ubVfull)       || throw(DimensionMismatch())
-    (nz,nz) == size(Πz)               || throw(DimensionMismatch())
-    (nz,nψ) == size(lse) == size(tmp) || throw(DimensionMismatch())
+    (nz,nψ,nd) == size(t.ubVfull)         || throw(DimensionMismatch())
+    (nz,nz) == size(Πz)                   || throw(DimensionMismatch())
+    (nz,nψ) == size(t.lse) == size(t.tmp) || throw(DimensionMismatch())
 
     if dograd
         nθ = size(dEV,3)
-        (nz,nψ,nθ,nS)     == size(dEV)      || throw(DimensionMismatch())
-        (nz,nψ,nSexp)     == size(dEVσ)     || throw(DimensionMismatch())
-        (nz,nψ,dmaxp1)    == size(q)        || throw(DimensionMismatch())
-        (nz,nψ,nθ,nd)     == size(dubVfull) || throw(DimensionMismatch())
-        (nz,nψ,dmaxp1)    == size(dubV_σ)   || throw(DimensionMismatch())
+        (nz,nψ,nθ,nS)     == size(dEV)        || throw(DimensionMismatch())
+        (nz,nψ,nSexp)     == size(dEVσ)       || throw(DimensionMismatch())
+        (nz,nψ,dmaxp1)    == size(t.q)        || throw(DimensionMismatch())
+        (nz,nψ,nθ,nd)     == size(t.dubVfull) || throw(DimensionMismatch())
+        (nz,nψ,dmaxp1)    == size(t.dubV_σ)   || throw(DimensionMismatch())
     end
 
     # --------- VFIt --------------
 
     # Views of ubV so we can efficiently access them
-    @views ubV0    = ubVfull[:,:,  1]
-    @views ubV1    = ubVfull[:,:,  2:dmaxp1]
-    @views ubV     = ubVfull[:,:,  1:dmaxp1]
+    @views ubV0    = t.ubVfull[:,:,  1]
+    @views ubV1    = t.ubVfull[:,:,  2:dmaxp1]
+    @views ubV     = t.ubVfull[:,:,  1:dmaxp1]
 
-    @views dubV0   = dubVfull[:,:,:,1]
-    @views dubV1   = dubVfull[:,:,:,2:dmaxp1]
-    @views dubV    = dubVfull[:,:,:,1:dmaxp1]
+    @views dubV0   = t.dubVfull[:,:,:,1]
+    @views dubV1   = t.dubVfull[:,:,:,2:dmaxp1]
+    @views dubV    = t.dubVfull[:,:,:,1:dmaxp1]
 
-    @views dubV_σ0 = dubV_σ[  :,:,  1]
-    @views dubV_σ1 = dubV_σ[  :,:,  2:dmaxp1]
+    @views dubV_σ0 = t.dubV_σ[  :,:,  1]
+    @views dubV_σ1 = t.dubV_σ[  :,:,  2:dmaxp1]
+    @views dubV_σ  = t.dubV_σ[  :,:,  1:dmaxp1]
 
     exp2lrn = exploratory_learning(wp)
     @views βEV1   =  EV[ :,:,  exp2lrn]
@@ -64,13 +58,13 @@ function solve_vf_explore!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, 
         @views dEVσ1 = dEVσ[ :,:,ip]
 
         # compute u + βEV(d) ∀ d ∈ actionspace(wp,i)
-        fillflows!(ubVfull, flow, p, θt, σ, i, itype...)
+        fillflows!(ubV, flow, p, θt, σ, i, itype...)
         ubV0 .+= β .* EV0
         ubV1 .+= βEV1 # β already baked in
 
         if dograd
-            fillflows_grad!(dubVfull, flowdθ, p, θt, σ, i, itype...)
-            fillflows!(       dubV_σ, flowdσ, p, θt, σ, i, itype...)
+            fillflows_grad!(dubV, flowdθ, p, θt, σ, i, itype...)
+            fillflows!(   dubV_σ, flowdσ, p, θt, σ, i, itype...)
             dubV0   .+= β .* dEV0
             dubV1   .+= βdEV1  # β already baked in
             dubV_σ0 .+= β .* dEVσ1
@@ -79,32 +73,22 @@ function solve_vf_explore!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, 
 
         if horzn == :Finite
             if dograd
-                # this does EV0 & ∇EV0
-                @views vfit!(EV[:,:,i], dEV[:,:,:,i], ubVfull, dubVfull, q, lse, tmp, Πz)
-
-                # ∂EV/∂σ = I ⊗ Πz * ∑( Pr(d) * ∂ubV/∂σ[zspace, ψspace, d]  )
-                sumprod!(tmp, dubV_σ, q)
-                @views A_mul_B_md!(dEVσ[:,:,i], Πz, tmp, 1)
+                @views vfit!(EV[:,:,i], dEV[:,:,:,i], dEVσ[:,:,i], t, p)
             else
-                @views vfit!(EV[:,:,i], ubVfull, lse, tmp, Πz)
+                @views vfit!(EV[:,:,i], t, p)
             end
 
         elseif horzn == :Infinite
-            converged, iter, bnds =  solve_inf_vfit_pfit!(EV0, ubV, lse, tmp, IminusTEVp, Πz, β; vftol=vftol, maxit0=maxit0, maxit1=maxit1)
+            converged, iter, bnds =  solve_inf_vfit_pfit!(EV0, t, p; vftol=vftol, maxit0=maxit0, maxit1=maxit1)
             converged || @warn "Did not converge at state $i after $iter pfit. McQueen-Porteus bnds: $bnds. θt = $θt, σ = $σ"
 
             if dograd
                 # TODO: only allows 0-payoff if no action
                 ubV[:,:,1] .= β .* EV0
-                gradinf!(dEV0, dEVσ1, ubV, dubV, dubV_σ, lse, tmp, IminusTEVp, Πz, β, true)
+                gradinf!(dEV0, dEVσ1, t, p, true)
             end
         else
             throw(error("i = $i, horzn = $horzn but must be :Finite or :Infinite"))
         end
     end
 end
-
-
-
-
-#

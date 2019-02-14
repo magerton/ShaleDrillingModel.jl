@@ -1,5 +1,7 @@
 export logsumexp3!, logsumexp_and_softmax3!, softmax3!, logsumexp_and_softmax!, logsumexp_and_softmax
 
+add_1_dim(x::AbstractArray) = reshape(x, size(x)..., 1)
+
 
 """
     logsumexp_and_softmax!(r, x)
@@ -32,7 +34,7 @@ function logsumexp3!(lse::AbstractMatrix, tmp::AbstractMatrix, x::AbstractArray3
     nz, nψ, nd = size(x)
     (nz, nψ) ==  size(lse) == size(tmp) || throw(DimensionMismatch())
 
-    maximum!(reshape(tmp, nz,nψ,1), x)
+    maximum!(add_1_dim(tmp), x)
     fill!(lse, zero(eltype(lse)))
     @inbounds for k in 1:nd
         @views lse .+= exp.(x[:,:,k] .- tmp)
@@ -46,7 +48,7 @@ function softmax3!(q::AbstractArray3, lse::AbstractMatrix, tmp::AbstractMatrix, 
     (nz, nψ, nd) == size(q) || throw(DimensionMismatch())
     (nz, nψ) ==  size(lse) == size(tmp) || throw(DimensionMismatch())
 
-    maximum!(reshape(tmp, nz,nψ,1), x)
+    maximum!(add_1_dim(tmp), x)
     fill!(lse, zero(eltype(lse)))
     @inbounds for k in 1:size(x,3)
         @views lse .+= (q[:,:,k] .= exp.(x[:,:,k] .- tmp))
@@ -60,7 +62,7 @@ function softmax3!(q::AbstractMatrix, lse::AbstractMatrix, tmp::AbstractMatrix, 
     nz, nψ, nd = size(x)
     (nz, nψ) ==  size(lse) == size(tmp) == size(q) || throw(DimensionMismatch())
 
-    maximum!(reshape(tmp, nz,nψ,1), x)
+    maximum!(add_1_dim(tmp), x)
     @views lse .= (q .= exp.(x[:,:,1] .- tmp))
     @inbounds for k in 2:nd
         @views lse .+= exp.(x[:,:,k] .- tmp)

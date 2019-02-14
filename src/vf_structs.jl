@@ -20,10 +20,11 @@ struct dcdp_primitives{FF,T<:Real,UP<:AbstractUnitProblem,AM<:AbstractMatrix{T},
     Πz::AM            # transition for z
     ψspace::AV        # ψspace = u + σv*v
     nθt::Int          # Num parameters in flow payoffs MINUS 1 for σv
+    anticipate_e::Bool # do we anticipate the ϵ shocks assoc w/ each choice?
 end
 
-function dcdp_primitives(FF::Symbol, β::T, wp::UP, zspace::TT, Πz::AM, ψspace::AV) where {T,TT,AM,AV,UP<:AbstractUnitProblem}
-    dcdp_primitives{Val{FF},T,UP,AM,TT,AV}(β, wp, zspace, Πz, ψspace, number_of_model_parms(FF))
+function dcdp_primitives(FF::Symbol, β::T, wp::UP, zspace::TT, Πz::AM, ψspace::AV, anticipate_e::Bool=true) where {T,TT,AM,AV,UP<:AbstractUnitProblem}
+    dcdp_primitives{Val{FF},T,UP,AM,TT,AV}(β, wp, zspace, Πz, ψspace, number_of_model_parms(FF), anticipate_e)
 end
 
 flow(prim::dcdp_primitives{FF}) where {FF} = FF
@@ -96,16 +97,17 @@ end
 
 # --------------------- tmp vars --------------------------
 
-struct dcdp_tmpvars{T<:Float64,AM<:AbstractMatrix{Float64}}
-    ubVfull::Array{T,3}
-    dubVfull::Array{T,4}
-    dubV_σ::Array{T,3}
+struct dcdp_tmpvars{AA2<:AbstractMatrix{Float64}, AA3<:AbstractArray3{Float64}, AA4<:AbstractArray4{Float64}}
+    ubVfull::AA3
+    dubVfull::AA4
+    dubV_σ::AA3
 
-    q::Array{T,3}
-    lse::Matrix{T}
-    tmp::Matrix{T}
-    Πψtmp::Matrix{T}
-    IminusTEVp::AM
+    q::AA3
+    lse::Matrix{Float64}
+    tmp::Matrix{Float64}
+    tmp_cart::Matrix{CartesianIndex{3}}
+    Πψtmp::Matrix{Float64}
+    IminusTEVp::AA2
 end
 
 function check_size(prim::dcdp_primitives, t::dcdp_tmpvars)
@@ -140,12 +142,25 @@ function dcdp_tmpvars(prim::dcdp_primitives)
     q        = zeros(T,nz,nψ,nd)
     lse      = zeros(T,nz,nψ)
     tmp      = zeros(T,nz,nψ)
+    tmp_cart = Matrix{CartesianIndex{3}}(undef,nz,nψ)
 
     # transition matrices
     Πψtmp = Matrix{T}(undef,nψ,nψ)
     IminusTEVp = ensure_diagonal(prim.Πz)
 
-    return dcdp_tmpvars(ubVfull, dubVfull, dubV_σ, q, lse, tmp, Πψtmp, IminusTEVp)
+    return dcdp_tmpvars(ubVfull, dubVfull, dubV_σ, q, lse, tmp, tmp_cart, Πψtmp, IminusTEVp)
+end
+
+function dcdp_tmpvars_view(t::dcdp_tmpvars, idxd::AbstractVector)
+    first(idxd) == 1 || throw(DomainError())
+    last(idxd) <= size(t.ubVfull,3) || throw(DomainError())
+
+    @views ubV    = t.ubVfull[ :,:,  idxd]
+    @views dubV   = t.dubVfull[:,:,:,idxd]
+    @views dubV_σ = t.dubV_σ[  :,:,  idxd]
+    @views q      = t.q[:,:,idxd]
+
+    return dcdp_tmpvars(ubV, dubV, dubV_σ, q, t.lse, t.tmp, t.tmp_cart, t.Πψtmp, t.IminusTEVp)
 end
 
 

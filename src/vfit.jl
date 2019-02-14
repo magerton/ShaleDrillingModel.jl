@@ -1,41 +1,65 @@
 # --------------------------- basic VFIT ----------------------------
 
 # simple Vfit
-function vfit!(EV0::AbstractMatrix, ubV::AbstractArray, lse::AbstractMatrix, tmp::AbstractMatrix, Πz::AbstractMatrix)
-    # logsumexp3!(lse,tmp,ubV)
-    maximum!(reshape(lse,size(lse)...,1), ubV)
+function vfit!(EV0::AbstractMatrix, t::dcdp_tmpvars, prim::dcdp_primitives)
+    ubV, dubV, dubV_σ, q, lse, tmp, tmp_cart, Πψtmp, IminusTEVp = t.ubVfull, t.dubVfull, t.dubV_σ, t.q, t.lse, t.tmp, t.tmp_cart, t.Πψtmp, t.IminusTEVp
+    β, Πz, anticipate_e = prim.β, prim.Πz, prim.anticipate_e
+
+    if anticipate_e
+        logsumexp3!(lse,tmp,ubV)
+    else
+        maximum!(add_1_dim(lse), ubV)
+    end
     A_mul_B_md!(EV0,Πz,lse,1)
 end
 
 # preserves ubV & updates derivatives
-function vfit!(EV0::AbstractMatrix, dEV0::AbstractArray3, ubV::AbstractArray3, dubV::AbstractArray4, q::AbstractArray3, lse::AbstractMatrix, tmp::AbstractMatrix, Πz::AbstractMatrix)
-    # logsumexp_and_softmax3!(lse,q,tmp,ubV)  # alternatively, findmax!(rval, rind, A) -> (maxval, index)
-    tmp_cart = Array{CartesianIndex{3}}(undef,size(lse)) # FIXME - PREALLOCATE!
-    lse1 = reshape(lse, size(lse)..., 1)
-    tmp_cart1 = reshape(tmp_cart, size(tmp_cart)..., 1)
+# function vfit!(EV0::AbstractMatrix, dEV0::AbstractArray3, ubV::AbstractArray3, dubV::AbstractArray4, q::AbstractArray3, lse::AbstractMatrix, tmp::AbstractMatrix, Πz::AbstractMatrix)
+function vfit!(EV0::AbstractMatrix, dEV0::AbstractArray3, dEV0σ::AbstractMatrix, t::dcdp_tmpvars, prim::dcdp_primitives)
+    ubV, dubV, dubV_σ, q, lse, tmp, tmp_cart, Πψtmp, IminusTEVp = t.ubVfull, t.dubVfull, t.dubV_σ, t.q, t.lse, t.tmp, t.tmp_cart, t.Πψtmp, t.IminusTEVp
+    β, Πz, anticipate_e = prim.β, prim.Πz, prim.anticipate_e
 
-    findmax!(lse1, tmp_cart1, ubV)
-    fill!(q, zero(eltype(q)))
-    for i in tmp_cart
-        q[i] = one(eltype(q))
+    if anticipate_e
+        logsumexp_and_softmax3!(lse,q,tmp,ubV) # FIXME!!
+    else
+        findmax!(add_1_dim(lse), add_1_dim(tmp_cart), ubV)
+        fill!(q, 0.0)
+        @inbounds @simd for i in tmp_cart
+            q[i] = 1.0
+        end
     end
     A_mul_B_md!(EV0,Πz,lse,1)
     sumdubV = @view(dubV[:,:,:,1])
     sumprod!(sumdubV,dubV,q)                # maybe use rind in a SparseMatrixCSC{Bool} for nzvals and then multiply?
     A_mul_B_md!(dEV0,Πz,sumdubV,1)
+
+    # ∂EV/∂σ = I ⊗ Πz * ∑( Pr(d) * ∂ubV/∂σ[zspace, ψspace, d]  )
+    if length(dEV0σ) > 0
+        sumprod!(tmp, dubV_σ, q)
+        @views A_mul_B_md!(dEV0σ, Πz, tmp, 1)
+    end
+end
+
+function vfit!(EV0::AbstractMatrix, dEV0::AbstractArray3, t::dcdp_tmpvars, prim::dcdp_primitives)
+    vfit!(EV0, dEV0, Matrix{Float64}(undef,0,0), t, prim)
 end
 
 # destroys ubV and updates derivatives
-function vfit!(EV0::AbstractMatrix, dEV0::AbstractArray3, ubV::AbstractArray3, dubV::AbstractArray4,                    lse::AbstractMatrix, tmp::AbstractMatrix, Πz::AbstractMatrix)
-    vfit!(EV0, dEV0, ubV, dubV, ubV, lse, tmp, Πz)
+function vfit_destroy_ubV!(EV0::AbstractMatrix, dEV0::AbstractArray3, t::dcdp_tmpvars, prim::dcdp_primitives)
+    t2 = dcdp_tmpvars(t.ubVfull, t.dubVfull, t.dubV_σ, t.ubVfull, t.lse, t.tmp, t.tmp_cart, t.Πψtmp, t.IminusTEVp, t.anticipate_e)
+    vfit!(EV0, dEV0, t2, prim)
 end
+
 
 # --------------------------- VFIT until conv ----------------------------
 
-function solve_inf_vfit!(EV0::AbstractMatrix, ubV::AbstractArray3, lse::AbstractMatrix, tmp::AbstractMatrix, Πz::AbstractMatrix, β::Real; maxit::Integer=60, vftol::Real=1e-11)
+function solve_inf_vfit!(EV0::AbstractMatrix, t::dcdp_tmpvars, prim::dcdp_primitives; maxit::Integer=60, vftol::Real=1e-11)
+    ubV, dubV, dubV_σ, q, lse, tmp, tmp_cart, Πψtmp, IminusTEVp = t.ubVfull, t.dubVfull, t.dubV_σ, t.q, t.lse, t.tmp, t.tmp_cart, t.Πψtmp, t.IminusTEVp
+    β, Πz, anticipate_e = prim.β, prim.Πz, prim.anticipate_e
+
     iter = zero(maxit)
     while true
-        vfit!(tmp, ubV, lse, tmp, Πz)
+        vfit!(tmp, t, prim)
         bnds = extrema(tmp.-EV0) .* β ./ (1.0 .- β)
         ubV[:,:,1] .= β .* (EV0 .= tmp)
         iter += 1
@@ -48,19 +72,20 @@ end
 
 # --------------------------- basic pfit ----------------------------
 
-function pfit!(EV0::AbstractMatrix, ubV::AbstractArray3, ΔEV::AbstractMatrix, tmp::AbstractMatrix, IminusTEVp::AbstractMatrix, Πz::AbstractMatrix, β::Real; vftol::Real=1e-11)
+function pfit!(EV0::AbstractMatrix, t::dcdp_tmpvars, prim::dcdp_primitives; vftol::Real=1e-11)
 
-    lse = ΔEV
-    lse1 = reshape(lse, size(lse)..., 1)
-    tmp_cart = Array{CartesianIndex{3}}(undef,size(lse))  # FIXME - PREALLOCATE!
-    tmp_cart1 = reshape(tmp_cart, size(tmp_cart)..., 1)
+    ubV, dubV, dubV_σ, q, lse, tmp, tmp_cart, Πψtmp, IminusTEVp = t.ubVfull, t.dubVfull, t.dubV_σ, t.q, t.lse, t.tmp, t.tmp_cart, t.Πψtmp, t.IminusTEVp
+    β, Πz, anticipate_e = prim.β, prim.Πz, prim.anticipate_e
 
-
-    # initial vfit
+    ΔEV = lse
     @views q0 = ubV[:,:,1]
-    # logsumexp_and_softmax3!(ΔEV,q0,tmp,ubV)
-    findmax!(lse1, tmp_cart1, ubV)
-    q0 .= last.(getfield.(tmp_cart, :I)) .== 1
+
+    if anticipate_e
+        logsumexp_and_softmax3!(ΔEV, q0, tmp, ubV)
+    else
+        findmax!(add_1_dim(ΔEV), add_1_dim(tmp_cart), ubV)
+        q0 .= last.(getfield.(tmp_cart, :I)) .== 1         # update q0 as Pr(d=0|x)
+    end
     A_mul_B_md!(tmp, Πz, ΔEV, 1)
 
     # compute difference & check bnds
@@ -85,10 +110,13 @@ end
 
 # --------------------------- pfit until convergence ----------------------------
 
-function solve_inf_pfit!(EV0::AbstractMatrix, ubV::AbstractArray3, ΔEV::AbstractMatrix, tmp::AbstractMatrix, IminusTEVp::AbstractMatrix, Πz::AbstractMatrix, β::Real; maxit::Integer=30, vftol::Real=1e-11)
+function solve_inf_pfit!(EV0::AbstractMatrix, t::dcdp_tmpvars, prim::dcdp_primitives; maxit::Integer=30, vftol::Real=1e-11)
+    ubV, dubV, dubV_σ, q, lse, tmp, tmp_cart, Πψtmp, IminusTEVp = t.ubVfull, t.dubVfull, t.dubV_σ, t.q, t.lse, t.tmp, t.tmp_cart, t.Πψtmp, t.IminusTEVp
+    β, Πz, anticipate_e = prim.β, prim.Πz, prim.anticipate_e
+
     iter = zero(maxit)
     while true
-        bnds = pfit!(EV0, ubV, ΔEV, tmp, IminusTEVp, Πz, β; vftol=vftol)
+        bnds = pfit!(EV0, t, prim; vftol=vftol)
         iter += 1
         converged = all(abs.(bnds) .< vftol)
         if converged  ||  iter >= maxit
@@ -102,7 +130,11 @@ end
 
 
 # note -- this destroys ubV
-function gradinf!(dEV0::AbstractArray3{T}, dEV0σ::AbstractMatrix{T}, ubV::AbstractArray3, dubV::AbstractArray4, dubV_σ::AbstractArray3, lse::AbstractMatrix, tmp::AbstractMatrix, IminusTEVp::AbstractMatrix, Πz::AbstractMatrix, β::Real, do_σ::Bool) where {T}
+function gradinf!(dEV0::AbstractArray3{T}, dEV0σ::AbstractMatrix{T}, t::dcdp_tmpvars, prim::dcdp_primitives, do_σ::Bool=false) where {T}
+
+    ubV, dubV, dubV_σ, q, lse, tmp, tmp_cart, Πψtmp, IminusTEVp = t.ubVfull, t.dubVfull, t.dubV_σ, t.q, t.lse, t.tmp, t.tmp_cart, t.Πψtmp, t.IminusTEVp
+    β, Πz, anticipate_e = prim.β, prim.Πz, prim.anticipate_e
+
     size(dubV,4) >= 2 || throw(DimensionMismatch("Need dubV with at least 2+ action possibilities"))
     nθ = size(dubV,3)
 
@@ -112,13 +144,17 @@ function gradinf!(dEV0::AbstractArray3{T}, dEV0σ::AbstractMatrix{T}, ubV::Abstr
     @views ΠsumdubVj = lse[:,1:nθ] # Array{T}(nz,nθ)
     @views dev0tmpj  = tmp[:,1:nθ] # Array{T}(nz,nθ)
 
-    tmp_cart = argmax(ubV; dims=3)  # FIXME - PREALLOCATE!
     q = ubV
-    fill!(q,0.0)
-    for i in tmp_cart
-        q[i] = one(eltype(q))
+
+    if anticipate_e
+        softmax3!(q, lse, tmp)
+    else
+        findmax!(add_1_dim(lse), add_1_dim(tmp_cart), ubV)
+        fill!(q, 0.0)
+        for i in tmp_cart
+            q[i] = 1.0
+        end
     end
-    # softmax3!(q, lse, tmp )
 
     # for dubV/dθt
     sumprod!(sumdubV, dubV, q)
@@ -136,7 +172,7 @@ function gradinf!(dEV0::AbstractArray3{T}, dEV0σ::AbstractMatrix{T}, ubV::Abstr
     end
 
     for j in 1:size(dubV,2)
-        @views update_IminusTVp!(IminusTEVp, Πz, β, ubV[:,j,1])
+        @views update_IminusTVp!(IminusTEVp, Πz, β, q[:,j,1])
         fact = lu(IminusTEVp)
 
         # Note: cannot do this with @view(dEV0[:,j,:])
@@ -152,21 +188,22 @@ function gradinf!(dEV0::AbstractArray3{T}, dEV0σ::AbstractMatrix{T}, ubV::Abstr
     end
 end
 
-function gradinf!(dEV0::AbstractArray3{T}, ubV::AbstractArray3, dubV::AbstractArray4, lse::AbstractMatrix, tmp::AbstractMatrix, IminusTEVp::AbstractMatrix, Πz::AbstractMatrix, β::Real) where {T}
-    gradinf!(dEV0, Array{T,2}(undef,0,0), ubV, dubV, Array{T,3}(undef,0,0,0), lse, tmp, IminusTEVp, Πz, β, false)
+function gradinf!(dEV0::AbstractArray3{T}, t::dcdp_tmpvars, prim::dcdp_primitives) where {T}
+    zeros2 = Array{T,2}(undef,0,0)
+    gradinf!(dEV0, zeros2, t, prim, false)
 end
 
 # --------------------------- double vfit/pfit loop -----------------------
 
-function solve_inf_vfit_pfit!(EV0::AbstractMatrix, ubV::AbstractArray3, lse::AbstractMatrix, tmp::AbstractMatrix, IminusTEVp::AbstractMatrix, Πz::AbstractMatrix, β::Real; vftol::Real=1e-9, maxit0::Integer=40, maxit1::Integer=20)
-    solve_inf_vfit!(EV0, ubV, lse, tmp, Πz, β; maxit=maxit0, vftol=vftol)
+function solve_inf_vfit_pfit!(EV0::AbstractMatrix, t::dcdp_tmpvars, prim::dcdp_primitives; vftol::Real=1e-9, maxit0::Integer=40, maxit1::Integer=20)
+    solve_inf_vfit!(EV0, t, prim; maxit=maxit0, vftol=vftol)
 
     # try-catch loop in case we have insane parameters that have Pr(no action) = 0, producing a singular IminusTEVp matrix.
     converged, iter, bnds = try
-        solve_inf_pfit!(EV0, ubV, lse, tmp, IminusTEVp, Πz, β; maxit=maxit1, vftol=vftol)
+        solve_inf_pfit!(EV0, t, prim; maxit=maxit1, vftol=vftol)
     catch
         @warn "pfit threw error. trying vfit."
-        solve_inf_vfit!(EV0, ubV, lse, tmp, Πz, β; maxit=5000, vftol=vftol)
+        solve_inf_vfit!(EV0, t, prim; maxit=5000, vftol=vftol)
     end
     return converged, iter, bnds
 end

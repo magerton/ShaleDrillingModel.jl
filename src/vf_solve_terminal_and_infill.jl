@@ -29,11 +29,6 @@ function solve_vf_infill!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, �
 
     EV         = evs.EV
     dEV        = evs.dEV
-    ubVfull    = t.ubVfull
-    dubVfull   = t.dubVfull
-    lse        = t.lse
-    tmp        = t.tmp
-    IminusTEVp = t.IminusTEVp
     wp         = p.wp
     Πz         = p.Πz
     β          = p.β
@@ -43,24 +38,24 @@ function solve_vf_infill!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, �
 
     # ------------------------ size checks ----------------------------------
 
-    (nz,nψ,dmaxp1) == size(ubVfull)         || throw(DimensionMismatch())
-    (nz,nz) == size(IminusTEVp) == size(Πz) || throw(DimensionMismatch())
-    (nz,nψ) == size(tmp) == size(lse)       || throw(DimensionMismatch())
+    (nz,nψ,dmaxp1) == size(t.ubVfull)         || throw(DimensionMismatch())
+    (nz,nz) == size(t.IminusTEVp) == size(Πz) || throw(DimensionMismatch())
+    (nz,nψ) == size(t.tmp) == size(t.lse)     || throw(DimensionMismatch())
 
     if dograd
         nθ = size(dEV,3)
-        (nz,nψ,nθ,nS)     == size(dEV)      || throw(DimensionMismatch())
-        (nz,nψ,nθ,dmaxp1) == size(dubVfull) || throw(DimensionMismatch())
+        (nz,nψ,nθ,nS)     == size(dEV)        || throw(DimensionMismatch())
+        (nz,nψ,nθ,dmaxp1) == size(t.dubVfull) || throw(DimensionMismatch())
     end
 
     # ------------------------ compute things ----------------------------------
 
     for i in ind_inf(wp)
         idxd, idxs, horzn = dp1space(wp,i), collect(sprimes(wp,i)), _horizon(wp,i)
-        # idxd, idxs, horzn, st = wp_info(wp, i)
 
-        @views ubV = ubVfull[:,:,idxd]
-        @views dubV = dubVfull[:,:,:,idxd]
+        tvw = dcdp_tmpvars_view(t,idxd)
+        ubV  = tvw.ubVfull
+        dubV = tvw.dubVfull
         @views EV0 = EV[:,:,i]
         @views dEV0 = dEV[:,:,:,i]
 
@@ -75,19 +70,19 @@ function solve_vf_infill!(evs::dcdp_Emax, t::dcdp_tmpvars, p::dcdp_primitives, �
 
         if horzn == :Finite
             if dograd
-                vfit!(EV0, dEV0, ubV, dubV, lse, tmp, Πz)
+                vfit!(EV0, dEV0, tvw, p)
             else
-                vfit!(EV0,       ubV,       lse, tmp, Πz)
+                vfit!(EV0, tvw, p)
             end
 
         elseif horzn == :Infinite
-            converged, iter, bnds =  solve_inf_vfit_pfit!(EV0, ubV, lse, tmp, IminusTEVp, Πz, β; vftol=vftol, maxit0=maxit0, maxit1=maxit1)
+            converged, iter, bnds =  solve_inf_vfit_pfit!(EV0, tvw, p; vftol=vftol, maxit0=maxit0, maxit1=maxit1)
             converged || @warn "Did not converge at state $i after $iter pfit. McQueen-Porteus bnds: $bnds. θt = $θt, σ = $σ"
 
             if dograd
                 # TODO: only allows 0-payoff if no action
                 ubV[:,:,1] .= β .* EV0
-                gradinf!(dEV0, ubV, dubV, lse, tmp, IminusTEVp, Πz, β)   # note: destroys ubV & dubV
+                gradinf!(dEV0, tvw, p)   # note: destroys ubV & dubV
             end
         else
             throw(error("i = $i, horzn = $horzn but must be :Finite or :Infinite"))
