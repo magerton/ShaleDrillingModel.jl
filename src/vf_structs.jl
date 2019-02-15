@@ -11,7 +11,8 @@ export dcdp_primitives,
     _ψ1clamp,
     _nθt,
     _θt,
-    _σv
+    _σv,
+    print_summary
 
 struct dcdp_primitives{FF,T<:Real,UP<:AbstractUnitProblem,AM<:AbstractMatrix{T},TT<:Tuple,AV<:AbstractVector{T}}
     β::T
@@ -36,6 +37,16 @@ _σv(θ::AbstractVector) = last(θ)
 _θt(x::AbstractVector, nθt::Integer,          p1::Integer=0) = view(x, 1:nθt+p1)
 _θt(x::AbstractVector, prim::dcdp_primitives, p1::Integer=0) = _θt(x, _nθt(prim), p1)
 
+function print_summary(p::dcdp_primitives)
+    print("\n--------------------------------------\n    Primitives\n--------------------------------------\n")
+    println("Flow payoffs are $(flow(p)) with nθt+1 = $(_nθt(p))+1 parameters")
+    println("Shocks anticipated? $(_anticipate_e(p))")
+    println("β = $(p.β)")
+    println("wp = $(p.wp)")
+    println("zsize = $(length.(_zspace(p))) and zspace = $(_zspace(p))")
+    println("nψ = $(_nψ(p)) and ψspace = $(_ψspace(p))")
+    println("--------------------------------------")
+end
 
 # functions to retrieve elements from dcdp_primitives
 _nθt(   prim::dcdp_primitives) = prim.nθt
@@ -44,6 +55,7 @@ _nψ(    prim::dcdp_primitives) = length(prim.ψspace) # prim.nψ
 _nS(    prim::dcdp_primitives) = _nS(prim.wp)
 _nSexp( prim::dcdp_primitives) = _nSexp(prim.wp)
 _nd(    prim::dcdp_primitives) = _dmax(prim.wp)+1
+_anticipate_e(prim::dcdp_primitives) = prim.anticipate_e
 
 _zspace(prim::dcdp_primitives) = prim.zspace
 

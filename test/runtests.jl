@@ -93,6 +93,7 @@ wp = LeasedProblem(dmx,4,5,3,2)
 zspace, ψspace, dspace, d1space, vspace = (logp_space, logσ_space,), range(-4.5, stop=4.5, length=nψ), 0:dmx, 0:1, range(-3.0, stop=3.0, length=nv)
 
 prim = dcdp_primitives(flowfuncname, β, wp, zspace, Πp, ψspace)
+print_summary(prim)
 tmpv = dcdp_tmpvars(prim)
 evs = dcdp_Emax(prim)
 
