@@ -31,7 +31,7 @@ function check_flowgrad(FF::Type, θ::AbstractVector{T}, σ::T, zspace::Tuple, �
                 dx[k] = flowdθ(FF, wp, sidx, θ, σ, z, ψ, k, d, itype...)
             end
             if !(fdx ≈ dx)
-                @warn "FF = $FF. Bad θ diff at sidx=$sidx, (z,ψ,d)=$zψd. du=$dx and fd = $dxfd"
+                @warn "FF = $FF. Bad θ diff at sidx=$sidx, (z,ψ,d)=$zψd. du=$dx and fd = $fdx"
                 return false
             end
         end

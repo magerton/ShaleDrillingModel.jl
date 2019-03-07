@@ -252,6 +252,30 @@ end
     return u::T
 end
 
+
+@inline function flow(::Type{Val{:cheb3_cost_tech}}, wp::AbstractUnitProblem, i::Integer, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, geoid::Real, roy::T) where {N,T}
+# @inline function flow(::Type{Val{:cheb3_cost_tech}}, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {N,T}
+    if d == 0
+        _sgnext(wp,i) && return θ[11]
+        return zero(T)
+    end
+    logp, logc, t = z
+    u = rev_exp(1,θ[1],1,θ[2],θ[3],θ[4],σ, logp, t, ψ, _Dgt0(wp,i), geoid,roy) + (d==1 ? θ[5] : θ[6] )*cheb0(t) + θ[7]*cheb1(t) + θ[8]*cheb2(t) + θ[9]*cheb3(t) + θ[10]*exp(logc)
+    d>1 && (u *= d)
+    return u::T
+end
+
+@inline function flow(::Type{Val{:cheb3_cost_tech_restr}}, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T) where {N,T}
+    if d == 0
+        sgn_ext && return θ[8]
+        return zero(T)
+    end
+    logp, logc, t = z
+    u = rev_exp_restricted(θ[1], σ, logp, t, ψ, Dgt0, geoid, roy) + (d==1 ? θ[2] : θ[3] )*cheb0(t) + θ[4]*cheb1(t) + θ[5]*cheb2(t) + θ[6]*cheb3(t) + θ[7]*exp(logc)
+    d>1 && (u *= d)
+    return u::T
+end
+
 # -----------------------------------------
 # dθ
 # -----------------------------------------
@@ -517,6 +541,56 @@ end
     k == 3  && return !Dgt0 ? zero(T)      : convert(T,d)
 
     k == 4  && return d == 0 && sgn_ext ? one(T) : zero(T)
+
+    throw(error("$k out of bounds"))
+end
+
+
+@inline function flowdθ(::Type{Val{:cheb3_cost_tech}}, wp::AbstractUnitProblem, i::Integer, θ::AbstractVector{T}, σ::T, z::NTuple{N,T}, ψ::T, k::Integer, d::Integer, geoid::Real, roy::T) where {N,T}
+# @inline function flowdθ(::Type{Val{:cheb3_cost_tech}}, θ::AbstractVector{T}, σ::T,     z::NTuple{N,T}, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {N,T}
+    d == 0 && !_sgnext(wp,i) && return zero(T)
+    Dgt0 = _Dgt0(wp,i)
+    logp, logc, t = z
+
+    # revenue
+    k == 1  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],θ[4],σ,logp,t,ψ,Dgt0,geoid,roy)
+    k == 2  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],θ[4],σ,logp,t,ψ,Dgt0,geoid,roy) * geoid
+    k == 3  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],θ[4],σ,logp,t,ψ,Dgt0,geoid,roy) * ( Dgt0 ? ψ : ψ*_ρ(σ) + θ[k]*(1-_ρ2(σ)))
+    k == 4  && return   d * rev_exp(1,θ[1],1,θ[2],θ[3],θ[4],σ,logp,t,ψ,Dgt0,geoid,roy) * t
+
+    # drilling cost
+    k == 5   && return d != 1 ? zero(T) : T(   cheb0(t) )
+    k == 6   && return d <= 1 ? zero(T) : T( d*cheb0(t) )
+    k == 7   && return d == 0 ? zero(T) : T( d*cheb1(t) )
+    k == 8   && return d == 0 ? zero(T) : T( d*cheb2(t) )
+    k == 9   && return d == 0 ? zero(T) : T( d*cheb3(t) )
+    k == 10  && return d == 0 ? zero(T) : T( d*exp(logc) )
+
+    # extension cost
+    k == 11  && return d == 0 && _sgnext(wp,i) ? one(T) : zero(T)
+
+    throw(error("$k out of bounds"))
+end
+
+
+
+@inline function flowdθ(::Type{Val{:cheb3_cost_tech_restr}}, θ::AbstractVector{T}, σ::T,     z::NTuple{N,T}, ψ::T, k::Integer,d::Integer,           d1::Integer, Dgt0::Bool, sgn_ext::Bool, geoid::Real, roy::T)::T where {N,T}
+    d == 0 && !sgn_ext && return zero(T)
+
+    logp, logc, t = z
+
+    # revenue
+    k == 1  && return   d * rev_exp_restricted(θ[1], σ, logp, t, ψ, Dgt0, geoid, roy)
+
+    # drilling cost
+    k == 2  && return d != 1 ? zero(T) : T(   cheb0(t) )
+    k == 3  && return d <= 1 ? zero(T) : T( d*cheb0(t) )
+    k == 4  && return d == 0 ? zero(T) : T( d*cheb1(t) )
+    k == 5  && return d == 0 ? zero(T) : T( d*cheb2(t) )
+    k == 6  && return d == 0 ? zero(T) : T( d*cheb3(t) )
+    k == 7  && return d == 0 ? zero(T) : T( d*exp(logc) )
+    # extension cost
+    k == 8  && return d == 0 && sgn_ext ? one(T) : zero(T)
 
     throw(error("$k out of bounds"))
 end

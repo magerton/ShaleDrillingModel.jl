@@ -42,7 +42,12 @@
     p8j = dcdp_primitives( :ttbuild_cost_restr , β, wp, (logp_space, logc_space, ), Πpconly, ψspace)
     p10j = dcdp_primitives( :ttbuild_cost      , β, wp, (logp_space, logc_space, ), Πpconly, ψspace)
 
-    σ = 0.25
+    ptfe        = dcdp_primitives( :timefe0812          , β, wp, (logp_space,             2003:2012,), Πpconly, ψspace)
+    ptfe_r      = dcdp_primitives( :timefe0812_restr    , β, wp, (logp_space,             2003:2012,), Πpconly, ψspace)
+    ptfe_cost   = dcdp_primitives( :timefecost0812      , β, wp, (logp_space, logc_space, 2003:2012,), Πpconly, ψspace)
+    ptfe_cost_r = dcdp_primitives( :timefecost0812_restr, β, wp, (logp_space, logc_space, 2003:2012,), Πpconly, ψspace)
+
+    σ = 1.0
 
     a = STARTING_log_ogip # 0.561244
     b = STARTING_σ_ψ      # 0.42165
@@ -68,11 +73,21 @@
     v10i = [-3.58283, 0.710067, 0.442882, -13.9518*0.2, -12.5996*0.2, 11.6749*0.2, -6.40167*0.2, 2.0126*0.2, -0.2, -1.17545, ]
     v11h = [-3.58283, 0.710067, 0.442882, 0.0032, -13.9518*0.2, -12.5996*0.2, 11.6749*0.2, -6.40167*0.2, 2.0126*0.2, -0.2, -1.17545, ]
 
+    vtimefecost0812       = [-3.09947, 0.67801 , 0.34145, -10.543255, -7.807559, -6.079760, -5.139465, -4.766280, 1.41112, -1.10191, -0.83747, ]
+    vtimefecost0812_restr = [-3.09947,                    -10.543255, -7.807559, -6.079760, -5.139465, -4.766280, 1.41112, -1.10191, -0.83747, ]
+    vtimefe0812           = [-3.09947, 0.67801 , 0.34145, -10.543255, -7.807559, -6.079760, -5.139465, -4.766280, 1.41112,           -0.83747, ]
+    vtimefe0812_restr     = [-3.09947,                    -10.543255, -7.807559, -6.079760, -5.139465, -4.766280, 1.41112,           -0.83747, ]
+
     roy = 0.225    # median royalty
     geoid = 4.706  # median geology
 
 
     println("Testing a bunch of small flow gradients now...")
+
+    # @test check_flowgrad(vtimefe0812_restr,     σ, ptfe_r,       geoid, roy)
+    # @test check_flowgrad(vtimefecost0812_restr, σ, ptfe_cost_r,  geoid, roy)
+    # @test check_flowgrad(vtimefe0812,           σ, ptfe,         geoid, roy)
+    # @test check_flowgrad(vtimefecost0812,       σ, ptfe_cost,    geoid, roy)
 
     @test check_flowgrad(v8f,  σ, p9h,  geoid, roy)
     @test check_flowgrad(v11h, σ, p11h, geoid, roy)
