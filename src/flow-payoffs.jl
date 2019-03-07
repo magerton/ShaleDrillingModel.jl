@@ -36,11 +36,12 @@ const STARTING_t = 2*0.042/(2016-2003)
 # See http://www.aip.de/groups/soe/local/numres/bookcpdf/c5-8.pdf
 @inline checkinterval(x::Real,min::Real,max::Real) =  min <= x <= max || throw(DomainError("x = $x must be in [$min,$max]"))
 @inline checkinterval(x::Real) = checkinterval(x,-1,1)
-@inline cheb0(x::Real) = (checkinterval(x); return one(Float64))
-@inline cheb1(x::Real) = (checkinterval(x); return x)
-@inline cheb2(x::Real) = (checkinterval(x); return 2*x^2 - 1)
-@inline cheb3(x::Real) = (checkinterval(x); return 4*x^3 - 3*x)
-@inline cheb4(x::Real) = (checkinterval(x); return 8*(x^4 - x^2) + 1)
+
+@inline cheb0(z::Real) = (x = clamp(z,-1,1); return one(eltype(z)))
+@inline cheb1(z::Real) = (x = clamp(z,-1,1); return x)
+@inline cheb2(z::Real) = (x = clamp(z,-1,1); return 2*x^2 - 1)
+@inline cheb3(z::Real) = (x = clamp(z,-1,1); return 4*x^3 - 3*x)
+@inline cheb4(z::Real) = (x = clamp(z,-1,1); return 8*(x^4 - x^2) + 1)
 
 # -----------------------------------------
 # Flows
