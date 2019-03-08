@@ -37,13 +37,13 @@ STARTING_t()        = ref_STARTING_t[]
 
 # --------------------------- common revenue functions & derivatives  --------------------------------------
 
-@inline    rev_exp_restricted(θ1::T, σ::T, logp::Real,          ψ::Real, Dgt0::Bool, geoid::Real, roy::Real) where {T} = rev_exp(   1, θ1, 1, STARTING_log_ogip(), STARTING_σ_ψ,             σ, logp,    ψ, Dgt0, geoid, roy)
-@inline drevdσ_exp_restricted(θ1::T, σ::T, logp::Real,          ψ::Real,             geoid::Real, roy::Real) where {T} = drevdσ_exp(1, θ1, 1, STARTING_log_ogip(), STARTING_σ_ψ,             σ, logp,    ψ,       geoid, roy)
-@inline drevdψ_exp_restricted(θ1::T, σ::T, logp::Real,          ψ::Real,             geoid::Real, roy::Real) where {T} = drevdψ_exp(1, θ1, 1, STARTING_log_ogip(), STARTING_σ_ψ,             σ, logp,    ψ,       geoid, roy)
+@inline    rev_exp_restricted(θ1::T, σ::T, logp::Real,          ψ::Real, Dgt0::Bool, geoid::Real, roy::Real) where {T} = rev_exp(   1, θ1, 1, STARTING_log_ogip(), STARTING_σ_ψ(),               σ, logp,    ψ, Dgt0, geoid, roy)
+@inline drevdσ_exp_restricted(θ1::T, σ::T, logp::Real,          ψ::Real,             geoid::Real, roy::Real) where {T} = drevdσ_exp(1, θ1, 1, STARTING_log_ogip(), STARTING_σ_ψ(),               σ, logp,    ψ,       geoid, roy)
+@inline drevdψ_exp_restricted(θ1::T, σ::T, logp::Real,          ψ::Real,             geoid::Real, roy::Real) where {T} = drevdψ_exp(1, θ1, 1, STARTING_log_ogip(), STARTING_σ_ψ(),               σ, logp,    ψ,       geoid, roy)
 
-@inline    rev_exp_restricted(θ1::T, σ::T, logp::Real, t::Real, ψ::Real, Dgt0::Bool, geoid::Real, roy::Real) where {T} = rev_exp(   1, θ1, 1, STARTING_log_ogip(), STARTING_σ_ψ, STARTING_t, σ, logp, t, ψ, Dgt0, geoid, roy)
-@inline drevdσ_exp_restricted(θ1::T, σ::T, logp::Real, t::Real, ψ::Real,             geoid::Real, roy::Real) where {T} = drevdσ_exp(1, θ1, 1, STARTING_log_ogip(), STARTING_σ_ψ, STARTING_t, σ, logp, t, ψ,       geoid, roy)
-@inline drevdψ_exp_restricted(θ1::T, σ::T, logp::Real, t::Real, ψ::Real,             geoid::Real, roy::Real) where {T} = drevdψ_exp(1, θ1, 1, STARTING_log_ogip(), STARTING_σ_ψ, STARTING_t, σ, logp, t, ψ,       geoid, roy)
+@inline    rev_exp_restricted(θ1::T, σ::T, logp::Real, t::Real, ψ::Real, Dgt0::Bool, geoid::Real, roy::Real) where {T} = rev_exp(   1, θ1, 1, STARTING_log_ogip(), STARTING_σ_ψ(), STARTING_t(), σ, logp, t, ψ, Dgt0, geoid, roy)
+@inline drevdσ_exp_restricted(θ1::T, σ::T, logp::Real, t::Real, ψ::Real,             geoid::Real, roy::Real) where {T} = drevdσ_exp(1, θ1, 1, STARTING_log_ogip(), STARTING_σ_ψ(), STARTING_t(), σ, logp, t, ψ,       geoid, roy)
+@inline drevdψ_exp_restricted(θ1::T, σ::T, logp::Real, t::Real, ψ::Real,             geoid::Real, roy::Real) where {T} = drevdψ_exp(1, θ1, 1, STARTING_log_ogip(), STARTING_σ_ψ(), STARTING_t(), σ, logp, t, ψ,       geoid, roy)
 
 # chebshev polynomials
 # See http://www.aip.de/groups/soe/local/numres/bookcpdf/c5-8.pdf
