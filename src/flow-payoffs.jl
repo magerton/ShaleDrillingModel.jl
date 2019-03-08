@@ -1,7 +1,7 @@
 export flow, flowdθ, flowdσ, flowdψ, STARTING_σ_ψ, STARTING_log_ogip, STARTING_t
 
-const STARTING_σ_ψ      = 0x1.566e7dd138308p-2 # 0x1.baddbb87af68ap-2 # = 0.432
-const STARTING_log_ogip = 0x1.4c203e90cc867p-1 # 0x1.670bf3d5b282dp-1 # = 0.701
+const STARTING_σ_ψ      = 0.319864 # 0x1.baddbb87af68ap-2 # = 0.432
+const STARTING_log_ogip = 0.599376 # 0x1.670bf3d5b282dp-1 # = 0.701
 const STARTING_t = 2*0.042/(2016-2003)
 
 # functions in case we have months to expiration
