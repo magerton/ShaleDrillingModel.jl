@@ -1,8 +1,22 @@
-export flow, flowdθ, flowdσ, flowdψ, STARTING_σ_ψ, STARTING_log_ogip, STARTING_t
+export flow, flowdθ, flowdσ, flowdψ, STARTING_σ_ψ, STARTING_log_ogip, STARTING_t, set_STARTING_σ_ψ, set_STARTING_log_ogip, set_STARTING_t
 
-const STARTING_σ_ψ      = 0.319864 # 0x1.baddbb87af68ap-2 # = 0.432
-const STARTING_log_ogip = 0.599376 # 0x1.670bf3d5b282dp-1 # = 0.701
-const STARTING_t = 2*0.042/(2016-2003)
+const ref_STARTING_σ_ψ      = Ref{Float64}(0x1.47b9927764a96p-2) # 0x1.baddbb87af68ap-2 # = 0.432
+const ref_STARTING_log_ogip = Ref{Float64}(0x1.6df0926ff0ac4p-1) # 0x1.670bf3d5b282dp-1 # = 0.701
+const ref_STARTING_t        = Ref{Float64}(2*0.042/(2016-2003))
+
+function set_STARTING_σ_ψ(x::Float64)
+    ref_STARTING_σ_ψ[] = x
+end
+function set_STARTING_log_ogip(x::Float64)
+    ref_STARTING_log_ogip[] = x
+end
+function set_STARTING_t(x::Float64)
+    ref_STARTING_t[] = x
+end
+
+STARTING_σ_ψ()      = ref_STARTING_σ_ψ[]
+STARTING_log_ogip() = ref_STARTING_log_ogip[]
+STARTING_t()        = ref_STARTING_t[]
 
 # functions in case we have months to expiration
 @inline flow(  FF::Type, θ::AbstractVector{T}, σ::T, z::Tuple, ψ::T,             d::Integer, d1::Integer, Dgt0::Bool, sgn_ext::Bool, τ::Real, geoid::Real, roy::T) where {N,T} = flow(  FF, θ, σ, z, ψ,    d, d1, Dgt0, sgn_ext, geoid, roy)
@@ -23,13 +37,13 @@ const STARTING_t = 2*0.042/(2016-2003)
 
 # --------------------------- common revenue functions & derivatives  --------------------------------------
 
-@inline    rev_exp_restricted(θ1::T, σ::T, logp::Real,          ψ::Real, Dgt0::Bool, geoid::Real, roy::Real) where {T} = rev_exp(   1, θ1, 1, STARTING_log_ogip, STARTING_σ_ψ,             σ, logp,    ψ, Dgt0, geoid, roy)
-@inline drevdσ_exp_restricted(θ1::T, σ::T, logp::Real,          ψ::Real,             geoid::Real, roy::Real) where {T} = drevdσ_exp(1, θ1, 1, STARTING_log_ogip, STARTING_σ_ψ,             σ, logp,    ψ,       geoid, roy)
-@inline drevdψ_exp_restricted(θ1::T, σ::T, logp::Real,          ψ::Real,             geoid::Real, roy::Real) where {T} = drevdψ_exp(1, θ1, 1, STARTING_log_ogip, STARTING_σ_ψ,             σ, logp,    ψ,       geoid, roy)
+@inline    rev_exp_restricted(θ1::T, σ::T, logp::Real,          ψ::Real, Dgt0::Bool, geoid::Real, roy::Real) where {T} = rev_exp(   1, θ1, 1, STARTING_log_ogip(), STARTING_σ_ψ,             σ, logp,    ψ, Dgt0, geoid, roy)
+@inline drevdσ_exp_restricted(θ1::T, σ::T, logp::Real,          ψ::Real,             geoid::Real, roy::Real) where {T} = drevdσ_exp(1, θ1, 1, STARTING_log_ogip(), STARTING_σ_ψ,             σ, logp,    ψ,       geoid, roy)
+@inline drevdψ_exp_restricted(θ1::T, σ::T, logp::Real,          ψ::Real,             geoid::Real, roy::Real) where {T} = drevdψ_exp(1, θ1, 1, STARTING_log_ogip(), STARTING_σ_ψ,             σ, logp,    ψ,       geoid, roy)
 
-@inline    rev_exp_restricted(θ1::T, σ::T, logp::Real, t::Real, ψ::Real, Dgt0::Bool, geoid::Real, roy::Real) where {T} = rev_exp(   1, θ1, 1, STARTING_log_ogip, STARTING_σ_ψ, STARTING_t, σ, logp, t, ψ, Dgt0, geoid, roy)
-@inline drevdσ_exp_restricted(θ1::T, σ::T, logp::Real, t::Real, ψ::Real,             geoid::Real, roy::Real) where {T} = drevdσ_exp(1, θ1, 1, STARTING_log_ogip, STARTING_σ_ψ, STARTING_t, σ, logp, t, ψ,       geoid, roy)
-@inline drevdψ_exp_restricted(θ1::T, σ::T, logp::Real, t::Real, ψ::Real,             geoid::Real, roy::Real) where {T} = drevdψ_exp(1, θ1, 1, STARTING_log_ogip, STARTING_σ_ψ, STARTING_t, σ, logp, t, ψ,       geoid, roy)
+@inline    rev_exp_restricted(θ1::T, σ::T, logp::Real, t::Real, ψ::Real, Dgt0::Bool, geoid::Real, roy::Real) where {T} = rev_exp(   1, θ1, 1, STARTING_log_ogip(), STARTING_σ_ψ, STARTING_t, σ, logp, t, ψ, Dgt0, geoid, roy)
+@inline drevdσ_exp_restricted(θ1::T, σ::T, logp::Real, t::Real, ψ::Real,             geoid::Real, roy::Real) where {T} = drevdσ_exp(1, θ1, 1, STARTING_log_ogip(), STARTING_σ_ψ, STARTING_t, σ, logp, t, ψ,       geoid, roy)
+@inline drevdψ_exp_restricted(θ1::T, σ::T, logp::Real, t::Real, ψ::Real,             geoid::Real, roy::Real) where {T} = drevdψ_exp(1, θ1, 1, STARTING_log_ogip(), STARTING_σ_ψ, STARTING_t, σ, logp, t, ψ,       geoid, roy)
 
 # chebshev polynomials
 # See http://www.aip.de/groups/soe/local/numres/bookcpdf/c5-8.pdf
