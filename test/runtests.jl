@@ -16,7 +16,7 @@ using MarkovTransitionMatrices
 # price transition matrices
 # -------------------------------------------------
 
-nlogp = 15
+nlogp = 21
 nlogc = 11
 nlogσ = 9
 
@@ -77,14 +77,14 @@ royalty_types = 1:length(royalty_rates)
 geology_types = 1.3430409262656042:0.1925954901417719:5.194950729101042
 
 # initial parameters
-flowfuncname = :one_restr
+flowfuncname = StaticDrillingPayoff(ConstrainedDrillingRevenue(), DrillingCost_constant(), ExtensionCost_Constant())
 θt = [-4.28566, -5.45746, -0.3, ] # ShaleDrillingModel.STARTING_log_ogip, ShaleDrillingModel.STARTING_σ_ψ,
 σv = 1.0
 
 θfull = vcat(θt, σv)
 
 # problem sizes
-nψ, dmx, nz, nv =  51, 3, size(Πp,1), 51
+nψ, dmx, nz, nv =  13, 3, size(Πp,1), 51
 # wp = LeasedProblemContsDrill(dmx,4,5,3,2)
 wp = LeasedProblem(dmx,4,5,3,2)
 # wp = PerpetualProblem(dmx,4,5,3,2)
@@ -92,7 +92,7 @@ wp = LeasedProblem(dmx,4,5,3,2)
 
 zspace, ψspace, dspace, d1space, vspace = (logp_space, logσ_space,), range(-4.5, stop=4.5, length=nψ), 0:dmx, 0:1, range(-3.0, stop=3.0, length=nv)
 
-prim = dcdp_primitives(flowfuncname, β, wp, zspace, Πp, ψspace)
+prim = dcdp_primitives(flowfuncname, β, wp, (logp_space,), P_price(), ψspace)
 print_summary(prim)
 tmpv = dcdp_tmpvars(prim)
 evs = dcdp_Emax(prim)
@@ -102,11 +102,11 @@ ShaleDrillingModel.check_size(prim, evs)
 
 include("BSplineTestFuns_runtests.jl")
 include("state-space.jl")
-# include("flow-payoffs.jl")
+include("flow-payoffs.jl")
 
 @testset  "testing flow gradients" begin
     let geoid = 2, roy = 0.2
-        @test check_flowgrad(θt, σv, prim, geoid, roy)
+        @test check_flowgrad(prim, θt, σv, geoid, roy)
     end
     @test check_dΠψ(σv, ψspace)
 end

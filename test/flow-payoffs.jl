@@ -1,132 +1,93 @@
+
 @testset "Flow gradients" begin
+    problem = StaticDrillingPayoff(
+        ShaleDrillingModel.DrillingRevenue(),
+        ShaleDrillingModel.DrillingCost_constant(),
+        ShaleDrillingModel.ExtensionCost_Constant()
+    )
 
-    p3   = dcdp_primitives( :one_restr   , β, wp, zspace, Πp, ψspace)
-    p4a  = dcdp_primitives( :dgt1_restr  , β, wp, zspace, Πp, ψspace)
-    p4b  = dcdp_primitives( :Dgt0_restr  , β, wp, zspace, Πp, ψspace)
-    p5   = dcdp_primitives( :one         , β, wp, zspace, Πp, ψspace)
+    let θ = fill(0.25, length(problem)),
+        σ = 0.75
+        ShaleDrillingModel.check_coef_length(problem, θ)
+    end
 
-    p6a  = dcdp_primitives( :dgt1        , β, wp, zspace, Πp, ψspace)
-    p6b  = dcdp_primitives( :Dgt0        , β, wp, zspace, Πp, ψspace)
+    ShaleDrillingModel.showtypetree(AbstractPayoffFunction)
 
-    p5a = dcdp_primitives( :dgt1_ext_restr, β, wp, zspace, Πp, ψspace)
-    p7a = dcdp_primitives( :dgt1_ext      , β, wp, zspace, Πp, ψspace)
+    println("")
 
-    p5c = dcdp_primitives( :dgt1_d1_restr, β, wp, zspace, Πp, ψspace)
-    p7c = dcdp_primitives( :dgt1_d1      , β, wp, zspace, Πp, ψspace)
+    types_to_test = (
+        DrillingCost_TimeFE(2008,2012),
+        DrillingCost_TimeFE(2009,2011),
+        DrillingCost_constant(),
+        # DrillingCost_TimeFE_rigrate(2008,2012),  # requires a different-sized state-space
+        DrillingRevenue_WithTaxes(),
+        DrillingRevenue(),
+        ConstrainedDrillingRevenue_WithTaxes(),
+        ConstrainedDrillingRevenue_WithTaxes(),
+        ExtensionCost_Zero(),
+        ExtensionCost_Constant(),
+        ExtensionCost_ψ(),
+        StaticDrillingPayoff(                       DrillingRevenue(), DrillingCost_TimeFE(2009,2011), ExtensionCost_Constant()),
+        UnconstrainedProblem( StaticDrillingPayoff( DrillingRevenue(), DrillingCost_TimeFE(2009,2011), ExtensionCost_Constant()) ),
+        ConstrainedProblem(   StaticDrillingPayoff( DrillingRevenue(), DrillingCost_TimeFE(2009,2011), ExtensionCost_Constant()) ),
+        StaticDrillingPayoff(ConstrainedDrillingRevenue(), DrillingCost_constant(), ExtensionCost_Constant())
+    )
 
-    p5d = dcdp_primitives( :dgt1_cost_restr, β, wp, (logp_space, logc_space, ), Πpconly, ψspace)
-    p7d = dcdp_primitives( :dgt1_cost      , β, wp, (logp_space, logc_space, ), Πpconly, ψspace)
+    for f in types_to_test
+        println("Testing fct $f")
+        let z = (2.5,2010), ψ = 1.0, geoid = 4.5, roy = 0.25, σ = 0.75
 
-    p6e = dcdp_primitives( :dgt1_cost_Dgt0_restr, β, wp, (logp_space, logc_space, ), Πpconly, ψspace)
-    p8e = dcdp_primitives( :dgt1_cost_Dgt0      , β, wp, (logp_space, logc_space, ), Πpconly, ψspace)
+            n = length(f)
+            θ0 = rand(n)
+            fd = zeros(Float64, n)
+            g = zeros(Float64, n)
 
-    p6f = dcdp_primitives( :dgt1_pricecost_restr, β, wp, (logp_space, logc_space, ), Πpconly, ψspace)
-    p8f = dcdp_primitives( :dgt1_pricecost      , β, wp, (logp_space, logc_space, ), Πpconly, ψspace)
-    p7f = dcdp_primitives( :dgt1_pricebreak_restr, β, wp, (logp_space, logc_space, ), Πpconly, ψspace)
-    p9f = dcdp_primitives( :dgt1_pricebreak      , β, wp, (logp_space, logc_space, ), Πpconly, ψspace)
+            for (d,i) in Iterators.product(0:2, 1:3)
 
-    p5g = dcdp_primitives( :cheb2_restr, β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
-    p7g = dcdp_primitives( :cheb2      , β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
-    p6g = dcdp_primitives( :cheb3_restr, β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
-    p8g = dcdp_primitives( :cheb3      , β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
+                # test ∂f/∂θ
+                Calculus.finite_difference!((thet) -> flow(f, thet, σ, wp, i, d, z, ψ, geoid, roy), θ0, fd, :central)
+                ShaleDrillingModel.gradient!(f, θ0, g, σ, wp, i, d, z, ψ, geoid, roy)
+                @test g ≈ fd
 
-    p7h = dcdp_primitives( :cheb3_dgt1_restr, β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
-    p9h = dcdp_primitives( :cheb3_dgt1      , β, wp, (logp_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
+                # test ∂f/∂ψ
+                fdpsi = Calculus.derivative((psi) -> flow(f, θ0, σ, wp, i, d, z, psi, geoid, roy), ψ)
+                gpsi = flowdψ(f, θ0, σ, wp, i, d, z, ψ, geoid, roy)
+                @test isapprox(fdpsi, gpsi, atol=1e-4)
 
-    p8i = dcdp_primitives( :cheb3_cost_restr, β, wp,  (logp_space, logc_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
-    p10i = dcdp_primitives( :cheb3_cost      , β, wp, (logp_space, logc_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
-
-    p9h  = dcdp_primitives( :cheb3_cost_tech_restr, β, wp, (logp_space, logc_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
-    p11h = dcdp_primitives( :cheb3_cost_tech      , β, wp, (logp_space, logc_space, -1.0:0.2:1.0, ), Πpconly, ψspace)
-
-    p8j = dcdp_primitives( :ttbuild_cost_restr , β, wp, (logp_space, logc_space, ), Πpconly, ψspace)
-    p10j = dcdp_primitives( :ttbuild_cost      , β, wp, (logp_space, logc_space, ), Πpconly, ψspace)
-
-    ptfe        = dcdp_primitives( :timefe0812          , β, wp, (logp_space,             2003:2012,), Πpconly, ψspace)
-    ptfe_r      = dcdp_primitives( :timefe0812_restr    , β, wp, (logp_space,             2003:2012,), Πpconly, ψspace)
-    ptfe_cost   = dcdp_primitives( :timefecost0812      , β, wp, (logp_space, logc_space, 2003:2012,), Πpconly, ψspace)
-    ptfe_cost_r = dcdp_primitives( :timefecost0812_restr, β, wp, (logp_space, logc_space, 2003:2012,), Πpconly, ψspace)
-
-    σ = 1.0
-
-    a = STARTING_log_ogip # 0.561244
-    b = STARTING_σ_ψ      # 0.42165
-
-    v3 = [-4.28566,       -5.45746,           -0.3, ]
-    v4 = [-4.28566,       -4.71627, -5.80131, -0.3, ]
-    v5 = [-4.28566, a, b, -5.45746,           -0.3, ]
-    v6 = [-4.28566, a, b, -4.71627, -5.80131, -0.3, ]
-
-    v5a = [-4.28566,       -4.71627, -5.80131, -0.2, -0.2, ]
-    v7a = [-4.28566, a, b, -4.71627, -5.80131, -0.2, -0.2, ]
-
-    v6e = [-4.28566,       -4.71627, -5.80131, -0.2, -0.2, -1.0,]
-    v8e = [-4.28566, a, b, -4.71627, -5.80131, -0.2, -0.2, -1.0,]
-
-    v6f = [-4.28566,       1.0, -2.71627, -1.80131, -0.7, -0.2, ]
-    v8f = [-4.28566, a, b, 1.0, -2.71627, -1.80131, -0.7, -0.2, ]
-
-    v7f = [-4.28566,       1.0, 1.0, -2.71627, -1.80131, -0.7, -0.2, ]
-    v9f = [-4.28566, a, b, 1.0, 1.0, -2.71627, -1.80131, -0.7, -0.2, ]
-
-    v8i  = [-3.58283,                     -13.9518*0.2, -12.5996*0.2, 11.6749*0.2, -6.40167*0.2, 2.0126*0.2, -0.2, -1.17545, ]
-    v10i = [-3.58283, 0.710067, 0.442882, -13.9518*0.2, -12.5996*0.2, 11.6749*0.2, -6.40167*0.2, 2.0126*0.2, -0.2, -1.17545, ]
-    v11h = [-3.58283, 0.710067, 0.442882, 0.0032, -13.9518*0.2, -12.5996*0.2, 11.6749*0.2, -6.40167*0.2, 2.0126*0.2, -0.2, -1.17545, ]
-
-    vtimefecost0812       = [-3.09947, 0.67801 , 0.34145, -10.543255, -7.807559, -6.079760, -5.139465, -4.766280, 1.41112, -1.10191, -0.83747, ]
-    vtimefecost0812_restr = [-3.09947,                    -10.543255, -7.807559, -6.079760, -5.139465, -4.766280, 1.41112, -1.10191, -0.83747, ]
-    vtimefe0812           = [-3.09947, 0.67801 , 0.34145, -10.543255, -7.807559, -6.079760, -5.139465, -4.766280, 1.41112,           -0.83747, ]
-    vtimefe0812_restr     = [-3.09947,                    -10.543255, -7.807559, -6.079760, -5.139465, -4.766280, 1.41112,           -0.83747, ]
-
-    roy = 0.225    # median royalty
-    geoid = 4.706  # median geology
-
-
-    println("Testing a bunch of small flow gradients now...")
-
-    # @test check_flowgrad(vtimefe0812_restr,     σ, ptfe_r,       geoid, roy)
-    # @test check_flowgrad(vtimefecost0812_restr, σ, ptfe_cost_r,  geoid, roy)
-    # @test check_flowgrad(vtimefe0812,           σ, ptfe,         geoid, roy)
-    # @test check_flowgrad(vtimefecost0812,       σ, ptfe_cost,    geoid, roy)
-
-    @test check_flowgrad(v8f,  σ, p9h,  geoid, roy)
-    @test check_flowgrad(v11h, σ, p11h, geoid, roy)
-
-    # @test check_flowgrad(v8i,  σ, p8j,  geoid, roy)
-    # @test check_flowgrad(v10i, σ, p10j, geoid, roy)
-    #
-    # @test check_flowgrad(v8i,  σ, p8i,  geoid, roy)
-    # @test check_flowgrad(v10i, σ, p10i, geoid, roy)
-    # @test check_flowgrad(v7f, σ, p7h, geoid, roy)
-    # @test check_flowgrad(v9f, σ, p9h, geoid, roy)
-    #
-    # @test check_flowgrad(v5a, σ, p5g, geoid, roy)
-    # @test check_flowgrad(v7f, σ, p7g, geoid, roy)
-    # @test check_flowgrad(v6f, σ, p6g, geoid, roy)
-    # @test check_flowgrad(v8f, σ, p8g, geoid, roy)
-    #
-    # @test check_flowgrad(v7f, σ, p7f, geoid, roy)
-    # @test check_flowgrad(v9f, σ, p9f, geoid, roy)
-    #
-    # @test check_flowgrad(v6f, σ, p6f, geoid, roy)
-    # @test check_flowgrad(v8f, σ, p8f, geoid, roy)
-    #
-    # @test check_flowgrad(v6e, σ, p6e, geoid, roy)
-    # @test check_flowgrad(v8e, σ, p8e, geoid, roy)
-    #
-    # @test check_flowgrad(v5a, σ, p5d, geoid, roy)
-    # @test check_flowgrad(v7a, σ, p7d, geoid, roy)
-    #
-    # @test check_flowgrad(v5a, σ, p5c, geoid, roy)
-    # @test check_flowgrad(v7a, σ, p7c, geoid, roy)
-    #
-    # @test check_flowgrad(v5a, σ, p5a, geoid, roy)
-    # @test check_flowgrad(v7a, σ, p7a, geoid, roy)
-    #
-    # @test check_flowgrad(v3, σ, p3 , geoid, roy)
-    # @test check_flowgrad(v4, σ, p4a, geoid, roy)
-    # @test check_flowgrad(v4, σ, p4b, geoid, roy)
-    # @test check_flowgrad(v5, σ, p5 , geoid, roy)
-    @test check_flowgrad(v6, σ, p6a, geoid, roy)
-    @test check_flowgrad(v6, σ, p6b, geoid, roy)
+                # test ∂f/∂σ
+                fdsig = Calculus.derivative((sig) -> flow(f, θ0, sig, wp, i, d, z, ψ, geoid, roy), σ)
+                gsig = flowdσ(f, θ0, σ, wp, i, d, z, ψ, geoid, roy)
+                @test isapprox(fdsig, gsig, atol=1e-4)
+            end
+        end
+    end
 end
+
+
+
+# @testset "Old flow gradient tests" begin
+#
+#     let zs_p   = (logp_space, ),
+#         zs_pc  = (logp_space, logc_space,),
+#         zs_py  = (logp_space,             2003:2012,),
+#         zs_pcy = (logp_space, logc_space, 2003:2012),
+#         roy = 0.225,
+#         geoid = 4.706,
+#         σ = 0.75,
+#         f1 = StaticDrillingPayoff(DrillingRevenue(), DrillingCost_constant(),                ExtensionCost_Constant()),
+#         f2 = StaticDrillingPayoff(DrillingRevenue(), DrillingCost_TimeFE(2009,2011),         ExtensionCost_Constant()),
+#         f3 = StaticDrillingPayoff(DrillingRevenue(), DrillingCost_TimeFE_rigrate(2008,2012), ExtensionCost_Constant())
+#
+#         function testfun(FF::AbstractStaticPayoffs, zspace::Tuple)
+#             println("testing $FF")
+#             p = dcdp_primitives(FF, β, wp, zspace, Πpconly, ψspace)
+#             check_flowgrad(p, fill(0.3, length(FF)), σ, geoid, roy)
+#         end
+#
+#         println("Testing a bunch of small flow gradients now...")
+#
+#         @test testfun(f1, zs_p)
+#         @test testfun(f2, zs_py)
+#         @test testfun(f3, zs_pcy)
+#     end
+# end

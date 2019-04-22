@@ -14,21 +14,21 @@ export dcdp_primitives,
     _σv,
     print_summary
 
-struct dcdp_primitives{FF,T<:Real,UP<:AbstractUnitProblem,AM<:AbstractMatrix{T},TT<:Tuple,AV<:AbstractVector{T}}
+struct dcdp_primitives{FF<:AbstractPayoffFunction,T<:Real,UP<:AbstractUnitProblem,AM<:AbstractMatrix{T},TT<:Tuple,AV<:AbstractVector{T}}
+    f::FF
     β::T
     wp::UP            # structure of endogenous choice vars
     zspace::TT        # z-space (tuple)
     Πz::AM            # transition for z
     ψspace::AV        # ψspace = u + σv*v
-    nθt::Int          # Num parameters in flow payoffs MINUS 1 for σv
     anticipate_e::Bool # do we anticipate the ϵ shocks assoc w/ each choice?
 end
 
-function dcdp_primitives(FF::Symbol, β::T, wp::UP, zspace::TT, Πz::AM, ψspace::AV, anticipate_e::Bool=true) where {T,TT,AM,AV,UP<:AbstractUnitProblem}
-    dcdp_primitives{Val{FF},T,UP,AM,TT,AV}(β, wp, zspace, Πz, ψspace, number_of_model_parms(FF), anticipate_e)
+function dcdp_primitives(f::FF, β::T, wp::UP, zspace::TT, Πz::AM, ψspace::AV, anticipate_e::Bool=true) where {FF,T,TT,AM,AV,UP<:AbstractUnitProblem}
+    dcdp_primitives{FF,T,UP,AM,TT,AV}(f,β, wp, zspace, Πz, ψspace, anticipate_e)
 end
 
-flow(prim::dcdp_primitives{FF}) where {FF} = FF
+flow(prim::dcdp_primitives) = prim.f
 
 # help us go from big parameter vector for all types to the relevant one
 _σv(θ::AbstractVector) = last(θ)
@@ -49,7 +49,7 @@ function print_summary(p::dcdp_primitives)
 end
 
 # functions to retrieve elements from dcdp_primitives
-_nθt(   prim::dcdp_primitives) = prim.nθt
+_nθt(   prim::dcdp_primitives) = length(prim.f)
 _nz(    prim::dcdp_primitives) = size(prim.Πz,1)
 _nψ(    prim::dcdp_primitives) = length(prim.ψspace) # prim.nψ
 _nS(    prim::dcdp_primitives) = _nS(prim.wp)

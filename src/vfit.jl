@@ -89,7 +89,7 @@ function pfit!(EV0::AbstractMatrix, t::dcdp_tmpvars, prim::dcdp_primitives; vfto
     A_mul_B_md!(tmp, Πz, ΔEV, 1)
 
     # compute difference & check bnds
-    bnds = extrema(ΔEV .= EV0 .- tmp) .* -β ./ (1.0 .- β)
+    bnds = extrema(ΔEV .= EV0 .- tmp) .* (-β/(1-β))
     if all(abs.(bnds) .< vftol)
         EV0 .= tmp
         return bnds
@@ -104,8 +104,8 @@ function pfit!(EV0::AbstractMatrix, t::dcdp_tmpvars, prim::dcdp_primitives; vfto
         fact = lu(IminusTEVp)
         ldiv!(fact, ΔEVj)                          # Vtmp = [I - T'(V)] \ [V - T(V)]
     end
-    EV0 .-= ΔEV                               # update V
-    return extrema(ΔEV) .* -β ./ (1.0 .- β)   # get norm
+    EV0 .-= ΔEV                       # update V
+    return extrema(ΔEV) .* (-β/(1-β)) # get norm
 end
 
 # --------------------------- pfit until convergence ----------------------------
