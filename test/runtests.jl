@@ -62,9 +62,10 @@ function P_pricecostvol()
 end
 
 minp = 1e-4
-Πp      = MarkovTransitionMatrices.sparsify!(P_pricevol(),     minp)
-Πpc     = MarkovTransitionMatrices.sparsify!(P_pricecostvol(), minp)
-Πpconly = MarkovTransitionMatrices.sparsify!(P_pricecost(),    minp)
+Πp      = MarkovTransitionMatrices.sparsify!(P_price(),     minp)
+# Πp      = MarkovTransitionMatrices.sparsify!(P_pricevol(),     minp)
+# Πpc     = MarkovTransitionMatrices.sparsify!(P_pricecostvol(), minp)
+# Πpconly = MarkovTransitionMatrices.sparsify!(P_pricecost(),    minp)
 
 # -------------------------------------------------
 # price transition matrices
@@ -90,9 +91,9 @@ wp = LeasedProblem(dmx,4,5,3,2)
 # wp = PerpetualProblem(dmx,4,5,3,2)
 # lp = LeasedProblem(dmx,4,1,-1,0)
 
-zspace, ψspace, dspace, d1space, vspace = (logp_space, logσ_space,), range(-4.5, stop=4.5, length=nψ), 0:dmx, 0:1, range(-3.0, stop=3.0, length=nv)
+zspace, ψspace, dspace, d1space, vspace = (logp_space, ), range(-4.5, stop=4.5, length=nψ), 0:dmx, 0:1, range(-3.0, stop=3.0, length=nv)
 
-prim = dcdp_primitives(flowfuncname, β, wp, (logp_space,), P_price(), ψspace)
+prim = dcdp_primitives(flowfuncname, β, wp, zspace, Πp, ψspace)
 print_summary(prim)
 tmpv = dcdp_tmpvars(prim)
 evs = dcdp_Emax(prim)

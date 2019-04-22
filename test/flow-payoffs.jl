@@ -65,29 +65,29 @@ end
 
 
 
-# @testset "Old flow gradient tests" begin
-#
-#     let zs_p   = (logp_space, ),
-#         zs_pc  = (logp_space, logc_space,),
-#         zs_py  = (logp_space,             2003:2012,),
-#         zs_pcy = (logp_space, logc_space, 2003:2012),
-#         roy = 0.225,
-#         geoid = 4.706,
-#         σ = 0.75,
-#         f1 = StaticDrillingPayoff(DrillingRevenue(), DrillingCost_constant(),                ExtensionCost_Constant()),
-#         f2 = StaticDrillingPayoff(DrillingRevenue(), DrillingCost_TimeFE(2009,2011),         ExtensionCost_Constant()),
-#         f3 = StaticDrillingPayoff(DrillingRevenue(), DrillingCost_TimeFE_rigrate(2008,2012), ExtensionCost_Constant())
-#
-#         function testfun(FF::AbstractStaticPayoffs, zspace::Tuple)
-#             println("testing $FF")
-#             p = dcdp_primitives(FF, β, wp, zspace, Πpconly, ψspace)
-#             check_flowgrad(p, fill(0.3, length(FF)), σ, geoid, roy)
-#         end
-#
-#         println("Testing a bunch of small flow gradients now...")
-#
-#         @test testfun(f1, zs_p)
-#         @test testfun(f2, zs_py)
-#         @test testfun(f3, zs_pcy)
-#     end
-# end
+@testset "Old flow gradient tests" begin
+
+    let zs_p   = (logp_space, ),
+        zs_pc  = (logp_space, logc_space,),
+        zs_py  = (logp_space,             2003:2012,),
+        zs_pcy = (logp_space, logc_space, 2003:2012),
+        roy = 0.225,
+        geoid = 4.706,
+        σ = 0.75,
+        f1 = StaticDrillingPayoff(DrillingRevenue(), DrillingCost_constant(),                ExtensionCost_Constant()),
+        f2 = StaticDrillingPayoff(DrillingRevenue(), DrillingCost_TimeFE(2009,2011),         ExtensionCost_Constant()),
+        f3 = StaticDrillingPayoff(DrillingRevenue(), DrillingCost_TimeFE_rigrate(2008,2012), ExtensionCost_Constant())
+
+        function testfun(FF::AbstractStaticPayoffs, zspace::Tuple)
+            println("testing $FF")
+            p = dcdp_primitives(FF, β, wp, zspace, Πp, ψspace)
+            check_flowgrad(p, fill(0.3, length(FF)), σ, geoid, roy)
+        end
+
+        println("Testing a bunch of small flow gradients now...")
+
+        @test testfun(f1, zs_p)
+        @test testfun(f2, zs_py)
+        @test testfun(f3, zs_pcy)
+    end
+end

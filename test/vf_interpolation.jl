@@ -15,7 +15,8 @@
 
         EVcopy .= sev.EV
         @test all(EVcopy .== sev.EV)
-        spec = (BSpline(Quadratic(InPlace())), BSpline(Quadratic(InPlace())), BSpline(Quadratic(InPlace())), NoInterp(), NoInterp(), NoInterp(),)
+        # spec = (BSpline(Quadratic(InPlace())), BSpline(Quadratic(InPlace())), BSpline(Quadratic(InPlace())), NoInterp(), NoInterp(), NoInterp(),)
+        spec = (BSpline(Quadratic(InPlace())), BSpline(Quadratic(InPlace())), NoInterp(), NoInterp(), NoInterp(),)
         sitp_test = interpolate!(EVcopy, spec, OnCell() )
         @test sitp_test.coefs === EVcopy
         @test !all(sitp_test.coefs .== sev.EV)

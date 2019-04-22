@@ -3,7 +3,9 @@ export logP!
 nplus1_impl(N::Integer) = :(Val{$(N+1)})
 @generated nplus1(::Type{Val{N}}) where {N} = nplus1_impl(N)
 
-@inline function logP!(grad::AbstractVector{T}, tmp::Vector{T}, θt::AbstractVector{T}, σ::T, prim::dcdp_primitives{FF,T}, isev::ItpSharedEV, uv::NTuple{2,T}, z::NTuple{NZ,Real}, d_obs::Integer, s_idx::Integer, itypidx::NTuple{NI,Real}, dograd::Bool=true) where {FF,T<:Real,NZ,NI}
+@inline function logP!(grad::AbstractVector{T}, tmp::Vector{T}, θt::AbstractVector{T}, σ::T, prim::dcdp_primitives, isev::ItpSharedEV, uv::NTuple{2,T}, z::NTuple{NZ,Real}, d_obs::Integer, s_idx::Integer, itypidx::NTuple{NI,Real}, dograd::Bool=true) where {T<:Real,NZ,NI}
+
+  FF = prim.f
 
   if dograd
     length(grad) == length(θt)+1 || throw(DimensionMismatch())
@@ -24,7 +26,7 @@ nplus1_impl(N::Integer) = :(Val{$(N+1)})
 
   @inbounds for d in drng
     sp_idx = sprime(wp, s_idx, d)
-    ubV[d+1] = flow(FF, wp, s_idx, θt, σ, z, ψ, d, itype...) + prim.β * isev.EV[z..., ψ, sp_idx, itypidx...]
+    ubV[d+1] = flow(FF, θt, σ, wp, s_idx, d, z, ψ, itype...) + prim.β * isev.EV[z..., ψ, sp_idx, itypidx...]
   end
 
   dograd ||  return ubV[d_obs+1] - logsumexp(ubV)
@@ -38,12 +40,12 @@ nplus1_impl(N::Integer) = :(Val{$(N+1)})
     sp_idx = sprime(wp, s_idx, d)
 
     @inbounds for k in eachindex(θt) # NOTE: assumes 1-based linear indexing!!
-      grad[k] += wt * (flowdθ(FF, wp, s_idx, θt, σ, z, ψ, k, d, itype...) + prim.β * isev.dEV[z..., ψ, k, sp_idx, itypidx...] )
+      grad[k] += wt * (flowdθ(FF, k, θt, σ, wp, s_idx, d, z, ψ, itype...) + prim.β * isev.dEV[z..., ψ, k, sp_idx, itypidx...] )
     end
 
     if s_idx <= end_ex0(wp)
-      dpsi = flowdψ(FF, wp, s_idx, θt, σ, z, ψ, d, itype...) + prim.β * gradient_d(nplus1(Val{NZ}), isev.EV, z..., ψ, sp_idx, itypidx...)::T
-      dsig = flowdσ(FF, wp, s_idx, θt, σ, z, ψ, d, itype...) + prim.β * isev.dEVσ[z..., ψ, sp_idx, itypidx...]
+      dpsi = flowdψ(FF, θt, σ, wp, s_idx, d, z, ψ, itype...) + prim.β * gradient_d(nplus1(Val{NZ}), isev.EV, z..., ψ, sp_idx, itypidx...)::T
+      dsig = flowdσ(FF, θt, σ, wp, s_idx, d, z, ψ, itype...) + prim.β * isev.dEVσ[z..., ψ, sp_idx, itypidx...]
       grad[end] += wt * (dpsi*_dψ1dθρ(uv..., ρ, σ) + dsig)
     end
   end

@@ -8,8 +8,8 @@
         itype = (geoid, roy,),
         pids = [1,],
         dmax = ShaleDrillingModel._dmax(wp),
-        rngs = (zspace...,                                        vspace, vspace, 0:dmax, 1:length(wp), geology_types, royalty_rates,),
-        idxs = (2:2:length(zspace[1])-1, 2:3:length(zspace[2])-1, 1:5:nv, 1:5:nv, 0:dmax, 1:length(wp), 1:ngeo,        1:nroy,),
+        rngs = (zspace...,                vspace, vspace, 0:dmax, 1:length(wp), geology_types, royalty_rates,),
+        idxs = (2:2:length(zspace[1])-1,  1:5:nv, 1:5:nv, 0:dmax, 1:length(wp), 1:ngeo,        1:nroy,),
         idx_sz = length.((θfull, idxs...)),
         prim = dcdp_primitives(flowfuncname, β, wp, zspace, Πp, ψspace),
         tmpv = dcdp_tmpvars(prim),
@@ -19,7 +19,7 @@
         tmp = Vector{T}(undef, dmax+1),
         θ1 = similar(θfull),
         θ2 = similar(θfull),
-        θttmp = Vector{Float64}(undef, prim.nθt),
+        θttmp = Vector{Float64}(undef, length(prim.f)),
         grad   = zeros(T, idx_sz),
         fdgrad = zeros(T, idx_sz)
 
@@ -32,7 +32,7 @@
 
         # test that things just solve...
         let uv = (1.,1.), z = getindex.(zspace, 7), dp1 = 1, s_idx = 1, itypidx = (1, 1,), tmpgrad = Vector{Float64}(undef, idx_sz[1])
-            θtvw = _θt(θfull, prim.nθt)
+            θtvw = _θt(θfull, _nθt(prim))
             σ0 = _σv(θfull)
             @test idx_sz[1] == length(θtvw)+1
             @test length(tmpgrad) == idx_sz[1]
@@ -49,14 +49,14 @@
         println("solved round 1. doing logP")
         grad .= 0.0
         for CI in CR
-            zpi, zvi, ui, vi, di, si, gi, ri = CI.I
-            zp , zv , u , v , d , s , g , r  = getindex.(rngs, CI.I)
+            zpi, ui, vi, di, si, gi, ri = CI.I
+            zp , u , v , d , s , g , r  = getindex.(rngs, CI.I)
 
             θtvw = _θt(θfull, prim)
             σ0 = _σv(θfull)
 
             if d ∈ ShaleDrillingModel.actionspace(prim.wp, s) # && !(s ∈ ShaleDrillingModel.ind_lrn(prim.wp.endpts))
-                @views lp = logP!(grad[:,CI], tmp, θtvw, σ0, prim, isev,  (u,v), (zp,zv,), d, s, (gi, ri,), dograd)
+                @views lp = logP!(grad[:,CI], tmp, θtvw, σ0, prim, isev,  (u,v), (zp,), d, s, (gi, ri,), dograd)
             end
         end
 
@@ -76,11 +76,11 @@
             serial_solve_vf_all!(sev, tmpv, prim, θ1, dograd; maxit0=40, maxit1=20, vftol=1e-10)
             print("logp: θ[$k]-h\t")
             for CI in CR
-                zpi, zvi, ui, vi, di, si, gi, ri = CI.I
-                zp , zv , u , v , d , s , g , r  = getindex.(rngs, CI.I)
+                zpi, ui, vi, di, si, gi, ri = CI.I
+                zp , u , v , d , s , g , r  = getindex.(rngs, CI.I)
                 θtvw1 = _θt(θ1, prim)
                 if d ∈ ShaleDrillingModel.actionspace(prim.wp, s) # && !(s ∈ ShaleDrillingModel.ind_lrn(prim.wp.endpts))
-                    fdgrad[k,CI] -= logP!(Vector{T}(), tmp, θtvw1, σ1, prim, isev, (u,v), (zp,zv,), d, s, (gi,ri), dograd)
+                    fdgrad[k,CI] -= logP!(Vector{T}(), tmp, θtvw1, σ1, prim, isev, (u,v), (zp,), d, s, (gi,ri), dograd)
                 end
             end
 
@@ -88,11 +88,11 @@
             serial_solve_vf_all!(sev, tmpv, prim, θ2, dograd; maxit0=40, maxit1=20, vftol=1e-10)
             println("updating fdgrad")
             for CI in CR
-                zpi, zvi, ui, vi, di, si, gi, ri = CI.I
-                zp , zv , u , v , d , s , g , r  = getindex.(rngs, CI.I)
+                zpi, ui, vi, di, si, gi, ri = CI.I
+                zp , u , v , d , s , g , r  = getindex.(rngs, CI.I)
                 θtvw2 = _θt(θ2, prim)
                 if d ∈ ShaleDrillingModel.actionspace(prim.wp, s) # && !(s ∈ ShaleDrillingModel.ind_lrn(prim.wp.endpts))
-                    fdgrad[k,CI] += logP!(Vector{T}(), tmp, θtvw2, σ2, prim, isev, (u,v), (zp,zv,), d, s, (gi,ri,), dograd)
+                    fdgrad[k,CI] += logP!(Vector{T}(), tmp, θtvw2, σ2, prim, isev, (u,v), (zp,), d, s, (gi,ri,), dograd)
                     fdgrad[k,CI] /= hh
                 end
             end
