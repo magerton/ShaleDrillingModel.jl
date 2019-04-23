@@ -7,6 +7,7 @@ export flow, flowdθ, flowdσ, flowdψ,
     DrillingCost_TimeFE,
     DrillingCost_TimeFE_rigrate,
     DrillingCost_constant,
+    DrillingCost_dgt1,
     AbstractDrillingRevenue,
     AbstractConstrainedDrillingRevenue,
     ConstrainedDrillingRevenue,
@@ -32,24 +33,6 @@ import Base: length
 # -----------------------------------------
 # so we can change these constants
 # -----------------------------------------
-
-const ref_STARTING_σ_ψ      = Ref{Float64}(0x1.47b9927764a96p-2) # 0x1.baddbb87af68ap-2 # = 0.432
-const ref_STARTING_log_ogip = Ref{Float64}(0x1.6df0926ff0ac4p-1) # 0x1.670bf3d5b282dp-1 # = 0.701
-const ref_STARTING_t        = Ref{Float64}(2*0.042/(2016-2003))
-
-function set_STARTING_σ_ψ(x::Float64)
-    ref_STARTING_σ_ψ[] = x
-end
-function set_STARTING_log_ogip(x::Float64)
-    ref_STARTING_log_ogip[] = x
-end
-function set_STARTING_t(x::Float64)
-    ref_STARTING_t[] = x
-end
-
-STARTING_σ_ψ()      = ref_STARTING_σ_ψ[]
-STARTING_log_ogip() = ref_STARTING_log_ogip[]
-STARTING_t()        = ref_STARTING_t[]
 
 # chebshev polynomials
 # See http://www.aip.de/groups/soe/local/numres/bookcpdf/c5-8.pdf
@@ -207,10 +190,21 @@ struct DrillingCost_constant <: AbstractDrillingCost end
 @inline flow(  u::DrillingCost_constant,             θ::AbstractVector{T}, σ::T, wp::AbstractUnitProblem, i::Integer, d::Integer, z::Tuple, ψ::T, geoid::Real, roy::Real) where {T} = d*θ[1]
 @inline flowdθ(u::DrillingCost_constant, k::Integer, θ::AbstractVector{T}, σ::T, wp::AbstractUnitProblem, i::Integer, d::Integer, z::Tuple, ψ::T, geoid::Real, roy::Real) where {T} = T(d)
 
+struct DrillingCost_dgt1 <: AbstractDrillingCost end
+@inline length(x::DrillingCost_dgt1) = 2
+@inline flow(           u::DrillingCost_dgt1,             θ::AbstractVector{T}, σ::T, wp::AbstractUnitProblem, i, d, z, ψ, geoid, roy) where {T} = d*(d<=1 ? θ[1] : θ[2])
+@inline function flowdθ(u::DrillingCost_dgt1, k::Integer, θ::AbstractVector{T}, σ::T, wp::AbstractUnitProblem, i, d, z, ψ, geoid, roy) where {T}
+    k == 1 && return d <= 1 ? T(d) : zero(T)
+    k == 2 && return d >  1 ? T(d) : zero(T)
+    throw(DomainError(k))
+end
+
+
 "Abstract Type for Costs w Fixed Effects"
 abstract type AbstractDrillingCost_TimeFE <: AbstractDrillingCost end
 @inline start(x::AbstractDrillingCost_TimeFE) = x.start
 @inline stop(x::AbstractDrillingCost_TimeFE) = x.stop
+@inline startstop(x::AbstractDrillingCost_TimeFE) = start(x), stop(x)
 @inline time_idx(x::AbstractDrillingCost_TimeFE, t) = clamp(t, start(x), stop(x)) - start(x) + 1
 
 "Time FE for 2008-2012"
@@ -267,6 +261,10 @@ const ONE_MINUS_MARGINAL_TAX_RATE = 1 - MARGINAL_TAX_RATE
 # other calculations
 const REAL_DISCOUNT_AND_DECLINE = 0x1.89279c9f3217dp-1   # computed from time FE in monthly pdxn
 const C_PER_MCF = GATH_COMP_TRTMT_PER_MCF * REAL_DISCOUNT_AND_DECLINE
+
+const STARTING_σ_ψ      = 0x1.47b9927764a96p-2 # 0x1.baddbb87af68ap-2 # = 0.432
+const STARTING_log_ogip = 0x1.6df0926ff0ac4p-1 # 0x1.670bf3d5b282dp-1 # = 0.701
+const STARTING_t        = 2*0.042/(2016-2003)
 
 function Eexpψ(θ4::T, σ::Number, ψ::Number, Dgt0::Bool)::T where {T}
     if Dgt0
@@ -331,6 +329,7 @@ flow(x::DrillingRevenue, θ::AbstractVector, σ, wp, i, d, z, ψ, geoid, roy) = 
 
 abstract type AbstractConstrainedDrillingRevenue <: AbstractDrillingRevenue end
 length(x::AbstractConstrainedDrillingRevenue) = 1
+constrained_parms(::AbstractConstrainedDrillingRevenue) = tuple()
 
 @inline function flowdθ(x::AbstractConstrainedDrillingRevenue, k::Integer, θ::AbstractVector{T}, σ::T, wp::AbstractUnitProblem, i::Integer, d::Integer, z::Tuple, ψ::T, geoid::Real, roy::Real)::T where {T}
     rev = flow(x, θ, σ, wp, i, d, z, ψ, geoid, roy)
@@ -340,29 +339,42 @@ end
 
 @inline function flowdσ(x::AbstractConstrainedDrillingRevenue, θ::AbstractVector{T}, σ::T, wp::AbstractUnitProblem, i::Integer, d::Integer, z::Tuple, ψ::T, geoid::Real, roy::Real)::T where {T}
     if !_Dgt0(wp,i) && d > 0
-        return flow(x, θ, σ, wp, i, d, z, ψ, geoid, roy) * (ψ*STARTING_σ_ψ() - STARTING_σ_ψ()^2*_ρ(σ)) * _dρdσ(σ)
+        return flow(x, θ, σ, wp, i, d, z, ψ, geoid, roy) * (ψ*σ_ψ(x) - σ_ψ(x)^2*_ρ(σ)) * _dρdσ(σ)
     end
     return zero(T)
 end
 
 @inline function flowdψ(x::AbstractConstrainedDrillingRevenue, θ::AbstractVector{T}, σ::T, wp::AbstractUnitProblem, i::Integer, d::Integer, z::Tuple, ψ::T, geoid::Real, roy::Real)::T where {T}
     if d > 0
-        dψ = flow(x, θ, σ, wp, i, d, z, ψ, geoid, roy) *  STARTING_σ_ψ()
+        dψ = flow(x, θ, σ, wp, i, d, z, ψ, geoid, roy) *  σ_ψ(x)
         return _Dgt0(wp,i) ? dψ : dψ * _ρ(σ)
     end
     return zero(T)
 end
 
 "Constrained Revenue with taxes and stuff"
-struct ConstrainedDrillingRevenue_WithTaxes <: AbstractConstrainedDrillingRevenue end
-flow(x::ConstrainedDrillingRevenue_WithTaxes, θ::AbstractVector, σ, wp, i, d, z, ψ, geoid, roy) = revenue_with_tax(θ[1], STARTING_log_ogip(), STARTING_σ_ψ(), σ, wp, i, d, z, ψ, geoid, roy)
+struct ConstrainedDrillingRevenue_WithTaxes <: AbstractConstrainedDrillingRevenue
+    log_ogip::Float64
+    σ_ψ::Float64
+end
+ConstrainedDrillingRevenue_WithTaxes() = ConstrainedDrillingRevenue_WithTaxes(STARTING_log_ogip, STARTING_σ_ψ)
+flow(x::ConstrainedDrillingRevenue_WithTaxes, θ::AbstractVector, σ, wp, i, d, z, ψ, geoid, roy) = revenue_with_tax(θ[1], log_ogip(x), σ_ψ(x), σ, wp, i, d, z, ψ, geoid, roy)
 
 "Constrained Simple revenue"
-struct ConstrainedDrillingRevenue <: AbstractConstrainedDrillingRevenue end
-flow(x::ConstrainedDrillingRevenue, θ::AbstractVector, σ, wp, i, d, z, ψ, geoid, roy) = revenue(θ[1], STARTING_log_ogip(), STARTING_σ_ψ(), σ, wp, i, d, z, ψ, geoid, roy)
+struct ConstrainedDrillingRevenue <: AbstractConstrainedDrillingRevenue
+    log_ogip::Float64
+    σ_ψ::Float64
+end
+ConstrainedDrillingRevenue() = ConstrainedDrillingRevenue(STARTING_log_ogip, STARTING_σ_ψ)
+flow(x::ConstrainedDrillingRevenue, θ::AbstractVector, σ, wp, i, d, z, ψ, geoid, roy) = revenue(θ[1], log_ogip(x), σ_ψ(x),  σ, wp, i, d, z, ψ, geoid, roy)
 
+log_ogip(x::Union{ConstrainedDrillingRevenue_WithTaxes, ConstrainedDrillingRevenue}) = x.log_ogip
+σ_ψ(x::Union{ConstrainedDrillingRevenue_WithTaxes, ConstrainedDrillingRevenue}) = x.σ_ψ
+
+constrained_parms(::Union{ConstrainedDrillingRevenue_WithTaxes, ConstrainedDrillingRevenue}) = (log_ogip=2, ψ=3)
+constrained_parms(x::StaticDrillingPayoff) = constrained_parms(x.revenue)
 
 UnconstrainedProblem(::ConstrainedDrillingRevenue_WithTaxes) = DrillingRevenue_WithTaxes()
-UnconstrainedProblem(::ConstrainedDrillingRevenue) = DrillingRevenue()
-ConstrainedProblem(::DrillingRevenue_WithTaxes) = ConstrainedDrillingRevenue_WithTaxes()
-ConstrainedProblem(::DrillingRevenue          ) = ConstrainedDrillingRevenue()
+UnconstrainedProblem(::ConstrainedDrillingRevenue)           = DrillingRevenue()
+ConstrainedProblem(::DrillingRevenue_WithTaxes)              = ConstrainedDrillingRevenue_WithTaxes()
+ConstrainedProblem(::DrillingRevenue          )              = ConstrainedDrillingRevenue()

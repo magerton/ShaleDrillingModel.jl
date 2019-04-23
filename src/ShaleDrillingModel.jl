@@ -23,6 +23,7 @@ include("helpers.jl")
 include("learning_transition.jl")
 
 include("flow-payoffs.jl")
+include("flow-payoffs-starting-values.jl")
 
 include("vf_structs.jl")
 include("utility.jl")

@@ -19,6 +19,7 @@
         DrillingCost_TimeFE(2008,2012),
         DrillingCost_TimeFE(2009,2011),
         DrillingCost_constant(),
+        DrillingCost_dgt1(),
         # DrillingCost_TimeFE_rigrate(2008,2012),  # requires a different-sized state-space
         DrillingRevenue_WithTaxes(),
         DrillingRevenue(),
