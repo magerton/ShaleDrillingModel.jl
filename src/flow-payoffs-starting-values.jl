@@ -7,7 +7,7 @@ starting_values(x::StaticDrillingPayoff{<:AbstractUnconstrainedDrillingRevenue, 
 starting_values(x::StaticDrillingPayoff{<:AbstractUnconstrainedDrillingRevenue, DrillingCost_dgt1,     ExtensionCost_Constant}) = [-0x1.30492070192dp+2,  STARTING_log_ogip, STARTING_α_ψ, -0x1.a8ca50a153ecbp+2, -0x1.45888b1d8fc67p+2, -0x1.c68737f1a1d98p-3, 1.0, ]
 
 function starting_values(x::DrillingCost_TimeFE)
-    if startstop(x.drillingcost) == (2008,2012,)
+    if startstop(x) == (2008,2012,)
         timefe = [-13.1534, -9.18679, -7.90885, -7.16243, -6.77896,]
     else
         throw(error())
@@ -16,7 +16,7 @@ function starting_values(x::DrillingCost_TimeFE)
 end
 
 function starting_values(x::DrillingCost_TimeFE_rigrate)
-    if startstop(x.drillingcost) == (2008,2012,)
+    if startstop(x) == (2008,2012,)
         timefe = [-11.5378, -7.84324, -6.52969, -5.65049, -5.40226,]
     else
         throw(error())
@@ -26,7 +26,7 @@ end
 
 
 function starting_values(x::StaticDrillingPayoff{<:AbstractUnconstrainedDrillingRevenue, C,  ExtensionCost_Constant}) where {C<:AbstractDrillingCost_TimeFE}
-    return vcat(-0x1.a1c8146018faap+1, STARTING_log_ogip, STARTING_α_ψ, starting_values(x.drillingcost), 0x1.de94ce50afacep+0)
+    return vcat(-0x1.a1c8146018faap+1, STARTING_log_ogip, STARTING_α_ψ, starting_values(x.drillingcost), -0.9088156073909275, 1.037876396029411)
 end
 
 function starting_values(x::StaticDrillingPayoff{<:AbstractConstrainedDrillingRevenue})
