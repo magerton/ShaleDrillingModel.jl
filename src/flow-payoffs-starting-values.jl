@@ -25,7 +25,7 @@ function starting_values(x::DrillingCost_TimeFE_rigrate)
 end
 
 
-function starting_values(x::StaticDrillingPayoff{DrillingRevenue{Unconstrained,NoTrend}, C,  ExtensionCost_Constant}) where {C<:AbstractDrillingCost_TimeFE}
+function starting_values(x::StaticDrillingPayoff{<:DrillingRevenue{Unconstrained,NoTrend}, <:AbstractDrillingCost_TimeFE,  ExtensionCost_Constant})
     return vcat(-0x1.a1c8146018faap+1, STARTING_log_ogip, STARTING_α_ψ, starting_values(x.drillingcost), -0.9088156073909275, 1.037876396029411)
 end
 
@@ -36,7 +36,7 @@ function starting_values(x::StaticDrillingPayoff{<:DrillingRevenue{Constrained,N
 end
 
 
-function starting_values(x::StaticDrillingPayoff{DrillingRevenue{Unconstrained,NoTrend,WithTaxes},DrillingCost_TimeFE,ExtensionCost_Constant})
+function starting_values(x::StaticDrillingPayoff{DrillingRevenue{Unconstrained,NoTrend,WithTaxes}, DrillingCost_TimeFE, ExtensionCost_Constant})
 
     revenue = [-0x1.26a3afb34b93dp+1, 0x1.401755c339009p-1, 0x1.7587cc6793516p-2, ]
     if startstop(x.drillingcost) == (2008,2012)
@@ -49,7 +49,7 @@ function starting_values(x::StaticDrillingPayoff{DrillingRevenue{Unconstrained,N
 end
 
 
-function starting_values(x::StaticDrillingPayoff{DrillingRevenue{Unconstrained,NoTrend,NoTaxes},DrillingCost_TimeFE,ExtensionCost_Constant})
+function starting_values(x::StaticDrillingPayoff{DrillingRevenue{Unconstrained,NoTrend,NoTaxes}, DrillingCost_TimeFE, ExtensionCost_Constant})
 
     revenue = [-0x1.52fec10df2f1ap+1, 0x1.2f754310c607ep-1, 0x1.666490fb4962p-2, ]
     if startstop(x.drillingcost) == (2008,2012)
