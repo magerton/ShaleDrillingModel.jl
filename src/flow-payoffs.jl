@@ -323,8 +323,8 @@ constrained_parms(x::StaticDrillingPayoff) = constrained_parms(x.revenue)
 
 ConstrainedProblem(  x::AbstractPayoffComponent, args...) = x
 UnconstrainedProblem(x::AbstractPayoffComponent, args...) = x
-UnconstrainedProblem(x::DrillingRevenue, args...)         = DrillingRevenue(Constrained(args...), x.tech, x.tax)
-ConstrainedProblem(  x::DrillingRevenue, args...)         = DrillingRevenue(Unconstrained(), x.tech, x.tax)
+UnconstrainedProblem(x::DrillingRevenue, args...)         = DrillingRevenue(Unconstrained(args...), x.tech, x.tax)
+ConstrainedProblem(  x::DrillingRevenue, args...)         = DrillingRevenue(Constrained(), x.tech, x.tax)
 ConstrainedProblem(  x::StaticDrillingPayoff, args...)    = StaticDrillingPayoff(ConstrainedProblem(revenue(x), args...), ConstrainedProblem(drillingcost(x)), ConstrainedProblem(extensioncost(x)))
 UnconstrainedProblem(x::StaticDrillingPayoff, args...)    = StaticDrillingPayoff(UnconstrainedProblem(revenue(x), args...), UnconstrainedProblem(drillingcost(x)), UnconstrainedProblem(extensioncost(x)))
 
