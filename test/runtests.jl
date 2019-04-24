@@ -78,7 +78,7 @@ royalty_types = 1:length(royalty_rates)
 geology_types = 1.3430409262656042:0.1925954901417719:5.194950729101042
 
 # initial parameters
-flowfuncname = StaticDrillingPayoff(ConstrainedDrillingRevenue(), DrillingCost_constant(), ExtensionCost_Constant())
+flowfuncname = StaticDrillingPayoff(DrillingRevenue(Constrained(),NoTrend(),NoTaxes()), DrillingCost_constant(), ExtensionCost_Constant())
 θt = [-4.28566, -5.45746, -0.3, ] # ShaleDrillingModel.STARTING_log_ogip, ShaleDrillingModel.STARTING_α_ψ,
 σv = 1.0
 

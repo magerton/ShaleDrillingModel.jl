@@ -1,9 +1,9 @@
 
 @testset "Flow gradients" begin
     problem = StaticDrillingPayoff(
-        ShaleDrillingModel.DrillingRevenue(),
-        ShaleDrillingModel.DrillingCost_constant(),
-        ShaleDrillingModel.ExtensionCost_Constant()
+        DrillingRevenue(Unconstrained(),NoTrend(),NoTaxes()),
+        DrillingCost_constant(),
+        ExtensionCost_Constant()
     )
 
     let θ = fill(0.25, length(problem)),
@@ -21,17 +21,21 @@
         DrillingCost_constant(),
         DrillingCost_dgt1(),
         # DrillingCost_TimeFE_rigrate(2008,2012),  # requires a different-sized state-space
-        DrillingRevenue_WithTaxes(),
-        DrillingRevenue(),
-        ConstrainedDrillingRevenue_WithTaxes(),
-        ConstrainedDrillingRevenue_WithTaxes(),
+        DrillingRevenue(Constrained(),NoTrend(),NoTaxes()),
+        DrillingRevenue(Constrained(),NoTrend(),WithTaxes()),
+        DrillingRevenue(Constrained(),TimeTrend(),NoTaxes()),
+        DrillingRevenue(Constrained(),TimeTrend(),WithTaxes()),
+        DrillingRevenue(Unconstrained(),NoTrend(),NoTaxes()),
+        DrillingRevenue(Unconstrained(),NoTrend(),WithTaxes()),
+        DrillingRevenue(Unconstrained(),TimeTrend(),NoTaxes()),
+        DrillingRevenue(Unconstrained(),TimeTrend(),WithTaxes()),
         ExtensionCost_Zero(),
         ExtensionCost_Constant(),
         ExtensionCost_ψ(),
-        StaticDrillingPayoff(                       DrillingRevenue(), DrillingCost_TimeFE(2009,2011), ExtensionCost_Constant()),
-        UnconstrainedProblem( StaticDrillingPayoff( DrillingRevenue(), DrillingCost_TimeFE(2009,2011), ExtensionCost_Constant()) ),
-        ConstrainedProblem(   StaticDrillingPayoff( DrillingRevenue(), DrillingCost_TimeFE(2009,2011), ExtensionCost_Constant()) ),
-        StaticDrillingPayoff(ConstrainedDrillingRevenue(), DrillingCost_constant(), ExtensionCost_Constant())
+        StaticDrillingPayoff(DrillingRevenue(Unconstrained(),NoTrend(),NoTaxes()), DrillingCost_TimeFE(2009,2011), ExtensionCost_Constant()),
+        UnconstrainedProblem( StaticDrillingPayoff(DrillingRevenue(Unconstrained(),NoTrend(),NoTaxes()), DrillingCost_TimeFE(2009,2011), ExtensionCost_Constant()), ),
+        ConstrainedProblem(   StaticDrillingPayoff(DrillingRevenue(Unconstrained(),NoTrend(),NoTaxes()), DrillingCost_TimeFE(2009,2011), ExtensionCost_Constant()), ),
+        StaticDrillingPayoff(DrillingRevenue(Constrained(),NoTrend(),NoTaxes()), DrillingCost_constant(), ExtensionCost_Constant()),
     )
 
     for f in types_to_test
@@ -75,9 +79,11 @@ end
         roy = 0.225,
         geoid = 4.706,
         σ = 0.75,
-        f1 = StaticDrillingPayoff(DrillingRevenue(), DrillingCost_constant(),                ExtensionCost_Constant()),
-        f2 = StaticDrillingPayoff(DrillingRevenue(), DrillingCost_TimeFE(2009,2011),         ExtensionCost_Constant()),
-        f3 = StaticDrillingPayoff(DrillingRevenue(), DrillingCost_TimeFE_rigrate(2008,2012), ExtensionCost_Constant())
+        dr1 = DrillingRevenue(Unconstrained(),NoTrend(),WithTaxes()),
+        dr2 = DrillingRevenue(Unconstrained(),TimeTrend(),NoTaxes()),
+        f1 = StaticDrillingPayoff(dr2, DrillingCost_constant(),                ExtensionCost_Constant()),
+        f2 = StaticDrillingPayoff(dr2, DrillingCost_TimeFE(2009,2011),         ExtensionCost_Constant()),
+        f3 = StaticDrillingPayoff(dr1, DrillingCost_TimeFE_rigrate(2008,2012), ExtensionCost_Constant())
 
         function testfun(FF::AbstractStaticPayoffs, zspace::Tuple)
             println("testing $FF")
