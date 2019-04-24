@@ -29,9 +29,25 @@ using InteractiveUtils: subtypes
 
 import Base: length
 
+# -----------------------------------------
+# some constants
+# -----------------------------------------
+
+# From Gulen et al (2015) "Production scenarios for the Haynesville..."
+const GATH_COMP_TRTMT_PER_MCF   = 0.42 + 0.07
+const MARGINAL_TAX_RATE = 0.42
+const ONE_MINUS_MARGINAL_TAX_RATE = 1 - MARGINAL_TAX_RATE
+
+# other calculations
+const REAL_DISCOUNT_AND_DECLINE = 0x1.89279c9f3217dp-1   # computed from time FE in monthly pdxn
+const C_PER_MCF = GATH_COMP_TRTMT_PER_MCF * REAL_DISCOUNT_AND_DECLINE
+
+const STARTING_α_ψ      = 0x1.7587cc6793516p-2 # 0.365
+const STARTING_log_ogip = 0x1.401755c339009p-1 # 0.625
+const STARTING_t        = 0.02
 
 # -----------------------------------------
-# so we can change these constants
+# some functions
 # -----------------------------------------
 
 # chebshev polynomials
@@ -252,19 +268,6 @@ end
 # -------------------------------------------
 # Revenue
 # -------------------------------------------
-
-# From Gulen et al (2015) "Production scenarios for the Haynesville..."
-const GATH_COMP_TRTMT_PER_MCF   = 0.42 + 0.07
-const MARGINAL_TAX_RATE = 0.42
-const ONE_MINUS_MARGINAL_TAX_RATE = 1 - MARGINAL_TAX_RATE
-
-# other calculations
-const REAL_DISCOUNT_AND_DECLINE = 0x1.89279c9f3217dp-1   # computed from time FE in monthly pdxn
-const C_PER_MCF = GATH_COMP_TRTMT_PER_MCF * REAL_DISCOUNT_AND_DECLINE
-
-const STARTING_α_ψ      = 0x1.6fd0ee5f6815ep-2 # 0x1.baddbb87af68ap-2 # = 0.432
-const STARTING_log_ogip = 0x1.1e09cf0dc782p-1  # 0x1.670bf3d5b282dp-1 # = 0.701
-const STARTING_t        = 2*0.042/(2016-2003)
 
 function Eexpψ(θ4::T, σ::Number, ψ::Number, Dgt0::Bool)::T where {T}
     if Dgt0

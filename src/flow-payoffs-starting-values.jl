@@ -34,3 +34,30 @@ function starting_values(x::StaticDrillingPayoff{<:AbstractConstrainedDrillingRe
     deleteat!(thet, constrained_parms(x))
     return thet
 end
+
+
+function starting_values(x::StaticDrillingPayoff{DrillingRevenue_WithTaxes,DrillingCost_TimeFE,ExtensionCost_Constant})
+
+    revenue = [-0x1.26a3afb34b93dp+1, 0x1.401755c339009p-1, 0x1.7587cc6793516p-2, ]
+    if startstop(x.drillingcost) == (2008,2012)
+        drillcost = [-0x1.9183a0a1751ap+3, -0x1.16eb650cefff5p+3, -0x1.d6e2d10036d19p+2, -0x1.a78c5f0290dd9p+2, -0x1.919a8fa25c0e9p+2, 0x1.7acb0d22485f5p+0, ]
+    else
+        drillcost = starting_values(x.drillingcost)
+    end
+    extension, σ = -0x1.a56fc68c70ad7p-1, 0x1.0ee29553db387p+0
+    return vcat(revenue, drillcost, extension, σ)
+end
+
+
+function starting_values(x::StaticDrillingPayoff{DrillingRevenue,DrillingCost_TimeFE,ExtensionCost_Constant})
+
+    revenue = [-0x1.52fec10df2f1ap+1, 0x1.2f754310c607ep-1, 0x1.666490fb4962p-2, ]
+    if startstop(x.drillingcost) == (2008,2012)
+        drillcost = [-0x1.a4e811fc110ccp+3, -0x1.29037a50f0256p+3, -0x1.fa94c6f064af4p+2, -0x1.cbf0ac440c092p+2, -0x1.b5029f65b30a1p+2, 0x1.74d357af0b952p+0,]
+    else
+        drillcost = starting_values(x.drillingcost)
+    end
+    extension, σ = -0x1.b8b6f1aad23abp-1, 0x1.fa9f78e45165fp-1
+
+    return vcat(revenue, drillcost, extension, σ)
+end
