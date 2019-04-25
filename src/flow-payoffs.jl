@@ -1,5 +1,5 @@
 export flow, flowdθ, flowdσ, flowdψ,
-    STARTING_α_ψ, STARTING_log_ogip, STARTING_t, set_STARTING_α_ψ, set_STARTING_log_ogip, set_STARTING_t,
+    STARTING_α_ψ, STARTING_log_ogip, STARTING_α_t,
     AbstractPayoffFunction,
     AbstractPayoffComponent,
     AbstractDrillingCost,
@@ -47,7 +47,7 @@ const C_PER_MCF = GATH_COMP_TRTMT_PER_MCF * REAL_DISCOUNT_AND_DECLINE
 
 const STARTING_α_ψ      = 0x1.7587cc6793516p-2 # 0.365
 const STARTING_log_ogip = 0x1.401755c339009p-1 # 0.625
-const STARTING_t        = 0.02
+const STARTING_α_t        = 0.02
 
 # -----------------------------------------
 # some functions
@@ -248,7 +248,7 @@ struct DrillingCost_TimeFE_rigrate <: AbstractDrillingCost_TimeFE
 end
 @inline length(x::DrillingCost_TimeFE_rigrate) = 3 + stop(x) - start(x)
 @inline function flow(u::DrillingCost_TimeFE_rigrate, θ::AbstractVector{T}, σ::T, wp::AbstractUnitProblem, i::Integer, d::Integer, z::Tuple{T,T,<:Integer}, ψ::T, geoid::Real, roy::Real)::T where {T}
-    d == 1 && return     θ[time_idx(u,last(z))] +                  θ[length(u)]*exp(z[2]  )
+    d == 1 && return     θ[time_idx(u,last(z))] +                  θ[length(u)]*exp(z[2])
     d  > 1 && return d*( θ[time_idx(u,last(z))] + θ[length(u)-1] + θ[length(u)]*exp(z[2]) )
     d  < 1 && return zero(T)
 end
@@ -278,7 +278,7 @@ struct Constrained   <: AbstractConstrainedType
     α_ψ::Float64
     α_t::Float64
 end
-Constrained() = Constrained(STARTING_log_ogip, STARTING_α_ψ, STARTING_t)
+Constrained() = Constrained(STARTING_log_ogip, STARTING_α_ψ, STARTING_α_t)
 log_ogip(x::Constrained) = x.log_ogip
 α_ψ(x::Constrained) = x.α_ψ
 α_t(x::Constrained) = x.α_t
