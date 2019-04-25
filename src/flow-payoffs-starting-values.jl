@@ -104,7 +104,7 @@ function starting_values(x::StaticDrillingPayoff{DrillingRevenue{Unconstrained,N
     else
         drillcost = starting_values(x.drillingcost)
     end
-    extension, σ = -0x1.074f0790ab74ep+0, 0x1.2a0017653f3ap+0,
+    extension, σ = -0x1.074f0790ab74ep+0, 0x1.2a0017653f3ap+0
 
     return vcat(revenue, drillcost, extension, σ)
 end
