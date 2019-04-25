@@ -98,7 +98,7 @@ end
 
 function starting_values(x::StaticDrillingPayoff{DrillingRevenue{Unconstrained,NoTrend,WithTaxes}, DrillingCost_TimeFE_rigrate, ExtensionCost_Constant})
 
-    revenue = [-0x1.efb258f038ac8p+0, STARTING_log_ogip, STARTING_α_ψ, STARTING_α_t,]
+    revenue = [-0x1.efb258f038ac8p+0, STARTING_log_ogip, STARTING_α_ψ, ]
     if startstop(x.drillingcost) == (2008,2012)
         drillcost = [-0x1.4dafb2c3fea83p+3, -0x1.bdf2b277efd1dp+2, -0x1.66f029f4b55cap+2, -0x1.1ba48cb417f4ap+2, -0x1.fb03c19418f3p+1, 0x1.5ea050ffdd721p+0, -0x1.3486f8054b66p+1,]
     else
