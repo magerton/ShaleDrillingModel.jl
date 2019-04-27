@@ -374,6 +374,12 @@ end
     return u::T
 end
 
+
+@inline eur_kernel(x::DrillingRevenue{<:AbstractConstrainedType,NoTrend},   θt::AbstractVector, z::Tuple, uv::NTuple{2}, geoid::Real, roy::Real) = exp(log_ogip(x,θ)*geoid + α_ψ(x,θ)*_ψ2(uv...))
+@inline eur_kernel(x::DrillingRevenue{<:AbstractConstrainedType,TimeTrend}, θt::AbstractVector, z::Tuple, uv::NTuple{2}, geoid::Real, roy::Real) = exp(log_ogip(x,θ)*geoid + α_ψ(x,θ)*_ψ2(uv...) + α_t(x,θ)*last(z))
+@inline eur_kernel(x::StaticDrillingPayoff, θt, z, uv, geoid::Real, roy::Real) = eur_kernel(x.revenue, θt, z, uv, geoid, roy)
+
+
 # ----------------------------------------------------------------
 # dψ and dσ are the same across many functions
 # ----------------------------------------------------------------
