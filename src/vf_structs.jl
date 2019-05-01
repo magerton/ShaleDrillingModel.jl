@@ -43,8 +43,9 @@ function print_summary(p::dcdp_primitives)
     println("Shocks anticipated? $(_anticipate_e(p))")
     println("β = $(p.β)")
     println("wp = $(p.wp)")
-    println("zsize = $(length.(_zspace(p))) and zspace = $(_zspace(p))")
-    println("nψ = $(_nψ(p)) and ψspace = $(_ψspace(p))")
+    println("zsize = $(length.(_zspace(p)))    nψ = $(_nψ(p))")
+    println("zspace = $(_zspace(p))")
+    println("ψspace = $(_ψspace(p))")
     println("--------------------------------------")
 end
 
