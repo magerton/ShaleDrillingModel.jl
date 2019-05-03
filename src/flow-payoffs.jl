@@ -281,7 +281,7 @@ struct Constrained   <: AbstractConstrainedType
     α_ψ::Float64
     α_t::Float64
 end
-Constrained() = Constrained(STARTING_log_ogip, STARTING_α_ψ, STARTING_α_t)
+Constrained(; log_ogip=STARTING_log_ogip, α_ψ = STARTING_α_ψ, α_t = STARTING_α_t, args...) = Constrained(log_ogip, α_ψ, α_t)
 log_ogip(x::Constrained) = x.log_ogip
 α_ψ(x::Constrained) = x.α_ψ
 α_t(x::Constrained) = x.α_t
@@ -332,18 +332,18 @@ constrained_parms(::DrillingRevenue{<:AbstractConstrainedType, NoTrend})   = (lo
 constrained_parms(::DrillingRevenue{<:AbstractConstrainedType, TimeTrend}) = (log_ogip=2, α_ψ=3, α_t=4)
 constrained_parms(x::StaticDrillingPayoff) = constrained_parms(x.revenue)
 
-ConstrainedProblem(  x::AbstractPayoffComponent, args...) = x
-UnconstrainedProblem(x::AbstractPayoffComponent, args...) = x
-UnconstrainedProblem(x::DrillingRevenue, args...)         = DrillingRevenue(Unconstrained(args...), x.tech, x.tax, x.learn)
-ConstrainedProblem(  x::DrillingRevenue, args...)         = DrillingRevenue(Constrained(), x.tech, x.tax, x.learn)
-ConstrainedProblem(  x::StaticDrillingPayoff, args...)    = StaticDrillingPayoff(ConstrainedProblem(revenue(x), args...), ConstrainedProblem(drillingcost(x)), ConstrainedProblem(extensioncost(x)))
-UnconstrainedProblem(x::StaticDrillingPayoff, args...)    = StaticDrillingPayoff(UnconstrainedProblem(revenue(x), args...), UnconstrainedProblem(drillingcost(x)), UnconstrainedProblem(extensioncost(x)))
+ConstrainedProblem(  x::AbstractPayoffComponent; kwargs...) = x
+UnconstrainedProblem(x::AbstractPayoffComponent; kwargs...) = x
+UnconstrainedProblem(x::DrillingRevenue; kwargs...)         = DrillingRevenue(Unconstrained(;kwargs...), x.tech, x.tax, x.learn)
+ConstrainedProblem(  x::DrillingRevenue; kwargs...)         = DrillingRevenue(Constrained(;kwargs...), x.tech, x.tax, x.learn)
+ConstrainedProblem(  x::StaticDrillingPayoff; kwargs...)    = StaticDrillingPayoff(ConstrainedProblem(revenue(x); kwargs...), ConstrainedProblem(drillingcost(x)), ConstrainedProblem(extensioncost(x)))
+UnconstrainedProblem(x::StaticDrillingPayoff; kwargs...)    = StaticDrillingPayoff(UnconstrainedProblem(revenue(x); kwargs...), UnconstrainedProblem(drillingcost(x)), UnconstrainedProblem(extensioncost(x)))
 
 
 NoLearningProblem(x::AbstractPayoffComponent, args...) = x
 LearningProblem(  x::AbstractPayoffComponent, args...) = x
-NoLearningProblem(x::DrillingRevenue, args...)      = DrillingRevenue(Unconstrained(args...), x.tech, x.tax, NoLearn())
-LearningProblem(  x::DrillingRevenue, args...)      = DrillingRevenue(Unconstrained(args...), x.tech, x.tax, Learn())
+NoLearningProblem(x::DrillingRevenue, args...)      = DrillingRevenue(x.constr, x.tech, x.tax, NoLearn())
+LearningProblem(  x::DrillingRevenue, args...)      = DrillingRevenue(x.constr, x.tech, x.tax, Learn())
 NoLearningProblem(x::StaticDrillingPayoff, args...) = StaticDrillingPayoff(NoLearningProblem(revenue(x), args...), drillingcost(x), extensioncost(x))
 LearningProblem(  x::StaticDrillingPayoff, args...) = StaticDrillingPayoff(  LearningProblem(revenue(x), args...), drillingcost(x), extensioncost(x))
 
