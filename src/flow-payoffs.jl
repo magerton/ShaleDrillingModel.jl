@@ -45,12 +45,12 @@ const MARGINAL_TAX_RATE = 0.42
 const ONE_MINUS_MARGINAL_TAX_RATE = 1 - MARGINAL_TAX_RATE
 
 # other calculations
-const REAL_DISCOUNT_AND_DECLINE =0x1.8e250949aadedp-1 # sum( β^((t+5)/12) q(t)/Q(240) for t = 1:240 )
+const REAL_DISCOUNT_AND_DECLINE =0x1.8e2dcbd7fd361p-1 # 0.7776931 = sum( β^((t+5)/12) q(t)/Q(240) for t = 1:240 )
 const C_PER_MCF = GATH_COMP_TRTMT_PER_MCF * REAL_DISCOUNT_AND_DECLINE
 
 const STARTING_α_ψ      = 0x1.7587cc6793516p-2 # 0.365
 const STARTING_log_ogip = 0x1.401755c339009p-1 # 0.625
-const STARTING_α_t        = 0.02
+const STARTING_α_t      = 0.01948
 
 # -----------------------------------------
 # some functions
