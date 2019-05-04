@@ -352,7 +352,7 @@ LearningProblem(  x::StaticDrillingPayoff, args...) = StaticDrillingPayoff(  Lea
 # base functions
 # -------------------------------------------
 
-@inline function Eexpψ(x::DrillingRevenue, θ4::T, σ::Number, ψ::Number, Dgt0::Bool)::T where {T}
+@inline function Eexpψ(x::DrillingRevenue{A,B,C,Learn}, θ4::T, σ::Number, ψ::Number, Dgt0::Bool)::T where {T,A,B,C}
     if Dgt0
         return θ4*ψ
     else
