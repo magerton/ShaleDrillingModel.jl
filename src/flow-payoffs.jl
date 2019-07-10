@@ -20,6 +20,7 @@ export flow, flowdθ, flowdσ, flowdψ,
     AbstractTaxType,
     NoTaxes,
     WithTaxes,
+    GathProcess,
     AbstractTechChange,
     NoTrend,
     TimeTrend,
@@ -41,12 +42,10 @@ import Base: length
 
 # From Gulen et al (2015) "Production scenarios for the Haynesville..."
 const GATH_COMP_TRTMT_PER_MCF   = 0.42 + 0.07
-const MARGINAL_TAX_RATE = 0.42
-const ONE_MINUS_MARGINAL_TAX_RATE = 1 - MARGINAL_TAX_RATE
+const MARGINAL_TAX_RATE = 0.402
 
 # other calculations
-const REAL_DISCOUNT_AND_DECLINE =0x1.8e2dcbd7fd361p-1 # 0.7776931 = sum( β^((t+5)/12) q(t)/Q(240) for t = 1:240 )
-const C_PER_MCF = GATH_COMP_TRTMT_PER_MCF * REAL_DISCOUNT_AND_DECLINE
+const REAL_DISCOUNT_AND_DECLINE = 0x1.8c9ab263d7fdap-1 # 0.774617743194536 = sum( ß^((t+5)/12) q(t)/Q(240) for t = 1:240 )
 
 const STARTING_α_ψ      = 0x1.7587cc6793516p-2 # 0.365
 const STARTING_log_ogip = 0x1.401755c339009p-1 # 0.625
@@ -299,7 +298,25 @@ baseyear(x::TimeTrend) = x.baseyear
 # taxes
 abstract type AbstractTaxType <: AbstractModelVariations end
 struct NoTaxes       <: AbstractTaxType end
-struct WithTaxes     <: AbstractTaxType end
+struct WithTaxes     <: AbstractTaxType
+    one_minus_mgl_tax_rate::Float64
+    cost_per_mcf::Float64
+end
+WithTaxes(;mgl_tax_rate = 1-MARGINAL_TAX_RATE, cost_per_mcf = GATH_COMP_TRTMT_PER_MCF * REAL_DISCOUNT_AND_DECLINE) = WithTaxes(mgl_tax_rate, cost_per_mcf)
+struct GathProcess   <: AbstractTaxType
+    cost_per_mcf::Float64
+end
+GathProcess(;cost_per_mcf = GATH_COMP_TRTMT_PER_MCF * REAL_DISCOUNT_AND_DECLINE) = GathProcess(cost_per_mcf)
+
+one_minus_mgl_tax_rate(x::StaticDrillingPayoff)    = one_minus_mgl_tax_rate(x)
+one_minus_mgl_tax_rate(x::AbstractDrillingRevenue) = one_minus_mgl_tax_rate(x.tax)
+one_minus_mgl_tax_rate(x::AbstractTaxType)         = 1
+one_minus_mgl_tax_rate(x::WithTaxes)               = x.one_minus_mgl_tax_rate
+cost_per_mcf(x::StaticDrillingPayoff)         = cost_per_mcf(x)
+cost_per_mcf(x::AbstractDrillingRevenue)      = cost_per_mcf(x.tax)
+cost_per_mcf(x::AbstractTaxType)              = 0
+cost_per_mcf(x::Union{WithTaxes,GathProcess}) = x.cost_per_mcf
+
 
 # learning
 abstract type AbstractLearningType <: AbstractModelVariations end
@@ -384,20 +401,29 @@ end
 end
 
 @inline function flow(x::DrillingRevenue{Cn,NoTrend,WithTaxes}, θ::AbstractVector{T}, σ::T, wp::AbstractUnitProblem, i::Integer, d::Integer, z::Tuple, ψ::Real, geoid::Real, roy::Real) where {T,Cn}
-    u = d*ONE_MINUS_MARGINAL_TAX_RATE*(one(T)-roy) * exp(θ[1] + log_ogip(x,θ)*geoid + Eexpψ(x, α_ψ(x,θ), σ, ψ, _Dgt0(wp,i))) * (exp(z[1]) - C_PER_MCF)
+    u = d*one_minus_mgl_tax_rate(x)*(one(T)-roy) * exp(θ[1] + log_ogip(x,θ)*geoid + Eexpψ(x, α_ψ(x,θ), σ, ψ, _Dgt0(wp,i))) * (exp(z[1]) - cost_per_mcf(x))
     return u::T
 end
 
-@inline function flow(x::DrillingRevenue{Cn,TimeTrend}, θ::AbstractVector{T}, σ::T, wp::AbstractUnitProblem, i::Integer, d::Integer, z::Tuple, ψ::Real, geoid::Real, roy::Real) where {T,Cn}
+@inline function flow(x::DrillingRevenue{Cn,NoTrend,GathProcess}, θ::AbstractVector{T}, σ::T, wp::AbstractUnitProblem, i::Integer, d::Integer, z::Tuple, ψ::Real, geoid::Real, roy::Real) where {T,Cn}
+    u = d*(one(T)-roy) * exp(θ[1] + log_ogip(x,θ)*geoid + Eexpψ(x, α_ψ(x,θ), σ, ψ, _Dgt0(wp,i))) * (exp(z[1]) - cost_per_mcf(x))
+    return u::T
+end
+
+@inline function flow(x::DrillingRevenue{Cn,TimeTrend,NoTaxes}, θ::AbstractVector{T}, σ::T, wp::AbstractUnitProblem, i::Integer, d::Integer, z::Tuple, ψ::Real, geoid::Real, roy::Real) where {T,Cn}
     u = d*(one(T)-roy) * exp(θ[1] + z[1] + log_ogip(x,θ)*geoid + Eexpψ(x, α_ψ(x,θ), σ, ψ, _Dgt0(wp,i)) + α_t(x,θ)*(last(z) - baseyear(x.tech)) )
     return u::T
 end
 
 @inline function flow(x::DrillingRevenue{Cn,TimeTrend,WithTaxes}, θ::AbstractVector{T}, σ::T, wp::AbstractUnitProblem, i::Integer, d::Integer, z::Tuple, ψ::Real, geoid::Real, roy::Real) where {T,Cn}
-    u = d*ONE_MINUS_MARGINAL_TAX_RATE*(one(T)-roy) * exp(θ[1] + log_ogip(x,θ)*geoid +  Eexpψ(x, α_ψ(x,θ), σ, ψ, _Dgt0(wp,i)) + α_t(x,θ)*(last(z) - baseyear(x.tech)) ) * (exp(z[1]) - C_PER_MCF)
+    u = d*one_minus_mgl_tax_rate(x)*(one(T)-roy) * exp(θ[1] + log_ogip(x,θ)*geoid +  Eexpψ(x, α_ψ(x,θ), σ, ψ, _Dgt0(wp,i)) + α_t(x,θ)*(last(z) - baseyear(x.tech)) ) * (exp(z[1]) - cost_per_mcf(x))
     return u::T
 end
 
+@inline function flow(x::DrillingRevenue{Cn,TimeTrend,GathProcess}, θ::AbstractVector{T}, σ::T, wp::AbstractUnitProblem, i::Integer, d::Integer, z::Tuple, ψ::Real, geoid::Real, roy::Real) where {T,Cn}
+    u = d * (one(T)-roy) * exp(θ[1] + log_ogip(x,θ)*geoid +  Eexpψ(x, α_ψ(x,θ), σ, ψ, _Dgt0(wp,i)) + α_t(x,θ)*(last(z) - baseyear(x.tech)) ) * (exp(z[1]) - cost_per_mcf(x))
+    return u::T
+end
 
 @inline eur_kernel(x::DrillingRevenue{<:AbstractConstrainedType,NoTrend},   θt::AbstractVector, z::Tuple, uv::NTuple{2}, geoid::Real, roy::Real) = exp(log_ogip(x,θt)*geoid + α_ψ(x,θt)*_ψ2(uv...))
 @inline eur_kernel(x::DrillingRevenue{<:AbstractConstrainedType,TimeTrend}, θt::AbstractVector, z::Tuple, uv::NTuple{2}, geoid::Real, roy::Real) = exp(log_ogip(x,θt)*geoid + α_ψ(x,θt)*_ψ2(uv...) + α_t(x,θt)*last(z))
