@@ -379,7 +379,8 @@ LearningProblem(  x::StaticDrillingPayoff, args...) = StaticDrillingPayoff(  Lea
 end
 
 @inline function Eexpψ(x::DrillingRevenue{A,B,C,NoLearn}, θ4::T, σ::Number, ψ::Number, Dgt0::Bool)::T where {T,A,B,C}
-    return θ4^2*0.5
+    ρ = _ρ(σ)
+    return θ4*(ψ*ρ + θ4*0.5*(one(T)-ρ^2))
 end
 
 
@@ -424,10 +425,6 @@ end
     u = d * (one(T)-roy) * exp(θ[1] + log_ogip(x,θ)*geoid +  Eexpψ(x, α_ψ(x,θ), σ, ψ, _Dgt0(wp,i)) + α_t(x,θ)*(last(z) - baseyear(x.tech)) ) * (exp(z[1]) - cost_per_mcf(x))
     return u::T
 end
-
-@inline eur_kernel(x::DrillingRevenue{<:AbstractConstrainedType,NoTrend},   θt::AbstractVector, z::Tuple, uv::NTuple{2}, geoid::Real, roy::Real) = exp(log_ogip(x,θt)*geoid + α_ψ(x,θt)*_ψ2(uv...))
-@inline eur_kernel(x::DrillingRevenue{<:AbstractConstrainedType,TimeTrend}, θt::AbstractVector, z::Tuple, uv::NTuple{2}, geoid::Real, roy::Real) = exp(log_ogip(x,θt)*geoid + α_ψ(x,θt)*_ψ2(uv...) + α_t(x,θt)*last(z))
-@inline eur_kernel(x::StaticDrillingPayoff, θt, z, uv, geoid::Real, roy::Real) = eur_kernel(x.revenue, θt, z, uv, geoid, roy)
 
 
 # ----------------------------------------------------------------
