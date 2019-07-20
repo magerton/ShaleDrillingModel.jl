@@ -30,7 +30,11 @@ export flow, flowdθ, flowdσ, flowdψ,
     DrillingRevenue,
     Learn,
     NoLearn,
-    NoLearningProblem
+    PerfectInfo,
+    MaxLearning,
+    NoLearningProblem,
+    WithRoyalty,
+    NoRoyalty
 
 using InteractiveUtils: subtypes
 
@@ -322,20 +326,27 @@ cost_per_mcf(x::Union{WithTaxes,GathProcess}) = x.cost_per_mcf
 abstract type AbstractLearningType <: AbstractModelVariations end
 struct Learn <: AbstractLearningType end
 struct NoLearn <: AbstractLearningType end
+struct PerfectInfo <: AbstractLearningType end
+struct MaxLearning <: AbstractLearningType end
+
+abstract type AbstractRoyaltyType <: AbstractModelVariations end
+struct WithRoyalty <: AbstractRoyaltyType end
+struct NoRoyalty   <: AbstractRoyaltyType end
 
 # ----------------------------------------------------------------
 # Drilling revenue object
 # ----------------------------------------------------------------
 
 # drilling revenue
-struct DrillingRevenue{Cn <: AbstractConstrainedType, Tech <: AbstractTechChange, Tax <: AbstractTaxType, Lrn <: AbstractLearningType} <: AbstractDrillingRevenue
+struct DrillingRevenue{Cn <: AbstractConstrainedType, Tech <: AbstractTechChange, Tax <: AbstractTaxType, Lrn <: AbstractLearningType, Roy <: AbstractRoyaltyType} <: AbstractDrillingRevenue
     constr::Cn
     tech::Tech
     tax::Tax
     learn::Lrn
+    royalty::Roy
 end
 
-DrillingRevenue(Cn::AbstractConstrainedType, Tech::AbstractTechChange, Tax::AbstractTaxType) = DrillingRevenue(Cn, Tech, Tax, Learn())
+DrillingRevenue(Cn::AbstractConstrainedType, Tech::AbstractTechChange, Tax::AbstractTaxType) = DrillingRevenue(Cn, Tech, Tax, Learn(), WithRoyalty())
 
 @inline log_ogip(x::DrillingRevenue{Constrained},   θ::AbstractVector) = log_ogip(x.constr)
 @inline α_ψ(     x::DrillingRevenue{Constrained},   θ::AbstractVector) = α_ψ(     x.constr)
@@ -351,29 +362,39 @@ constrained_parms(x::StaticDrillingPayoff) = constrained_parms(x.revenue)
 
 ConstrainedProblem(  x::AbstractPayoffComponent; kwargs...) = x
 UnconstrainedProblem(x::AbstractPayoffComponent; kwargs...) = x
-UnconstrainedProblem(x::DrillingRevenue; kwargs...)         = DrillingRevenue(Unconstrained(;kwargs...), x.tech, x.tax, x.learn)
-ConstrainedProblem(  x::DrillingRevenue; kwargs...)         = DrillingRevenue(Constrained(;kwargs...), x.tech, x.tax, x.learn)
+UnconstrainedProblem(x::DrillingRevenue; kwargs...)         = DrillingRevenue(Unconstrained(;kwargs...), x.tech, x.tax, x.learn, x.royalty)
+ConstrainedProblem(  x::DrillingRevenue; kwargs...)         = DrillingRevenue(Constrained(;kwargs...), x.tech, x.tax, x.learn, x.royalty)
 ConstrainedProblem(  x::StaticDrillingPayoff; kwargs...)    = StaticDrillingPayoff(ConstrainedProblem(revenue(x); kwargs...), ConstrainedProblem(drillingcost(x)), ConstrainedProblem(extensioncost(x)))
 UnconstrainedProblem(x::StaticDrillingPayoff; kwargs...)    = StaticDrillingPayoff(UnconstrainedProblem(revenue(x); kwargs...), UnconstrainedProblem(drillingcost(x)), UnconstrainedProblem(extensioncost(x)))
 
-
 NoLearningProblem(x::AbstractPayoffComponent, args...) = x
 LearningProblem(  x::AbstractPayoffComponent, args...) = x
-NoLearningProblem(x::DrillingRevenue, args...)      = DrillingRevenue(x.constr, x.tech, x.tax, NoLearn())
-LearningProblem(  x::DrillingRevenue, args...)      = DrillingRevenue(x.constr, x.tech, x.tax, Learn())
+NoLearningProblem(x::DrillingRevenue, args...)      = DrillingRevenue(x.constr, x.tech, x.tax, NoLearn(), x.royalty)
+LearningProblem(  x::DrillingRevenue, args...)      = DrillingRevenue(x.constr, x.tech, x.tax, Learn(), x.royalty)
 NoLearningProblem(x::StaticDrillingPayoff, args...) = StaticDrillingPayoff(NoLearningProblem(revenue(x), args...), drillingcost(x), extensioncost(x))
 LearningProblem(  x::StaticDrillingPayoff, args...) = StaticDrillingPayoff(  LearningProblem(revenue(x), args...), drillingcost(x), extensioncost(x))
+
+NoRoyaltyProblem(  x::AbstractPayoffComponent, args...) = x
+WithRoyaltyProblem(x::AbstractPayoffComponent, args...) = x
+NoRoyaltyProblem(  x::DrillingRevenue, args...)      = DrillingRevenue(x.constr, x.tech, x.tax, x.learn, NoRoyalty())
+WithRoyaltyProblem(x::DrillingRevenue, args...)      = DrillingRevenue(x.constr, x.tech, x.tax, x.learn, WithRoyalty())
+NoRoyaltyProblem(  x::StaticDrillingPayoff, args...) = StaticDrillingPayoff(NoLearningProblem(revenue(x), args...), drillingcost(x), extensioncost(x))
+WithRoyaltyProblem(x::StaticDrillingPayoff, args...) = StaticDrillingPayoff(  LearningProblem(revenue(x), args...), drillingcost(x), extensioncost(x))
 
 
 # -------------------------------------------
 # base functions
 # -------------------------------------------
 
-@inline function Eexpψ(x::DrillingRevenue{A,B,C,Learn}, θ4::T, σ::Number, ψ::Number, Dgt0::Bool)::T where {T,A,B,C}
+_ρ(σ::Real, x::AbstractLearningType) = _ρ(σ)
+_ρ(σ::Real, x::PerfectInfo) = one(σ)
+_ρ(σ::Real, x::MaxLearning) = zero(σ)
+
+@inline function Eexpψ(x::DrillingRevenue{A,B,C}, θ4::T, σ::Number, ψ::Number, Dgt0::Bool)::T where {T,A,B,C}
     if Dgt0
         return θ4*ψ
     else
-        ρ = _ρ(σ)
+        ρ = _ρ(σ, x.learn)
         return θ4*(ψ*ρ + θ4*0.5*(one(T)-ρ^2))
     end
 end
@@ -396,33 +417,28 @@ end
 # flow revenue
 # ----------------------------------------------------------------
 
+@inline d_tax_royalty(x::DrillingRevenue{Cnstr,Trnd,Tax,       Lrn, WithRoyalty}, d::Number, roy::T) where {T,Cnstr,Trnd,Lrn,Tax} = d*(one(T)-roy)
+@inline d_tax_royalty(x::DrillingRevenue{Cnstr,Trnd,Tax,       Lrn, NoRoyalty},   d::Number, roy::T) where {T,Cnstr,Trnd,Lrn,Tax} = d
+@inline d_tax_royalty(x::DrillingRevenue{Cnstr,Trnd,WithTaxes, Lrn, WithRoyalty}, d::Number, roy::T) where {T,Cnstr,Trnd,Lrn,   } = d*(one(T)-roy)*one_minus_mgl_tax_rate(x)
+@inline d_tax_royalty(x::DrillingRevenue{Cnstr,Trnd,WithTaxes, Lrn, NoRoyalty},   d::Number, roy::T) where {T,Cnstr,Trnd,Lrn,   } = d*             one_minus_mgl_tax_rate(x)
+
 @inline function flow(x::DrillingRevenue{Cn,NoTrend,NoTaxes}, θ::AbstractVector{T}, σ::T, wp::AbstractUnitProblem, i::Integer, d::Integer, z::Tuple, ψ::Real, geoid::Real, roy::Real) where {T,Cn}
-    u = d*(one(T)-roy) * exp(θ[1] + z[1] + log_ogip(x,θ)*geoid + Eexpψ(x, α_ψ(x,θ), σ, ψ, _Dgt0(wp,i)))
-    return u::T
-end
-
-@inline function flow(x::DrillingRevenue{Cn,NoTrend,WithTaxes}, θ::AbstractVector{T}, σ::T, wp::AbstractUnitProblem, i::Integer, d::Integer, z::Tuple, ψ::Real, geoid::Real, roy::Real) where {T,Cn}
-    u = d*one_minus_mgl_tax_rate(x)*(one(T)-roy) * exp(θ[1] + log_ogip(x,θ)*geoid + Eexpψ(x, α_ψ(x,θ), σ, ψ, _Dgt0(wp,i))) * (exp(z[1]) - cost_per_mcf(x))
-    return u::T
-end
-
-@inline function flow(x::DrillingRevenue{Cn,NoTrend,GathProcess}, θ::AbstractVector{T}, σ::T, wp::AbstractUnitProblem, i::Integer, d::Integer, z::Tuple, ψ::Real, geoid::Real, roy::Real) where {T,Cn}
-    u = d*(one(T)-roy) * exp(θ[1] + log_ogip(x,θ)*geoid + Eexpψ(x, α_ψ(x,θ), σ, ψ, _Dgt0(wp,i))) * (exp(z[1]) - cost_per_mcf(x))
+    u = d_tax_royalty(x, d, roy) * exp(θ[1] + z[1] + log_ogip(x,θ)*geoid + Eexpψ(x, α_ψ(x,θ), σ, ψ, _Dgt0(wp,i)))
     return u::T
 end
 
 @inline function flow(x::DrillingRevenue{Cn,TimeTrend,NoTaxes}, θ::AbstractVector{T}, σ::T, wp::AbstractUnitProblem, i::Integer, d::Integer, z::Tuple, ψ::Real, geoid::Real, roy::Real) where {T,Cn}
-    u = d*(one(T)-roy) * exp(θ[1] + z[1] + log_ogip(x,θ)*geoid + Eexpψ(x, α_ψ(x,θ), σ, ψ, _Dgt0(wp,i)) + α_t(x,θ)*(last(z) - baseyear(x.tech)) )
+    u = d_tax_royalty(x, d, roy) * exp(θ[1] + z[1] + log_ogip(x,θ)*geoid + Eexpψ(x, α_ψ(x,θ), σ, ψ, _Dgt0(wp,i)) + α_t(x,θ)*(last(z) - baseyear(x.tech)) )
     return u::T
 end
 
-@inline function flow(x::DrillingRevenue{Cn,TimeTrend,WithTaxes}, θ::AbstractVector{T}, σ::T, wp::AbstractUnitProblem, i::Integer, d::Integer, z::Tuple, ψ::Real, geoid::Real, roy::Real) where {T,Cn}
-    u = d*one_minus_mgl_tax_rate(x)*(one(T)-roy) * exp(θ[1] + log_ogip(x,θ)*geoid +  Eexpψ(x, α_ψ(x,θ), σ, ψ, _Dgt0(wp,i)) + α_t(x,θ)*(last(z) - baseyear(x.tech)) ) * (exp(z[1]) - cost_per_mcf(x))
+@inline function flow(x::DrillingRevenue{Cn,NoTrend}, θ::AbstractVector{T}, σ::T, wp::AbstractUnitProblem, i::Integer, d::Integer, z::Tuple, ψ::Real, geoid::Real, roy::Real) where {T,Cn}
+    u = d_tax_royalty(x, d, roy) * exp(θ[1] + log_ogip(x,θ)*geoid + Eexpψ(x, α_ψ(x,θ), σ, ψ, _Dgt0(wp,i))) * (exp(z[1]) - cost_per_mcf(x))
     return u::T
 end
 
-@inline function flow(x::DrillingRevenue{Cn,TimeTrend,GathProcess}, θ::AbstractVector{T}, σ::T, wp::AbstractUnitProblem, i::Integer, d::Integer, z::Tuple, ψ::Real, geoid::Real, roy::Real) where {T,Cn}
-    u = d * (one(T)-roy) * exp(θ[1] + log_ogip(x,θ)*geoid +  Eexpψ(x, α_ψ(x,θ), σ, ψ, _Dgt0(wp,i)) + α_t(x,θ)*(last(z) - baseyear(x.tech)) ) * (exp(z[1]) - cost_per_mcf(x))
+@inline function flow(x::DrillingRevenue{Cn,TimeTrend}, θ::AbstractVector{T}, σ::T, wp::AbstractUnitProblem, i::Integer, d::Integer, z::Tuple, ψ::Real, geoid::Real, roy::Real) where {T,Cn}
+    u = d_tax_royalty(x, d, roy) * exp(θ[1] + log_ogip(x,θ)*geoid +  Eexpψ(x, α_ψ(x,θ), σ, ψ, _Dgt0(wp,i)) + α_t(x,θ)*(last(z) - baseyear(x.tech)) ) * (exp(z[1]) - cost_per_mcf(x))
     return u::T
 end
 

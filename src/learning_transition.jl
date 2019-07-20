@@ -1,4 +1,4 @@
-export check_dΠψ, _dψ1dθρ, _ρ, _ψ2, _ψ1
+export _dψ1dθρ, _ρ, _ψ2, _ψ1
 
 @inline _ρ(θρ::Real) = logistic(θρ)
 @inline _dρdθρ(θρ::Real) = (z = logistic(θρ); z*(1-z) )
@@ -23,65 +23,3 @@ _dρdσ = _dρdθρ # alias
 # finite difference versions
 @inline _ρ(x::Real, h::Real) = _ρ(x+h)
 @inline _z(x2::Real, x1::Real, Δ::Real, ρ::Real, h::Real) = _z(x2, x1+h, Δ, ρ)
-
-# ------------------------------ matrix updates -------------------------
-
-function _βΠψdθρ!(P::AbstractMatrix, y::StepRangeLen, θρ::Real, β::Real)
-    n = length(y)
-    (n,n) == size(P) || throw(DimensionMismatch())
-    ρ = _ρ(θρ)
-    dρdθρ = _dρdθρ(θρ)
-    Δ = 0.5 * step(y)
-
-    @inbounds for (j,yj) in enumerate(y)
-        if j == 1
-            @. P[ :,j] = β * _dπdρ(yj,y,Δ,ρ) * dρdθρ
-        elseif j == n
-            @. P[ :,j] = -β * _dπdρ(yj,y,-Δ,ρ) * dρdθρ
-        else
-            @. P[ :,j] = β * ( _dπdρ(yj,y,Δ,ρ) - _dπdρ(yj,y,-Δ,ρ) ) * dρdθρ
-        end
-    end
-end
-
-function _βΠψ!(P::AbstractMatrix, y1::StepRangeLen, y2::StepRangeLen, θp::Real, β::Real)
-    n = length(y2)
-    n == length(y1) || throw(DimensionMismatch())
-    (n,n) == size(P) || throw(DimensionMismatch())
-    ρ = _ρ(θp)
-    Δ = 0.5 * step(y2)
-
-    @inbounds for (j,yj) in enumerate(y2)
-        if j == 1
-            @. P[ :,j] = β * normcdf(_z(yj, y1, Δ, ρ))
-        elseif j == n
-            @. P[ :,j] = β * normccdf(_z(yj, y1, -Δ, ρ))
-        else
-            @. P[ :,j] = β * ( normcdf(_z(yj, y1, Δ, ρ)) - normcdf(_z(yj, y1, -Δ, ρ) ))
-        end
-    end
-end
-
-_βΠψ!(P::AbstractMatrix, y1::StepRangeLen, θp::Real, β::Real) = _βΠψ!(P, y1, y1, θp, β)
-
-function _βΠψ(y1::StepRangeLen{T}, θp::Real, β::Real) where {T}
-    P = Matrix{T}(undef, length(y1), length(y1))
-    _βΠψ!(P, y1, y1, θp, β)
-    return P
-end
-
-# ------------------------------ derivative check -------------------------
-
-function check_dΠψ(θρ::Real, ψspace::StepRangeLen)
-
-    Δ = 0.5 * step(ψspace)
-
-    for yj in ψspace
-        for y in ψspace
-            fdσ = Calculus.derivative((sig) -> normcdf(_z(yj, y, Δ, _ρ(sig))), θρ)
-            dσ  = _dρdθρ(θρ) * _dπdρ(yj, y, Δ, _ρ(θρ))
-            abs(fdσ - dσ ) < 1e-7 || throw(error("bad σ grad at σ = $σ, ψ2 = $yj, ψ1 = $y"))
-        end
-    end
-    return true
-end
