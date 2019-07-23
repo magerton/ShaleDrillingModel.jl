@@ -28,11 +28,13 @@ export flow, flowdθ, flowdσ, flowdψ,
     Unconstrained,
     Constrained,
     DrillingRevenue,
+    AbstractLearningType,
     Learn,
     NoLearn,
     PerfectInfo,
     MaxLearning,
     NoLearningProblem,
+    AbstractRoyaltyType,
     WithRoyalty,
     NoRoyalty
 
@@ -390,7 +392,7 @@ _ρ(σ::Real, x::AbstractLearningType) = _ρ(σ)
 _ρ(σ::Real, x::PerfectInfo) = one(σ)
 _ρ(σ::Real, x::MaxLearning) = zero(σ)
 
-@inline function Eexpψ(x::DrillingRevenue{A,B,C}, θ4::T, σ::Number, ψ::Number, Dgt0::Bool)::T where {T,A,B,C}
+@inline function Eexpψ(x::DrillingRevenue, θ4::T, σ::Number, ψ::Number, Dgt0::Bool)::T where {T}
     if Dgt0
         return θ4*ψ
     else
