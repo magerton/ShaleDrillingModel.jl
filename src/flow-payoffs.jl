@@ -348,6 +348,8 @@ struct DrillingRevenue{Cn <: AbstractConstrainedType, Tech <: AbstractTechChange
     royalty::Roy
 end
 
+learn(x::DrillingRevenue) = x.learn
+
 DrillingRevenue(Cn::AbstractConstrainedType, Tech::AbstractTechChange, Tax::AbstractTaxType) = DrillingRevenue(Cn, Tech, Tax, Learn(), WithRoyalty())
 
 @inline log_ogip(x::DrillingRevenue{Constrained},   θ::AbstractVector) = log_ogip(x.constr)
@@ -392,20 +394,33 @@ _ρ(σ::Real, x::AbstractLearningType) = _ρ(σ)
 _ρ(σ::Real, x::PerfectInfo) = one(σ)
 _ρ(σ::Real, x::MaxLearning) = zero(σ)
 
-@inline function Eexpψ(x::DrillingRevenue, θ4::T, σ::Number, ψ::Number, Dgt0::Bool)::T where {T}
+@inline Eexpψ(x::DrillingRevenue, θ4, σ, ψ, Dgt0) = Eexpψ(learn(x), θ4, σ, ψ, Dgt0)
+
+@inline function Eexpψ(x::AbstractLearningType, θ4::T, σ::Number, ψ::Number, Dgt0::Bool)::T where {T}
     if Dgt0
         return θ4*ψ
     else
-        ρ = _ρ(σ, x.learn)
+        ρ = _ρ(σ, x)
         return θ4*(ψ*ρ + θ4*0.5*(one(T)-ρ^2))
     end
 end
 
-@inline function Eexpψ(x::DrillingRevenue{A,B,C,NoLearn}, θ4::T, σ::Number, ψ::Number, Dgt0::Bool)::T where {T,A,B,C}
+@inline function Eexpψ(::NoLearn, θ4::T, σ::Number, ψ::Number, Dgt0::Bool)::T where {T}
     ρ = _ρ(σ)
     return θ4*(ψ*ρ + θ4*0.5*(one(T)-ρ^2))
 end
 
+@inline function Eexpψ(::PerfectInfo, θ4::T, σ::Number, ψ::Number, Dgt0::Bool)::T where {T}
+    return θ4*ψ
+end
+
+@inline function Eexpψ(::MaxLearning, θ4::T, σ::Number, ψ::Number, Dgt0::Bool)::T where {T}
+    if Dgt0
+        return θ4*ψ
+    else
+        return 0.5 * θ4^2
+    end
+end
 
 # ----------------------------------------------------------------
 # regular drilling revenue
@@ -421,8 +436,8 @@ end
 
 @inline d_tax_royalty(x::DrillingRevenue{Cnstr,Trnd,Tax,       Lrn, WithRoyalty}, d::Number, roy::T) where {T,Cnstr,Trnd,Lrn,Tax} = d*(one(T)-roy)
 @inline d_tax_royalty(x::DrillingRevenue{Cnstr,Trnd,Tax,       Lrn, NoRoyalty},   d::Number, roy::T) where {T,Cnstr,Trnd,Lrn,Tax} = d
-@inline d_tax_royalty(x::DrillingRevenue{Cnstr,Trnd,WithTaxes, Lrn, WithRoyalty}, d::Number, roy::T) where {T,Cnstr,Trnd,Lrn,   } = d*(one(T)-roy)*one_minus_mgl_tax_rate(x)
-@inline d_tax_royalty(x::DrillingRevenue{Cnstr,Trnd,WithTaxes, Lrn, NoRoyalty},   d::Number, roy::T) where {T,Cnstr,Trnd,Lrn,   } = d*             one_minus_mgl_tax_rate(x)
+@inline d_tax_royalty(x::DrillingRevenue{Cnstr,Trnd,WithTaxes, Lrn, WithRoyalty}, d::Number, roy::T) where {T,Cnstr,Trnd,Lrn    } = d*(one(T)-roy)*one_minus_mgl_tax_rate(x)
+@inline d_tax_royalty(x::DrillingRevenue{Cnstr,Trnd,WithTaxes, Lrn, NoRoyalty},   d::Number, roy::T) where {T,Cnstr,Trnd,Lrn    } = d*             one_minus_mgl_tax_rate(x)
 
 @inline function flow(x::DrillingRevenue{Cn,NoTrend,NoTaxes}, θ::AbstractVector{T}, σ::T, wp::AbstractUnitProblem, i::Integer, d::Integer, z::Tuple, ψ::Real, geoid::Real, roy::Real) where {T,Cn}
     u = d_tax_royalty(x, d, roy) * exp(θ[1] + z[1] + log_ogip(x,θ)*geoid + Eexpψ(x, α_ψ(x,θ), σ, ψ, _Dgt0(wp,i)))

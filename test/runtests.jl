@@ -119,6 +119,7 @@ include("logsumexp3.jl")
 include("vfit.jl")
 include("vf_solve_terminal_and_infill.jl")
 include("vf_solve_exploratory.jl")
+include("vf_learning_versions.jl")
 
 zero!(tmpv)
 let geoid = 2, roy = 0.25, itype = (geoid, roy,)
