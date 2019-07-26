@@ -36,7 +36,10 @@ export flow, flowdθ, flowdσ, flowdψ,
     NoLearningProblem,
     AbstractRoyaltyType,
     WithRoyalty,
-    NoRoyalty
+    NoRoyalty,
+    revenue,
+    drillingcost,
+    extensioncost
 
 using InteractiveUtils: subtypes
 
@@ -390,9 +393,11 @@ WithRoyaltyProblem(x::StaticDrillingPayoff, args...) = StaticDrillingPayoff(  Le
 # base functions
 # -------------------------------------------
 
-_ρ(σ::Real, x::AbstractLearningType) = _ρ(σ)
-_ρ(σ::Real, x::PerfectInfo) = one(σ)
-_ρ(σ::Real, x::MaxLearning) = zero(σ)
+@inline _ρ(σ::Real, x::AbstractLearningType) = _ρ(σ)
+@inline _ρ(σ::Real, x::PerfectInfo) = one(σ)
+@inline _ρ(σ::Real, x::MaxLearning) = zero(σ)
+@inline _ρ(σ, x::DrillingRevenue) = _ρ(σ, learn(x))
+@inline _ρ(σ, x::StaticDrillingPayoff) = _ρ(σ, revenue(x))
 
 @inline Eexpψ(x::DrillingRevenue, θ4, σ, ψ, Dgt0) = Eexpψ(learn(x), θ4, σ, ψ, Dgt0)
 
