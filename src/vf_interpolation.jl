@@ -126,6 +126,13 @@ end
 
 function set_up_dcdp_workers(pids::AbstractVector{<:Integer}, prim::dcdp_primitives, typegrids::AbstractVector...; σ0::Real=1.0, ψflag::Interpolations.Flag=Quadratic(InPlace()), kwargs...)
 
+    @eval @everwhere begin
+        set_g_SharedEV(nothing)
+        set_g_ItpSharedEV(nothing)
+        set_g_dcdp_tmpvars(nothing)
+        gc()
+    end
+
     println("initialize shared arrays")
     sev = SharedEV(pids, prim, typegrids...)
 
