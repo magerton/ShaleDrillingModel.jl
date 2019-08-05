@@ -120,7 +120,12 @@ exploratory_learning(wp::PerpetualProblem) = end_ex0(wp)+1 : end_lrn(wp)
 
 # -------------------------------------------------------------------
 
+"""
+    state_if_never_drilled(wp::AbstractUnitProblem, state0::Integer, t::Integer)
 
+At what state will a unit be in after `t` periods have passed if it has
+decision structure `wp` and a starting `state0`?
+"""
 function state_if_never_drilled(wp::AbstractUnitProblem, state0::Integer, t::Integer)
 
     if state0 <= end_ex1(wp)
@@ -362,6 +367,7 @@ function _dmax(wp::AbstractUnitProblem, sidx::Integer)
     throw(DomainError())
 end
 
+@inline actionspace(wp::AbstractUnitProblem) = 0:_dmax(wp)
 @inline actionspace(wp::AbstractUnitProblem, sidx::Integer) = 0:_dmax(wp,sidx)
 @inline dp1space(   wp::AbstractUnitProblem, sidx::Integer) = actionspace(wp,sidx) .+ 1
 
