@@ -445,6 +445,10 @@ end
 @inline d_tax_royalty(x::DrillingRevenue{Cnstr,Trnd,WithTaxes, Lrn, WithRoyalty}, d::Number, roy::T) where {T,Cnstr,Trnd,Lrn    } = d*(one(T)-roy)*one_minus_mgl_tax_rate(x)
 @inline d_tax_royalty(x::DrillingRevenue{Cnstr,Trnd,WithTaxes, Lrn, NoRoyalty},   d::Number, roy::T) where {T,Cnstr,Trnd,Lrn    } = d*             one_minus_mgl_tax_rate(x)
 
+@inline eur_kernel(x::DrillingRevenue{<:AbstractConstrainedType,NoTrend},   θt::AbstractVector, z::Tuple, uv::NTuple{2}, geoid::Real, roy::Real) = exp(log_ogip(x,θt)*geoid + α_ψ(x,θt)*_ψ2(uv...))
+@inline eur_kernel(x::DrillingRevenue{<:AbstractConstrainedType,TimeTrend}, θt::AbstractVector, z::Tuple, uv::NTuple{2}, geoid::Real, roy::Real) = exp(log_ogip(x,θt)*geoid + α_ψ(x,θt)*_ψ2(uv...) + α_t(x,θt)*(last(z) - baseyear(x.tech)))
+@inline eur_kernel(x::StaticDrillingPayoff, θt, z, uv, geoid::Real, roy::Real) = eur_kernel(revenue(x), θt, z, uv, geoid, roy)
+
 @inline function flow(x::DrillingRevenue{Cn,NoTrend,NoTaxes}, θ::AbstractVector{T}, σ::T, wp::AbstractUnitProblem, i::Integer, d::Integer, z::Tuple, ψ::Real, geoid::Real, roy::Real) where {T,Cn}
     u = d_tax_royalty(x, d, roy) * exp(θ[1] + z[1] + log_ogip(x,θ)*geoid + Eexpψ(x, α_ψ(x,θ), σ, ψ, _Dgt0(wp,i)))
     return u::T
