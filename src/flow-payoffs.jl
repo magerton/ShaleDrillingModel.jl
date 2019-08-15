@@ -302,7 +302,7 @@ struct NoTrend       <: AbstractTechChange  end
 struct TimeTrend     <: AbstractTechChange
     baseyear::Int
 end
-TimeTrend() = TimeTrend(2008)
+TimeTrend() = TimeTrend(2008) # FIXME: set to first year
 baseyear(x::TimeTrend) = x.baseyear
 
 # taxes

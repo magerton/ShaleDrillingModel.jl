@@ -20,6 +20,7 @@ function logsumexp_and_softmax!(r::AbstractArray{T}, x::AbstractArray{T}) where 
     @inbounds @simd for i in 1:n
         s += ( r[i] = exp(x[i] - u) )
     end
+    s > zero(T) || throw(DomainError(s, "sum( exp.(x .- maximum(x)) ) <= 0"))
     invs = one(T)/s
     r .*= invs
     return log(s) + u
