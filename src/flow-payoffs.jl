@@ -379,6 +379,7 @@ NoLearningProblem(x::AbstractPayoffComponent, args...) = x
 LearningProblem(  x::AbstractPayoffComponent, args...) = x
 NoLearningProblem(x::DrillingRevenue, args...)      = DrillingRevenue(x.constr, x.tech, x.tax, NoLearn(), x.royalty)
 LearningProblem(  x::DrillingRevenue, args...)      = DrillingRevenue(x.constr, x.tech, x.tax, Learn(), x.royalty)
+PerfectInfo(x::DrillingRevenue, args...)            = DrillingRevenue(x.constr, x.tech, x.tax, PerfectInfo(), x.royalty)
 NoLearningProblem(x::StaticDrillingPayoff, args...) = StaticDrillingPayoff(NoLearningProblem(revenue(x), args...), drillingcost(x), extensioncost(x))
 LearningProblem(  x::StaticDrillingPayoff, args...) = StaticDrillingPayoff(  LearningProblem(revenue(x), args...), drillingcost(x), extensioncost(x))
 
@@ -386,8 +387,8 @@ NoRoyaltyProblem(  x::AbstractPayoffComponent, args...) = x
 WithRoyaltyProblem(x::AbstractPayoffComponent, args...) = x
 NoRoyaltyProblem(  x::DrillingRevenue, args...)      = DrillingRevenue(x.constr, x.tech, x.tax, x.learn, NoRoyalty())
 WithRoyaltyProblem(x::DrillingRevenue, args...)      = DrillingRevenue(x.constr, x.tech, x.tax, x.learn, WithRoyalty())
-NoRoyaltyProblem(  x::StaticDrillingPayoff, args...) = StaticDrillingPayoff(NoLearningProblem(revenue(x), args...), drillingcost(x), extensioncost(x))
-WithRoyaltyProblem(x::StaticDrillingPayoff, args...) = StaticDrillingPayoff(  LearningProblem(revenue(x), args...), drillingcost(x), extensioncost(x))
+NoRoyaltyProblem(  x::StaticDrillingPayoff, args...) = StaticDrillingPayoff(  NoRoyaltyProblem(revenue(x), args...), drillingcost(x), extensioncost(x))
+WithRoyaltyProblem(x::StaticDrillingPayoff, args...) = StaticDrillingPayoff(WithRoyaltyProblem(revenue(x), args...), drillingcost(x), extensioncost(x))
 
 
 # -------------------------------------------
