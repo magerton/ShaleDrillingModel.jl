@@ -4,6 +4,8 @@ function starting_values(x::AbstractPayoffFunction)
     @warn "using random values for $x"
     rand(length(x))
 end
+
+"Note, this includes an extra parameter for σ!!"
 function starting_values(x::StaticDrillingPayoff)
     @warn "using random values for $x"
     rand(length(x)+1)
@@ -11,6 +13,16 @@ end
 
 starting_values(x::StaticDrillingPayoff{DrillingRevenue{Unconstrained,NoTrend}, DrillingCost_constant, ExtensionCost_Constant}) = [-0x1.5abc9b2ad486fp+1, STARTING_log_ogip, STARTING_α_ψ, -0x1.efb4349a3e38cp+2,                        -0x1.6ce81fc7e1acep-3, 1.0, ]
 starting_values(x::StaticDrillingPayoff{DrillingRevenue{Unconstrained,NoTrend}, DrillingCost_dgt1,     ExtensionCost_Constant}) = [-0x1.30492070192dp+2,  STARTING_log_ogip, STARTING_α_ψ, -0x1.a8ca50a153ecbp+2, -0x1.45888b1d8fc67p+2, -0x1.c68737f1a1d98p-3, 1.0, ]
+
+function starting_values(x::DrillingCost_TimeFE_costdiffs)
+    if startstop(x) == (2008,2012,)
+        timefe = [-12.2663, -8.60268, -7.26867, -6.5999, -6.34026,]
+    else
+        timefe = fill(-7.0, length(range(startstop(x)..., step=1)))
+        @warn "filling timefe as $timefe"
+    end
+    return vcat(timefe, 1.49329, 0.1, 1.49329)
+end
 
 function starting_values(x::DrillingCost_TimeFE)
     if startstop(x) == (2008,2012,)
@@ -25,7 +37,8 @@ function starting_values(x::DrillingCost_TimeFE_rigrate)
     if startstop(x) == (2008,2012,)
         timefe = [-11.5378, -7.84324, -6.52969, -5.65049, -5.40226,]
     else
-        throw(error())
+        timefe = fill(-7.0, length(range(startstop(x)..., step=1)))
+        @warn "filling timefe as $timefe"
     end
     return vcat(timefe, 1.47941, -0.811621,)  # timeFE, multi-well discount, rig-rate
 end
@@ -53,6 +66,13 @@ function starting_values(x::StaticDrillingPayoff{DrillingRevenue{Unconstrained,N
         drillcost = starting_values(x.drillingcost)
     end
     extension, σ = -0x1.a56fc68c70ad7p-1, 0x1.0ee29553db387p+0
+    return vcat(revenue, drillcost, extension, σ)
+end
+
+function starting_values(x::StaticDrillingPayoff{DrillingRevenue{Unconstrained,TimeTrend,GathProcess,Learn,WithRoyalty}, DrillingCost_TimeFE_costdiffs, ExtensionCost_Constant})
+    revenue = [-2.68143, 0.571703, 0.330266, 0.0256914,]
+    drillcost = starting_values(x.drillingcost)
+    extension, σ = -0.848626, 0.76108
     return vcat(revenue, drillcost, extension, σ)
 end
 

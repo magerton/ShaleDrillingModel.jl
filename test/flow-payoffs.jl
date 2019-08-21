@@ -18,6 +18,7 @@
     types_to_test = (
         DrillingCost_TimeFE(2008,2012),
         DrillingCost_TimeFE(2009,2011),
+        DrillingCost_TimeFE_costdiffs(2008,2012),
         DrillingCost_constant(),
         DrillingCost_dgt1(),
         # DrillingCost_TimeFE_rigrate(2008,2012),  # requires a different-sized state-space
@@ -47,7 +48,7 @@
             fd = zeros(Float64, n)
             g = zeros(Float64, n)
 
-            for (d,i) in Iterators.product(0:2, 1:3)
+            for (d,i) in Iterators.product(0:ShaleDrillingModel._dmax(wp), 1:length(wp))
 
                 # test ∂f/∂θ
                 Calculus.finite_difference!((thet) -> flow(f, thet, σ, wp, i, d, z, ψ, geoid, roy), θ0, fd, :central)
