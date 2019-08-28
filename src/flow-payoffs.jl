@@ -8,6 +8,7 @@ export flow, flowdθ, flowdσ, flowdψ,
     DrillingCost_TimeFE_rigrate,
     DrillingCost_constant,
     DrillingCost_TimeFE_costdiffs,
+    DrillingCost_TimeFE_rig_costdiffs,
     DrillingCost_dgt1,
     AbstractExtensionCost,
     ExtensionCost_Constant,
@@ -312,6 +313,47 @@ end
     k == K-1 && return d <= 1 ? zero(T) : T(d)
     k <= K   && return d == 0 ? zero(T) : d*exp(z[2])
     throw(DomainError(k))
+end
+
+
+
+"Time FE for 2008-2012 with shifters for (D==0,d>1), (D>1,d==1), (D>1,d>1)"
+struct DrillingCost_TimeFE_rig_costdiffs <: AbstractDrillingCost_TimeFE
+    start::Int16
+    stop::Int16
+end
+@inline length(x::DrillingCost_TimeFE_rig_costdiffs) = 5 + stop(x) - start(x)
+@inline function flow(u::DrillingCost_TimeFE_rig_costdiffs, θ::AbstractVector{T}, σ::T, wp::AbstractUnitProblem, i::Integer, d::Integer, z::Tuple{T,T,<:Integer}, ψ::T, geoid::Real, roy::Real)::T where {T}
+    d < 1 && return zero(T)
+    K = length(u)
+    tidx = time_idx(u, last(z))
+
+    if !_Dgt0(wp,i)
+        r = d == 1 ? zero(T) : θ[K-3]
+    else
+        r = d == 1 ? θ[K-2]  : θ[K-1]
+    end
+    return d*( r + θ[tidx] + θ[K]*exp(z[2]) )
+end
+
+@inline function flowdθ(u::DrillingCost_TimeFE_rig_costdiffs, k::Integer, θ::AbstractVector{T}, σ::T, wp::AbstractUnitProblem, i::Integer, d::Integer, z::Tuple{T,T,<:Integer}, ψ::T, geoid::Real, roy::Real)::T where {T}
+    K = length(u)
+    tidx = time_idx(u, last(z))
+    Dgt0 = _Dgt0(wp,i)
+
+    if 0 < k < K-3
+        return k == tidx       ? T(d) : zero(T)
+    elseif k == K-3
+        return !Dgt0 && d >  1 ? T(d) : zero(T)
+    elseif k == K-2
+        return  Dgt0 && d == 1 ? one(T) : zero(T)
+    elseif k == K-1
+        return  Dgt0 && d >  1 ? T(d) : zero(T)
+    elseif k == K
+        return  d == 0 ? zero(T) : d*exp(z[2])
+    else
+        throw(DomainError(k))
+    end
 end
 
 

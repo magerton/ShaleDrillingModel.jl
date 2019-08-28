@@ -1,5 +1,5 @@
 
-@testset "Flow gradients" begin
+@testset "Flow gradients NO rigs" begin
     problem = StaticDrillingPayoff(
         DrillingRevenue(Unconstrained(),NoTrend(),NoTaxes()),
         DrillingCost_constant(),
@@ -42,6 +42,42 @@
     for f in types_to_test
         println("Testing fct $f")
         let z = (2.5,2010), ψ = 1.0, geoid = 4.5, roy = 0.25, σ = 0.75
+
+            n = length(f)
+            θ0 = rand(n)
+            fd = zeros(Float64, n)
+            g = zeros(Float64, n)
+
+            for (d,i) in Iterators.product(0:ShaleDrillingModel._dmax(wp), 1:length(wp))
+
+                # test ∂f/∂θ
+                Calculus.finite_difference!((thet) -> flow(f, thet, σ, wp, i, d, z, ψ, geoid, roy), θ0, fd, :central)
+                ShaleDrillingModel.gradient!(f, θ0, g, σ, wp, i, d, z, ψ, geoid, roy)
+                @test g ≈ fd
+
+                # test ∂f/∂ψ
+                fdpsi = Calculus.derivative((psi) -> flow(f, θ0, σ, wp, i, d, z, psi, geoid, roy), ψ)
+                gpsi = flowdψ(f, θ0, σ, wp, i, d, z, ψ, geoid, roy)
+                @test isapprox(fdpsi, gpsi, atol=1e-4)
+
+                # test ∂f/∂σ
+                fdsig = Calculus.derivative((sig) -> flow(f, θ0, sig, wp, i, d, z, ψ, geoid, roy), σ)
+                gsig = flowdσ(f, θ0, σ, wp, i, d, z, ψ, geoid, roy)
+                @test isapprox(fdsig, gsig, atol=1e-4)
+            end
+        end
+    end
+end
+
+
+@testset "Flow gradients with rigs" begin
+    types_to_test = (
+        DrillingCost_TimeFE_rigrate(2008,2012),
+        DrillingCost_TimeFE_rig_costdiffs(2008,2012),
+    )
+    for f in types_to_test
+        println("Testing fct $f")
+        let z = (1.62, 0.45, 2010), ψ = 1.0, geoid = 4.5, roy = 0.25, σ = 0.75
 
             n = length(f)
             θ0 = rand(n)
