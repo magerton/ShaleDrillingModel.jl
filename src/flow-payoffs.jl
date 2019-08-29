@@ -57,7 +57,7 @@ const GATH_COMP_TRTMT_PER_MCF   = 0.42 + 0.07
 const MARGINAL_TAX_RATE = 0.402
 
 # other calculations
-const REAL_DISCOUNT_AND_DECLINE = 0x1.8d040f502492dp-1  #  0.775421598942818= sum( β^((t+5-1)/12) q(t)/Q(240) for t = 1:240)
+const REAL_DISCOUNT_AND_DECLINE = 0x1.8e06b611ed4d8p-1  #  0.777394952476835= sum( β^((t+5-1)/12) q(t)/Q(240) for t = 1:240)
 
 const STARTING_α_ψ      = 0x1.7587cc6793516p-2 # 0.365
 const STARTING_log_ogip = 0x1.401755c339009p-1 # 0.625
