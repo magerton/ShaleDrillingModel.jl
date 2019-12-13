@@ -8,7 +8,7 @@ using StatsBase
 using AxisAlgorithms
 using Calculus
 using GenGlobal
-using Interpolations
+using InterpolationsOld
 
 using SharedArrays
 using SparseArrays

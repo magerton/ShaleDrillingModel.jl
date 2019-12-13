@@ -2,8 +2,8 @@
 
 export prefilterByView!, serial_prefilterByView!, parallel_prefilterByView!, gradient_d, gradient_d_impl
 
-using Interpolations
-using Interpolations: iextract, itptype, DimSpec, BSplineInterpolation, prefilter!,
+using InterpolationsOld
+using InterpolationsOld: iextract, itptype, DimSpec, BSplineInterpolation, prefilter!,
     gridtype, tweight, GridType, gradient_impl, count_interp_dims, gradient_coefficients, index_gen, define_indices,
     sqr, cub, InterpolationType, coordlookup, rescale_gradient, Flag
 
@@ -109,7 +109,7 @@ fixedgradient(sitp::ScaledInterpolation{T,N,ITPT,IT,GT}, xs...      ) where {T,N
 
     quote
         length(g) == $(count_interp_dims(IT, N)) || throw(ArgumentError(string("The length of the provided gradient vector (", length(g), ") did not match the number of interpolating dimensions (", $(count_interp_dims(IT, N)), ")")))
-        Interpolations.gradient!(g, sitp.itp, $(interp_indices...))
+        InterpolationsOld.gradient!(g, sitp.itp, $(interp_indices...))
         cntr = 0
         for i = 1:N
                 if $(interp_dimens)[i]

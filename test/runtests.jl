@@ -101,7 +101,7 @@ evs = dcdp_Emax(prim)
 ## check sizes of models
 ShaleDrillingModel.check_size(prim, evs)
 
-include("BSplineTestFuns_runtests.jl")
+# include("BSplineTestFuns_runtests.jl")
 include("state-space.jl")
 include("flow-payoffs.jl")
 

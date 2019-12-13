@@ -1,8 +1,8 @@
-using Interpolations: Flag, Quadratic, InPlace
+using InterpolationsOld: Flag, Quadratic, InPlace, AbstractInterpolation
 
 export ItpSharedEV, set_up_dcdp_workers
 
-struct ItpSharedEV{T,A1<:Interpolations.AbstractInterpolation{T},A2<:Interpolations.AbstractInterpolation{T},A3<:Interpolations.AbstractInterpolation{T},TT<:Tuple}
+struct ItpSharedEV{T,A1<:AbstractInterpolation{T},A2<:AbstractInterpolation{T},A3<:AbstractInterpolation{T},TT<:Tuple}
   EV::A1
   dEV::A2
   dEVσ::A3
@@ -124,7 +124,7 @@ end
 
 # -------------------------------------------------------------
 
-function set_up_dcdp_workers(pids::AbstractVector{<:Integer}, prim::dcdp_primitives, typegrids::AbstractVector...; σ0::Real=1.0, ψflag::Interpolations.Flag=Quadratic(InPlace()), kwargs...)
+function set_up_dcdp_workers(pids::AbstractVector{<:Integer}, prim::dcdp_primitives, typegrids::AbstractVector...; σ0::Real=1.0, ψflag::Flag=Quadratic(InPlace()), kwargs...)
 
     # @eval @everywhere begin
     #     set_g_SharedEV(nothing)
